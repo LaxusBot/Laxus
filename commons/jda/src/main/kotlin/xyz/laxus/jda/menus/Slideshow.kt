@@ -25,6 +25,7 @@ import net.dv8tion.jda.core.requests.RestAction
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.embed
 import xyz.laxus.jda.util.message
+import xyz.laxus.util.functional.AddRemoveBlock
 import xyz.laxus.util.ignored
 import java.awt.Color
 import kotlin.coroutines.experimental.coroutineContext
@@ -37,8 +38,8 @@ import kotlin.math.min
  * @author Kaidan Gustave
  */
 @Suppress("Unused", "MemberVisibilityCanBePrivate")
-class Slideshow(builder: Slideshow.Builder): Menu(builder) {
-    companion object {
+class Slideshow private constructor(builder: Slideshow.Builder): Menu(builder) {
+    private companion object {
         const val BIG_LEFT = Paginator.BIG_LEFT
         const val LEFT = Paginator.LEFT
         const val STOP = Paginator.STOP
@@ -46,9 +47,9 @@ class Slideshow(builder: Slideshow.Builder): Menu(builder) {
         const val BIG_RIGHT = Paginator.BIG_RIGHT
     }
 
-    private val color: (Int, Int) -> Color? = builder.colorFun
-    private val text: (Int, Int) -> String? = builder.textFun
-    private val description: (Int, Int) -> String? = builder.descriptionFun
+    private val color: PageFunction<Color?> = builder.colorFun
+    private val text: PageFunction<String?> = builder.textFun
+    private val description: PageFunction<String?> = builder.descriptionFun
     private val urls: List<String> = builder.urls
     private val showPageNumbers: Boolean = builder.showPageNumbers
     private val waitOnSinglePage: Boolean = builder.waitOnSinglePage
@@ -57,8 +58,11 @@ class Slideshow(builder: Slideshow.Builder): Menu(builder) {
     private val leftText: String? = builder.textToLeft
     private val rightText: String? = builder.textToRight
     private val allowTextInput: Boolean = builder.allowTextInput
-    private val finalAction: (suspend (Message) -> Unit)? = builder.finalAction
+    private val finalAction: FinalAction? = builder.finalAction
     private val pages = urls.size
+
+    constructor(builder: Slideshow.Builder = Slideshow.Builder(),
+                build: Slideshow.Builder.() -> Unit): this(builder.apply(build))
 
     override suspend fun displayIn(channel: MessageChannel) = paginate(channel, 1)
 
@@ -176,15 +180,6 @@ class Slideshow(builder: Slideshow.Builder): Menu(builder) {
         }
     }
 
-    private fun checkReaction(event: MessageReactionAddEvent, message: Message): Boolean {
-        return if(event.messageIdLong != message.idLong) false else when(event.reactionEmote.name) {
-            LEFT, RIGHT, STOP -> isValidUser(event.user, event.guild)
-            BIG_LEFT, BIG_RIGHT -> bulkSkipNumber > 1 && isValidUser(event.user, event.guild)
-
-            else -> false
-        }
-    }
-
     private suspend fun handleMessageReactionAddAction(event: MessageReactionAddEvent, message: Message, pageNum: Int) {
         var newPageNum = pageNum
         when(event.reactionEmote.name) {
@@ -229,6 +224,15 @@ class Slideshow(builder: Slideshow.Builder): Menu(builder) {
         pagination(m, newPageNum)
     }
 
+    private fun checkReaction(event: MessageReactionAddEvent, message: Message): Boolean {
+        return if(event.messageIdLong != message.idLong) false else when(event.reactionEmote.name) {
+            LEFT, RIGHT, STOP -> isValidUser(event.user, event.guild)
+            BIG_LEFT, BIG_RIGHT -> bulkSkipNumber > 1 && isValidUser(event.user, event.guild)
+
+            else -> false
+        }
+    }
+
     private fun renderPage(pageNum: Int): Message = message {
         text(pageNum, pages)?.let { this@message.append(it) }
         embed embed@{
@@ -246,9 +250,9 @@ class Slideshow(builder: Slideshow.Builder): Menu(builder) {
     }
 
     class Builder : Menu.Builder<Slideshow.Builder, Slideshow>() {
-        var colorFun: (Int, Int) -> Color? = { _, _ -> null }
-        var textFun: (Int, Int) -> String? = { _, _ -> null }
-        var descriptionFun: (Int, Int) -> String? = { _, _ -> null }
+        var colorFun: PageFunction<Color?> = { _, _ -> null }
+        var textFun: PageFunction<String?> = { _, _ -> null }
+        var descriptionFun: PageFunction<String?> = { _, _ -> null }
         val urls: MutableList<String> = ArrayList()
         var showPageNumbers: Boolean = true
         var waitOnSinglePage: Boolean = false
@@ -258,7 +262,10 @@ class Slideshow(builder: Slideshow.Builder): Menu(builder) {
         var textToLeft: String? = null
         var textToRight: String? = null
         var allowTextInput = false
-        var finalAction: (suspend (Message) -> Unit)? = null
+        var finalAction: FinalAction? = null
+
+        @PublishedApi
+        internal val block by lazy { ItemControllerBlock(urls) }
 
         operator fun plusAssign(item: String) {
             urls.add(item)
@@ -283,8 +290,8 @@ class Slideshow(builder: Slideshow.Builder): Menu(builder) {
             return this
         }
 
-        inline fun urls(lazy: MutableList<in String>.() -> Unit): Slideshow.Builder {
-            urls.lazy()
+        inline fun urls(lazy: AddRemoveBlock<String>.() -> Unit): Slideshow.Builder {
+            block.lazy()
             return this
         }
 
@@ -298,22 +305,22 @@ class Slideshow(builder: Slideshow.Builder): Menu(builder) {
             return this
         }
 
-        inline fun text(crossinline lazy: (Int, Int) -> String?): Slideshow.Builder {
-            textFun = { p, t -> lazy(p, t) }
-            return this
-        }
-
-        inline fun color(crossinline lazy: (Int, Int) -> Color?): Slideshow.Builder {
+        inline fun color(crossinline lazy: PageFunction<Color?>): Slideshow.Builder {
             colorFun = { p, t -> lazy(p, t) }
             return this
         }
 
-        inline fun description(crossinline lazy: (Int, Int) -> String?): Slideshow.Builder {
+        inline fun text(crossinline lazy: PageFunction<String?>): Slideshow.Builder {
+            textFun = { p, t -> lazy(p, t) }
+            return this
+        }
+
+        inline fun description(crossinline lazy: PageFunction<String?>): Slideshow.Builder {
             descriptionFun = { p, t -> lazy(p, t) }
             return this
         }
 
-        fun finalAction(block: suspend (Message) -> Unit): Slideshow.Builder {
+        fun finalAction(block: FinalAction): Slideshow.Builder {
             finalAction = block
             return this
         }

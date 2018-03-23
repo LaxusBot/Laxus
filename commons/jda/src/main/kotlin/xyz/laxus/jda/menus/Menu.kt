@@ -86,5 +86,5 @@ abstract class Menu(builder: Builder<*,*>) {
     @DslMarker
     @Retention(AnnotationRetention.SOURCE)
     @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-    annotation class Dsl
+    internal annotation class Dsl
 }

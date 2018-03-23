@@ -41,8 +41,8 @@ import kotlin.coroutines.experimental.coroutineContext
  *
  * @author Kaidan Gustave
  */
-class OrderedMenu(builder: OrderedMenu.Builder): Menu(builder) {
-    companion object {
+class OrderedMenu private constructor(builder: OrderedMenu.Builder): Menu(builder) {
+    private companion object {
         val numbers = arrayOf(
             "1\u20E3", "2\u20E3",
             "3\u20E3", "4\u20E3",
@@ -59,7 +59,7 @@ class OrderedMenu(builder: OrderedMenu.Builder): Menu(builder) {
             "\uD83C\uDDEE", "\uD83C\uDDEF"
         )
 
-        const val cancel: String = "\u274C"
+        const val cancel = "\u274C"
     }
 
     private val color: Color? = builder.color
@@ -69,7 +69,7 @@ class OrderedMenu(builder: OrderedMenu.Builder): Menu(builder) {
     private val useLetters: Boolean = builder.useLetters
     private val allowTypedInput: Boolean = builder.allowTypedInput
     private val useCancel: Boolean = builder.useCancel
-    private val finalAction: (suspend (Message) -> Unit)? = builder.finalAction
+    private val finalAction: FinalAction? = builder.finalAction
 
     constructor(builder: OrderedMenu.Builder = OrderedMenu.Builder(),
                 build: OrderedMenu.Builder.() -> Unit): this(builder.apply(build))
@@ -130,56 +130,58 @@ class OrderedMenu(builder: OrderedMenu.Builder): Menu(builder) {
         }
     }
 
-    private fun waitGeneric(message: Message) {
-        waiter.waitFor<GenericMessageEvent>(
-            delay = timeout,
-            unit = unit,
-            timeout = { finalAction?.invoke(message) },
-            condition = {
-                when(it) {
-                    is MessageReactionAddEvent -> it.isValid(message)
-                    is MessageReceivedEvent -> it.isValid(message)
-                    else -> false
-                }
-            },
-            action = {
-                if(it is MessageReactionAddEvent) {
-                    if(it.reactionEmote.name == cancel && useCancel) {
-                        finalAction?.invoke(message)
-                    } else {
-                        val choice = choices[it.reactionEmote.name.number]
-                        choice(message)
-                    }
-                } else if(it is MessageReceivedEvent) {
-                    val num = it.message.contentRaw.messageNumber
-                    if(num < 0 || num > choices.size) {
-                        finalAction?.invoke(message)
-                    } else {
-                        val choice = choices[num]
-                        choice(message)
-                    }
-                }
+    private suspend fun waitGeneric(message: Message) {
+        val deferred = waiter.receive<GenericMessageEvent>(delay = timeout, unit = unit) {
+            when(it) {
+                is MessageReactionAddEvent -> it.isValid(message)
+                is MessageReceivedEvent -> it.isValid(message)
+                else -> false
             }
-        )
+        }
+
+        val event = deferred.await()
+
+        if(event === null) {
+            finalAction?.invoke(message)
+            return
+        }
+
+        if(event is MessageReactionAddEvent) {
+            if(event.reactionEmote.name == cancel && useCancel) {
+                finalAction?.invoke(message)
+            } else {
+                val choice = choices[event.reactionEmote.name.number]
+                choice(message)
+            }
+        } else if(event is MessageReceivedEvent) {
+            val num = event.message.contentRaw.messageNumber
+            if(num < 0 || num > choices.size) {
+                finalAction?.invoke(message)
+            } else {
+                val choice = choices[num]
+                choice(message)
+            }
+        }
     }
 
-    private fun waitReactionOnly(message: Message) {
-        waiter.waitFor<MessageReactionAddEvent>(
-            delay = timeout,
-            unit = unit,
-            timeout = { finalAction?.invoke(message) },
-            condition = {
-                it.isValid(message)
-            },
-            action = {
-                if(it.reactionEmote.name == cancel && useCancel) {
-                    finalAction?.invoke(message)
-                } else {
-                    val choice = choices[it.reactionEmote.name.number]
-                    choice(message)
-                }
-            }
-        )
+    private suspend fun waitReactionOnly(message: Message) {
+        val deferred = waiter.receive<MessageReactionAddEvent>(delay = timeout, unit = unit) {
+            it.isValid(message)
+        }
+
+        val event = deferred.await()
+
+        if(event === null) {
+            finalAction?.invoke(message)
+            return
+        }
+
+        if(event.reactionEmote.name == cancel && useCancel) {
+            finalAction?.invoke(message)
+        } else {
+            val choice = choices[event.reactionEmote.name.number]
+            choice(message)
+        }
     }
 
     private fun MessageReactionAddEvent.isValid(message: Message): Boolean {
@@ -202,12 +204,12 @@ class OrderedMenu(builder: OrderedMenu.Builder): Menu(builder) {
         return isValidUser(author, guild)
     }
 
-    private val message: Message get() = message {
+    private val message get() = message {
         text?.let { append { text } }
         embed {
             this@OrderedMenu.description?.let { append(it) }
 
-            this@embed.color = this@OrderedMenu.color
+            this.color = this@OrderedMenu.color
 
             for((i, c) in choices.withIndex()) {
                 append("\n${i.emoji} $c")
@@ -215,10 +217,14 @@ class OrderedMenu(builder: OrderedMenu.Builder): Menu(builder) {
         }
     }
 
-    private inline val Int.emoji: String inline get() = numbers.modifyIf(useLetters){letters}[this]
+    private val Int.emoji: String get() {
+        return numbers.modifyIf(useLetters) { letters }[this]
+    }
 
-    private inline val String.number: Int inline get() {
-        return numbers.modifyIf(useLetters) { letters }.withIndex().firstOrNull { it.value == this }?.index ?: -1
+    private val String.number: Int get() {
+        return numbers.modifyIf(useLetters) { letters }.withIndex().firstOrNull {
+            it.value == this
+        }?.index ?: -1
     }
 
     private val String.messageNumber: Int get() {
@@ -239,29 +245,25 @@ class OrderedMenu(builder: OrderedMenu.Builder): Menu(builder) {
         }
     }
 
-    class Builder(): Menu.Builder<OrderedMenu.Builder, OrderedMenu>() {
+    class Builder : Menu.Builder<OrderedMenu.Builder, OrderedMenu>() {
         var color: Color? = null
         var text: String? = null
         var description: String? = null
         var useLetters = false
         var allowTypedInput = true
         var useCancel = false
-        var finalAction: (suspend (Message) -> Unit)? = null
+        var finalAction: FinalAction? = null
 
         private val _choices: MutableList<OrderedMenu.Choice> = LinkedList()
-        val choices: List<OrderedMenu.Choice> get() = unmodifiableList(_choices)
+        internal val choices: List<OrderedMenu.Choice> get() = unmodifiableList(_choices)
 
-        constructor(build: OrderedMenu.Builder.() -> Unit): this() {
-            build()
-        }
-
-        operator fun set(name: String, action: suspend (Message) -> Unit) {
+        operator fun set(name: String, action: FinalAction) {
             _choices += OrderedMenu.Choice(name, action)
         }
 
         fun clearChoices() = _choices.clear()
-        fun finalAction(block: suspend (Message) -> Unit): OrderedMenu.Builder = apply { finalAction = block }
-        fun choice(name: String, action: suspend (Message) -> Unit): OrderedMenu.Builder = apply { set(name, action) }
+        fun finalAction(block: FinalAction): OrderedMenu.Builder = apply { finalAction = block }
+        fun choice(name: String, action: FinalAction): OrderedMenu.Builder = apply { set(name, action) }
         inline fun description(lazy: () -> String?): OrderedMenu.Builder = apply { description = lazy() }
         inline fun text(lazy: () -> String?): OrderedMenu.Builder = apply { text = lazy() }
         inline fun useCancelButton(lazy: () -> Boolean): OrderedMenu.Builder = apply { useCancel = lazy() }
@@ -271,7 +273,7 @@ class OrderedMenu(builder: OrderedMenu.Builder): Menu(builder) {
         inline fun allowTextInput(lazy: () -> Boolean): OrderedMenu.Builder = apply { allowTypedInput = lazy() }
     }
 
-    class Choice(val name: String = "null", private val action: (suspend (Message) -> Unit)? = null) {
+    class Choice(val name: String = "null", private val action: FinalAction? = null) {
         suspend operator fun invoke(message: Message) {
             action?.invoke(message)
         }

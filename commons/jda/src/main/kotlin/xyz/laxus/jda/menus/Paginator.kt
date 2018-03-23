@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:Suppress("Unused", "MemberVisibilityCanBePrivate")
 package xyz.laxus.jda.menus
 
 import kotlinx.coroutines.experimental.launch
@@ -25,6 +26,7 @@ import net.dv8tion.jda.core.requests.RestAction
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.embed
 import xyz.laxus.jda.util.message
+import xyz.laxus.util.functional.AddRemoveBlock
 import xyz.laxus.util.ignored
 import java.awt.Color
 import kotlin.coroutines.experimental.coroutineContext
@@ -38,9 +40,8 @@ import kotlin.math.roundToInt
  *
  * @author Kaidan Gustave
  */
-@Suppress("Unused", "MemberVisibilityCanBePrivate")
-class Paginator(builder: Paginator.Builder): Menu(builder) {
-    companion object {
+class Paginator private constructor(builder: Paginator.Builder): Menu(builder) {
+    internal companion object {
         const val BIG_LEFT = "\u23EA"
         const val LEFT = "\u25C0"
         const val STOP = "\u23F9"
@@ -48,8 +49,8 @@ class Paginator(builder: Paginator.Builder): Menu(builder) {
         const val BIG_RIGHT = "\u23E9"
     }
 
-    private val color: (Int, Int) -> Color? = builder.colorFun
-    private val text: (Int, Int) -> String? = builder.textFun
+    private val color: PageFunction<Color?> = builder.colorFun
+    private val text: PageFunction<String?> = builder.textFun
     private val items: List<String> = builder.items
     private val columns: Int = builder.columns
     private val itemsPerPage: Int = builder.itemsPerPage
@@ -61,7 +62,7 @@ class Paginator(builder: Paginator.Builder): Menu(builder) {
     private val leftText: String? = builder.textToLeft
     private val rightText: String? = builder.textToRight
     private val allowTextInput: Boolean = builder.allowTextInput
-    private val finalAction: (suspend (Message) -> Unit)? = builder.finalAction
+    private val finalAction: FinalAction? = builder.finalAction
     private val pages: Int = ceil(items.size.toDouble() / itemsPerPage).roundToInt()
 
     constructor(builder: Paginator.Builder = Paginator.Builder(),
@@ -195,15 +196,6 @@ class Paginator(builder: Paginator.Builder): Menu(builder) {
         handleMessageReactionAddAction(event, message, pageNum)
     }
 
-    private fun checkReaction(event: MessageReactionAddEvent, message: Message): Boolean {
-        return if(event.messageIdLong != message.idLong) false else when(event.reactionEmote.name) {
-            LEFT, RIGHT, STOP -> isValidUser(event.user, event.guild)
-            BIG_LEFT, BIG_RIGHT -> bulkSkipNumber > 1 && isValidUser(event.user, event.guild)
-
-            else -> false
-        }
-    }
-
     private suspend fun handleMessageReactionAddAction(event: MessageReactionAddEvent, message: Message, pageNum: Int) {
         var newPageNum = pageNum
         when(event.reactionEmote.name) {
@@ -246,6 +238,15 @@ class Paginator(builder: Paginator.Builder): Menu(builder) {
         ignored { event.reaction.removeReaction(event.user).queue() }
         val m = ignored(message) { message.editMessage(renderPage(newPageNum)).await() }
         pagination(m, newPageNum)
+    }
+
+    private fun checkReaction(event: MessageReactionAddEvent, message: Message): Boolean {
+        return if(event.messageIdLong != message.idLong) false else when(event.reactionEmote.name) {
+            LEFT, RIGHT, STOP -> isValidUser(event.user, event.guild)
+            BIG_LEFT, BIG_RIGHT -> bulkSkipNumber > 1 && isValidUser(event.user, event.guild)
+
+            else -> false
+        }
     }
 
     private fun renderPage(pageNum: Int): Message {
@@ -291,9 +292,9 @@ class Paginator(builder: Paginator.Builder): Menu(builder) {
         }
     }
 
-    class Builder constructor(): Menu.Builder<Paginator.Builder, Paginator>() {
-        var colorFun: (Int, Int) -> Color? = { _, _ -> null }
-        var textFun: (Int, Int) -> String? = { _, _ -> null }
+    class Builder : Menu.Builder<Paginator.Builder, Paginator>() {
+        var colorFun: PageFunction<Color?> = { _, _ -> null }
+        var textFun: PageFunction<String?> = { _, _ -> null }
         val items: MutableList<String> = ArrayList()
         var columns: Int = 1
             set(value) {
@@ -314,11 +315,10 @@ class Paginator(builder: Paginator.Builder): Menu(builder) {
         var textToLeft: String? = null
         var textToRight: String? = null
         var allowTextInput: Boolean = false
-        var finalAction: (suspend (Message) -> Unit)? = null
+        var finalAction: FinalAction? = null
 
-        constructor(build: Paginator.Builder.() -> Unit): this() {
-            build()
-        }
+        @PublishedApi
+        internal val block by lazy { ItemControllerBlock(items) }
 
         operator fun String.unaryPlus() {
             items.add(this)
@@ -347,8 +347,8 @@ class Paginator(builder: Paginator.Builder): Menu(builder) {
             return this
         }
 
-        inline fun items(lazy: MutableList<in String>.() -> Unit): Paginator.Builder {
-            items.lazy()
+        inline fun items(lazy: AddRemoveBlock<String>.() -> Unit): Paginator.Builder {
+            block.lazy()
             return this
         }
 
@@ -377,17 +377,17 @@ class Paginator(builder: Paginator.Builder): Menu(builder) {
             return this
         }
 
-        inline fun text(crossinline lazy: (Int, Int) -> String?): Paginator.Builder {
+        inline fun text(crossinline lazy: PageFunction<String?>): Paginator.Builder {
             textFun = { p, t -> lazy(p, t) }
             return this
         }
 
-        inline fun color(crossinline lazy: (Int, Int) -> Color?): Paginator.Builder {
+        inline fun color(crossinline lazy: PageFunction<Color?>): Paginator.Builder {
             colorFun = { p, t -> lazy(p, t) }
             return this
         }
 
-        fun finalAction(block: suspend (Message) -> Unit): Paginator.Builder {
+        fun finalAction(block: FinalAction): Paginator.Builder {
             finalAction = block
             return this
         }

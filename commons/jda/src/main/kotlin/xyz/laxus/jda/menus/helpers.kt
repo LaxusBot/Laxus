@@ -16,7 +16,12 @@
 package xyz.laxus.jda.menus
 
 import net.dv8tion.jda.core.entities.Guild
+import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.entities.User
+import xyz.laxus.util.functional.AddRemoveBlock
+
+typealias FinalAction = (suspend (Message) -> Unit)
+typealias PageFunction<R> = (Int, Int) -> R
 
 internal inline fun <reified M: Menu> M.isValidUser(user: User, guild: Guild? = null): Boolean = when {
     user.isBot -> false
@@ -24,4 +29,14 @@ internal inline fun <reified M: Menu> M.isValidUser(user: User, guild: Guild? = 
     user in users -> true
     guild === null -> false
     else -> guild.getMember(user)?.roles?.any { it in roles } == true
+}
+
+class ItemControllerBlock<in T>(private val collection: MutableCollection<T>): AddRemoveBlock<T> {
+    override fun add(element: T) {
+        collection += element
+    }
+
+    override fun remove(element: T) {
+        collection -= element
+    }
 }
