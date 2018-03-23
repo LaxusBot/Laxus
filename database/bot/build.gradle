@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 dependencies {
+    // JDA
     compileOnly jda()
 
+    // Projects
     compileOnly project(':commons')
     compileOnly project(':commons:jda')
     compileOnly project(':core')

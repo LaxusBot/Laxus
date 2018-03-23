@@ -13,18 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+repositories {
+    jitpack()
+}
+
 dependencies {
-    compileOnly kotlinModule('reflect')
-    compileOnly kotlinxCoroutines('core')
-    compileOnly kotlinJson()
+    // JDA & Lavaplayer
     compileOnly jda()
-    compileOnly hocon()
+    compileOnly jdaUtilities('commons')
     compileOnly lavaplayer()
+
+    // Kotlin
+    compileOnly kotlinModule('reflect')
+    compileOnly kotlinJson()
+
+    // Kotlin Coroutines
+    compileOnly kotlinxCoroutines('core')
+
+    // Database
     compileOnly h2()
+
+    // Configuration
+    compileOnly hocon()
+
+    // Logging
     compileOnly slf4j()
     compileOnly logback()
+
+    // Other
     compileOnly jagtag()
 
+    // Projects
     compileOnly project(':commons')
     compileOnly project(':commons:jda')
     compileOnly project(':database')

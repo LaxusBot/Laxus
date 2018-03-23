@@ -18,10 +18,16 @@ repositories {
 }
 
 dependencies {
+    // JDA
     compileOnly jda()
     compileOnly jdaUtilities('commons')
+
+    // Kotlin
     compileOnly kotlinModule('reflect')
+
+    // Kotlin Coroutines
     compileOnly kotlinxCoroutines('core')
 
+    // Projects
     compileOnly project(':commons')
 }

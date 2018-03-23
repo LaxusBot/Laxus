@@ -14,10 +14,18 @@
  * limitations under the License.
  */
 dependencies {
+    // Kotlin
     compileOnly kotlinModule('reflect')
+
+    // Database
     compileOnly h2()
+
+    // Configuration
     compileOnly hocon()
+
+    // Logging
     compileOnly slf4j()
 
+    // Projects
     compileOnly project(':commons')
 }

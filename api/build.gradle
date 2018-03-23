@@ -19,25 +19,39 @@ repositories {
 }
 
 dependencies {
+    // JDA
     compileOnly jda()
     compileOnly jdaUtilities('oauth2')
 
+    // Kotlin
     compileOnly kotlinModule('reflect')
     compileOnly kotlinJson()
+
+    // Kotlin Coroutines
     compileOnly kotlinxCoroutines('core')
     compileOnly kotlinxCoroutines('io')
+
+    // Kotlin Html
     compileOnly kotlinxHtml()
+
+    // Ktor
     compileOnly ktorModule('html-builder')
     compileOnly ktorServer()
     compileOnly ktorServer('netty')
     compileOnly ktorServer('host-common')
-    compileOnly hocon()
+
+    // Database
     compileOnly h2()
 
+    // Configuration
+    compileOnly hocon()
+
+    // Projects
     compileOnly project(':commons')
     compileOnly project(':commons:jda')
     compileOnly project(':core')
     compileOnly project(':database')
 
+    // Test compile OkHttp for testing REST requests
     testCompile okHttp()
 }

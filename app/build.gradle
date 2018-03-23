@@ -13,33 +13,81 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+apply plugin: 'application'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+mainClassName = 'xyz.laxus.Main'
+
 repositories {
     jitpack()
     maven { url "https://dl.bintray.com/kotlin/ktor" }
 }
 
 dependencies {
+    // Kotlin
+    compile kotlinModule('stdlib-jdk8')
+    compile kotlinModule('stdlib-jdk7')
     compile kotlinModule('reflect')
-    compile kotlinJson()
-    compile kotlinxCoroutines('core')
-    compile kotlinxCoroutines('io')
-    compile ktorServer('core')
-    compile ktorServer('netty')
-    compile ktorServer('host-common')
 
+    // Kotlin Coroutines
+    compile kotlinxCoroutines('core')
+    //compile kotlinxCoroutines('io')
+
+    // Kotlin Json
+    compile kotlinJson()
+
+    // Ktor
+    //compile ktorServer('core')
+    //compile ktorServer('netty')
+    //compile ktorServer('host-common')
+
+    // JDA & Lavaplayer
     compile jda()
     compile jdaUtilities('oauth2')
-    compile jagtag()
+    compile lavaplayer()
 
-    compile hocon()
+    // Database
     compile h2()
+
+    // Configuration
+    compile hocon()
+
+    // Logging
     compile slf4j()
     compile logback()
 
-    compile project(':api')
+    // Requests
+    compile okHttp()
+    compile youtube()
+    compile jsoup()
+
+    // Misc
+    compile jagtag()
+
+    // Projects
+    //compile project(':api')
     compile project(':commons')
     compile project(':commons:jda')
     compile project(':database')
     compile project(':database:bot')
     compile project(':core')
+}
+
+shadowJar {
+    baseName 'laxus'
+    version ''
+    classifier ''
+
+    manifest {
+        attributes 'Manifest-Version': "${ver.major}.${ver.minor}",
+                   'Implementation-Version': "$ver",
+                   'Main-Class': mainClassName
+    }
+}
+
+build {
+    dependsOn classes
+    dependsOn shadowJar
+
+    shadowJar.mustRunAfter classes
 }

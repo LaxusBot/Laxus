@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 dependencies {
+    // Kotlin
     compileOnly kotlinModule('reflect')
+
+    // Configuration
     compileOnly hocon()
+
+    // Logging
     compileOnly logback()
+    compileOnly slf4j()
 }
