@@ -1,0 +1,41 @@
+### IntelliJ Project Files ###
+/.idea/
+/**/out/
+/**/src/test/
+*.iml
+
+### IDE Configurations ###
+!.editorconfig
+
+### Gradle Files ###
+/.gradle/
+/build/
+
+!build.gradle
+!settings.gradle
+!gradlew.bat
+!gradlew
+
+### Configurations ###
+/**/src/main/resources/*.conf
+
+### Log Files ###
+/logs/
+/test-logs/
+
+### Data Files ###
+*.txt
+*.json
+*.mv.db
+*.h2.db
+*.lock.db
+*.trace.db
+.DS_STORE
+
+### Images ###
+*.gif
+*.jpg
+*.png
+
+### Tests ###
+/api/request-tests/
