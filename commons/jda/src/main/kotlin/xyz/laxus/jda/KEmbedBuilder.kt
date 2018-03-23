@@ -19,6 +19,7 @@ package xyz.laxus.jda
 import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.IMentionable
 import net.dv8tion.jda.core.entities.MessageEmbed
+import xyz.laxus.jda.util.MessageDsl
 import xyz.laxus.util.lineSeparator
 import xyz.laxus.util.modifyIf
 import java.awt.Color
@@ -29,6 +30,7 @@ import java.time.temporal.TemporalAccessor
 /**
  * @author Kaidan Gustave
  */
+@MessageDsl
 class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
     @PublishedApi
     internal val fields = mutableListOf<MessageEmbed.Field>()
@@ -61,16 +63,16 @@ class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
 
     }.build()
 
-    operator fun component1()  = description
-    operator fun component2()  = fields
-    operator fun component3()  = title
-    operator fun component4()  = url
-    operator fun component5()  = time
-    operator fun component6()  = color
-    operator fun component7()  = author
-    operator fun component8()  = thumbnail
-    operator fun component9()  = footer
-    operator fun component10() = image
+    private operator fun component1()  = description
+    private operator fun component2()  = fields
+    private operator fun component3()  = title
+    private operator fun component4()  = url
+    private operator fun component5()  = time
+    private operator fun component6()  = color
+    private operator fun component7()  = author
+    private operator fun component8()  = thumbnail
+    private operator fun component9()  = footer
+    private operator fun component10() = image
 
     override fun append(csq: CharSequence?): KEmbedBuilder {
         description.append(csq)
@@ -153,6 +155,7 @@ class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
         return this
     }
 
+    @MessageDsl
     data class Entity @PublishedApi internal constructor(var value: String = EmbedBuilder.ZERO_WIDTH_SPACE,
                                                          var url: String? = null,
                                                          var icon: String? = null) {
@@ -173,6 +176,7 @@ class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
         }
     }
 
+    @MessageDsl
     data class Field @PublishedApi internal constructor(
         var name: String = EmbedBuilder.ZERO_WIDTH_SPACE,
         var inline: Boolean = true

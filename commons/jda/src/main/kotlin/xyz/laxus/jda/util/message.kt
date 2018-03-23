@@ -22,26 +22,31 @@ import net.dv8tion.jda.core.entities.MessageEmbed
 import net.dv8tion.jda.core.requests.restaction.MessageAction
 import xyz.laxus.jda.KEmbedBuilder
 
+@MessageDsl
 inline fun message(builder: MessageBuilder = MessageBuilder(), init: MessageBuilder.() -> Unit): Message {
     builder.init()
     return builder.build()
 }
 
+@MessageDsl
 inline fun MessageBuilder.embed(crossinline init: KEmbedBuilder.() -> Unit): MessageBuilder {
     val builder = KEmbedBuilder()
     builder.init()
     return setEmbed(builder.build())
 }
 
+@MessageDsl
+inline fun embed(init: KEmbedBuilder.() -> Unit): MessageEmbed = KEmbedBuilder().apply(init).build()
+
 inline fun <reified M: Message> M.editMessage(block: MessageBuilder.() -> Unit): MessageAction {
     return editMessage(MessageBuilder().apply(block).build())
-}
-
-inline fun embed(init: KEmbedBuilder.() -> Unit): MessageEmbed = with (KEmbedBuilder()) {
-    init()
-    build()
 }
 
 fun filterMassMentions(string: String): String {
     return string.replace("@everyone", "@\u0435veryone").replace("@here", "@h\u0435re").trim()
 }
+
+@DslMarker
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+@Retention(AnnotationRetention.SOURCE)
+internal annotation class MessageDsl

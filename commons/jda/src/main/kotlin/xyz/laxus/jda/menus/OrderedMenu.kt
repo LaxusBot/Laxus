@@ -207,7 +207,7 @@ class OrderedMenu private constructor(builder: OrderedMenu.Builder): Menu(builde
     private val message get() = message {
         text?.let { append { text } }
         embed {
-            this@OrderedMenu.description?.let { append(it) }
+            description?.let { append(it) }
 
             this.color = this@OrderedMenu.color
 

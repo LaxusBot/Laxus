@@ -255,35 +255,35 @@ class Paginator private constructor(builder: Paginator.Builder): Menu(builder) {
 
         return message {
             text(pageNum, pages)?.let { this@message.append(it) }
-            embed embed@ {
+            embed {
                 if(columns == 1) {
                     for(i in start until end) {
-                        this@embed.appendln()
-                        this@embed.append(if(numberItems) "`${i + 1}.`" else "")
-                        this@embed.append(items[i])
+                        appendln()
+                        append(if(numberItems) "`${i + 1}.`" else "")
+                        append(items[i])
                     }
                 } else {
                     val per = ceil((end - start).toDouble() / columns).roundToInt()
                     for(k in 0 until columns) {
-                        this@embed.field field@{
-                            this@field.name = ""
+                        field {
+                            name = ""
                             var i = start + k * per
                             while((i < end) && (i < start + (k + 1) * per)) {
-                                this@field.appendln()
-                                this@field.append(if(numberItems) "${i + 1}. " else "")
-                                this@field.append(items[i])
+                                appendln()
+                                append(if(numberItems) "${i + 1}. " else "")
+                                append(items[i])
                                 i++
                             }
 
-                            this@field.inline = true
+                            inline = true
                         }
                     }
                 }
 
-                this@embed.color { this@Paginator.color(pageNum, pages) }
+                color { color(pageNum, pages) }
 
                 if(showPageNumbers) {
-                    this@embed.footer {
+                    footer {
                         value = "Page $pageNum/$pages"
                         url = null
                     }

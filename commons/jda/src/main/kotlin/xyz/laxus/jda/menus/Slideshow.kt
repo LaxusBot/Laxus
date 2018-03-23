@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:Suppress("Unused", "MemberVisibilityCanBePrivate")
 package xyz.laxus.jda.menus
 
 import kotlinx.coroutines.experimental.launch
@@ -37,7 +38,6 @@ import kotlin.math.min
  *
  * @author Kaidan Gustave
  */
-@Suppress("Unused", "MemberVisibilityCanBePrivate")
 class Slideshow private constructor(builder: Slideshow.Builder): Menu(builder) {
     private companion object {
         const val BIG_LEFT = Paginator.BIG_LEFT
@@ -234,14 +234,14 @@ class Slideshow private constructor(builder: Slideshow.Builder): Menu(builder) {
     }
 
     private fun renderPage(pageNum: Int): Message = message {
-        text(pageNum, pages)?.let { this@message.append(it) }
-        embed embed@{
+        text(pageNum, pages)?.let { append(it) }
+        embed {
             image { urls[pageNum - 1] }
-            this@embed.color { this@Slideshow.color(pageNum, pages) }
+            color { color(pageNum, pages) }
             description(pageNum, urls.size)?.let { + it }
 
             if(showPageNumbers) {
-                this@embed.footer {
+                footer {
                     value = "Image $pageNum/$pages"
                     url = null
                 }
