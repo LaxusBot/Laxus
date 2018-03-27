@@ -13,21 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("unused")
-package xyz.laxus.api.routes
+package xyz.laxus.api
 
-import io.ktor.application.call
-import io.ktor.http.HttpStatusCode
-import xyz.laxus.api.util.respondJson
-
-/**
- * @author Kaidan Gustave
- */
-object Hello : RouteController() {
-    @Route(Method.GET, "/hello")
-    suspend fun CallContext.get() {
-        call.respondJson(status = HttpStatusCode.OK) {
-            "message" to "Hello"
-        }
-    }
-}
+val appJson: ContentType = ContentType.parse("application/json;charset=utf-8")!!

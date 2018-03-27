@@ -20,25 +20,17 @@ import java.util.function.BiConsumer
 @Suppress("UNCHECKED_CAST")
 class FixedSizeCache<K, V>(size: Int): MutableMap<K, V> {
     init {
-        require(size>0) { "Cache size must be at least 1!" }
+        require(size > 0) { "Cache size must be at least 1!" }
     }
 
     private var currIndex = 0
+    private val map = HashMap<K, V>()
+    private val backingKeys = arrayOfNulls<Any>(size) as Array<K?>
 
-    private val map: MutableMap<K, V> = HashMap()
-    private val backingKeys: Array<K?> = arrayOfNulls<Any>(size) as Array<K?>
-
-    override val entries: MutableSet<MutableMap.MutableEntry<K, V>>
-        get() = map.entries
-
-    override val keys: MutableSet<K>
-        get() = map.keys
-
-    override val values: MutableCollection<V>
-        get() = map.values
-
-    override val size: Int
-        get() = backingKeys.count { it !== null }
+    override val entries get() = map.entries
+    override val keys get() = map.keys
+    override val values get() = map.values
+    override val size get() = backingKeys.count { it !== null }
 
     operator fun set(key: K, value: V) {
         put(key, value)
@@ -46,15 +38,16 @@ class FixedSizeCache<K, V>(size: Int): MutableMap<K, V> {
 
     override fun clear() {
         map.clear()
-        for(i in 0 until backingKeys.size)
+        for(i in 0 until backingKeys.size) {
             backingKeys[i] = null
+        }
         currIndex = 0
     }
 
     override fun put(key: K, value: V): V? {
-        val v = if(backingKeys[currIndex] !== null)
+        val v = if(backingKeys[currIndex] !== null) {
             map.remove(backingKeys[currIndex])
-        else map.put(key, value)
+        } else map.put(key, value)
 
         backingKeys[currIndex] = key
         currIndex = (currIndex + 1) % backingKeys.size

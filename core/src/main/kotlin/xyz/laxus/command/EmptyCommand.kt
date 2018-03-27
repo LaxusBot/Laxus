@@ -13,24 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.util
+package xyz.laxus.command
 
-import io.ktor.application.ApplicationCall
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.withCharset
-import io.ktor.response.respond
-import me.kgustave.json.JSObject
-import me.kgustave.json.emptyJSObject
+/**
+ * @author Kaidan Gustave
+ */
+abstract class EmptyCommand: Command {
+    override val arguments by lazy { children.joinToString("|", "[", "]", 4, "...") { it.name } }
 
-internal val JsonContentType = ContentType.Application.Json.withCharset(Charsets.UTF_8)
+    constructor(group: Group): super(group)
+    constructor(parent: Command): super(parent)
 
-internal suspend fun ApplicationCall.respondJson(
-    status: HttpStatusCode? = null,
-    block: suspend JSObject.() -> Unit
-) {
-    status?.let { response.status(status) }
-    val json = emptyJSObject()
-    json.block()
-    respond(json)
+    override suspend fun execute(ctx: CommandContext) {
+        if(ctx.args.isEmpty()) ctx.missingArgs() else ctx.invalidArgs()
+    }
 }

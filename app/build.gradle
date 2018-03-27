@@ -28,21 +28,19 @@ dependencies {
     compile kotlinModule('stdlib-jdk8')
     compile kotlinModule('stdlib-jdk7')
     compile kotlinModule('reflect')
+    compile kotlinModule("script-runtime")
+    compile kotlinModule("script-util")
+    runtime kotlinModule("compiler-embeddable")
 
     // Kotlin Coroutines
     compile kotlinxCoroutines('core')
-    //compile kotlinxCoroutines('io')
 
     // Kotlin Json
     compile kotlinJson()
 
-    // Ktor
-    //compile ktorServer('core')
-    //compile ktorServer('netty')
-    //compile ktorServer('host-common')
-
     // JDA & Lavaplayer
     compile jda()
+    compile jdaUtilities('commons')
     compile jdaUtilities('oauth2')
     compile lavaplayer()
 
@@ -65,7 +63,6 @@ dependencies {
     compile jagtag()
 
     // Projects
-    //compile project(':api')
     compile project(':commons')
     compile project(':commons:jda')
     compile project(':database')

@@ -25,7 +25,7 @@ inline fun OkHttpClient.newRequest(lazy: Request.Builder.() -> Unit) : Call {
     return newCall(builder.build())
 }
 
-suspend inline fun <reified C: Call> C.await(): Response = suspendCoroutine { cont ->
+suspend fun Call.await(): Response = suspendCoroutine { cont ->
     enqueue(object : Callback {
         override fun onFailure(call: Call, e: IOException) {
             cont.resumeWithException(e)

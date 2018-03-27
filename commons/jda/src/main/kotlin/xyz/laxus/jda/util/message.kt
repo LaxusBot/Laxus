@@ -22,6 +22,11 @@ import net.dv8tion.jda.core.entities.MessageEmbed
 import net.dv8tion.jda.core.requests.restaction.MessageAction
 import xyz.laxus.jda.KEmbedBuilder
 
+@DslMarker
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
+@Retention(AnnotationRetention.SOURCE)
+internal annotation class MessageDsl
+
 @MessageDsl
 inline fun message(builder: MessageBuilder = MessageBuilder(), init: MessageBuilder.() -> Unit): Message {
     builder.init()
@@ -45,8 +50,3 @@ inline fun <reified M: Message> M.editMessage(block: MessageBuilder.() -> Unit):
 fun filterMassMentions(string: String): String {
     return string.replace("@everyone", "@\u0435veryone").replace("@here", "@h\u0435re").trim()
 }
-
-@DslMarker
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-@Retention(AnnotationRetention.SOURCE)
-internal annotation class MessageDsl

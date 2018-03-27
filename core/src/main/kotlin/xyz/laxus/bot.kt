@@ -42,6 +42,8 @@ import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import org.slf4j.Logger
 import xyz.laxus.command.Command
+import xyz.laxus.command.CommandContext
+import xyz.laxus.command.CommandMap
 import xyz.laxus.jda.listeners.SuspendedListener
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.listeningTo
@@ -51,18 +53,21 @@ import xyz.laxus.util.await
 import xyz.laxus.util.collections.CaseInsensitiveHashMap
 import xyz.laxus.util.collections.FixedSizeCache
 import xyz.laxus.util.collections.sumByLong
+import xyz.laxus.util.commandArgs
 import xyz.laxus.util.createLogger
+import xyz.laxus.util.db.prefixes
 import xyz.laxus.util.newRequest
 import java.io.IOException
 import java.time.OffsetDateTime
 import java.time.OffsetDateTime.now
 import java.time.temporal.ChronoUnit.SECONDS
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit.HOURS
 import kotlin.coroutines.experimental.coroutineContext
 
 class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedListener {
-    companion object LOG : Logger by createLogger(Bot::class)
+    companion object LOG: Logger by createLogger(Bot::class)
 
     private val cooldowns = ConcurrentHashMap<String, OffsetDateTime>()
     private val uses = CaseInsensitiveHashMap<Int>()
@@ -75,6 +80,7 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
 
     val httpClient: OkHttpClient = Laxus.HttpClientBuilder.build()
     val startTime: OffsetDateTime = now()
+    val commands: Map<String, Command> = CommandMap(*builder.groups.onEach(Command.Group::init).sorted().toTypedArray())
 
     val messageCacheSize get() = callCache.size
 
@@ -122,9 +128,58 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
     }
 
     private suspend fun onMessageReceived(event: MessageReceivedEvent) {
-        delay(2)
-        event.textChannel
-        TODO("")
+        // Do not allow bots to trigger any sort of command
+        if(event.author.isBot)
+            return
+
+        if(event.textChannel?.canTalk() == false)
+            return
+
+        val raw = event.message.contentRaw
+        val guild = event.guild
+
+        val parts = when {
+            raw.startsWith(prefix, true) -> {
+                raw.substring(prefix.length).trim().split(commandArgs, 2)
+            }
+
+            guild !== null -> {
+                val prefixes = event.guild.prefixes
+
+                if(prefixes.isEmpty())
+                    return
+
+                val prefix = prefixes.find { raw.startsWith(it, true) } ?: return
+                raw.substring(prefix.length).trim().split(commandArgs, 2)
+            }
+
+            else -> return
+        }
+
+        val name = parts[0].toLowerCase()
+        val args = if(parts.size == 2) parts[1] else ""
+        if(mode.checkCall(event, this@Bot, name, args)) {
+            val ctx = CommandContext(event, args, this@Bot, coroutineContext)
+            commands[name]?.let { command ->
+                mode.onCommandCall(ctx, command)
+                return command.run(ctx)
+            }
+
+            /* TODO Custom Commands
+            if(ctx.isGuild) {
+                ctx.guild.getCustomCommand(name)?.let { customCommand ->
+                    with(parser) {
+                        clear()
+                        put("user", event.author)
+                        put("guild", event.guild)
+                        put("channel", event.textChannel)
+                        put("args", args)
+                    }
+
+                    ctx.reply(parser.parse(customCommand))
+                }
+            }*/
+        }
     }
 
     private suspend fun onMessageDelete(event: MessageDeleteEvent) {
@@ -268,16 +323,25 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
         callCache.computeIfAbsent(id) { HashSet() } += message
     }
 
+    interface Listener {
+        companion object LOG: Logger by createLogger(Bot.Listener::class)
+
+        fun checkCall(event: MessageReceivedEvent, bot: Bot, name: String, args: String): Boolean = true
+        fun onCommandCall(ctx: CommandContext, command: Command) {}
+        fun onCommandTerminated(ctx: CommandContext, command: Command, msg: String) { ctx.reply(msg) }
+        fun onCommandCompleted(ctx: CommandContext, command: Command) {}
+        fun onException(ctx: CommandContext, command: Command, exception: Throwable) {
+            LOG.error("${command.fullname} encountered an exception:", exception)
+        }
+    }
+
     class Builder @PublishedApi internal constructor() {
+        val groups = LinkedList<Command.Group>()
         var prefix = Laxus.Prefix
         var dBotsKey: String? = null
         var dBotsListKey: String? = null
         var callCacheSize = 300
         var mode = RunMode.SERVICE
-    }
-
-    interface Listener {
-        // TODO
     }
 }
 

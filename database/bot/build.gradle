@@ -20,6 +20,5 @@ dependencies {
     // Projects
     compileOnly project(':commons')
     compileOnly project(':commons:jda')
-    compileOnly project(':core')
     compileOnly project(':database')
 }

@@ -18,9 +18,10 @@ package xyz.laxus
 
 import net.dv8tion.jda.core.AccountType.BOT
 import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.OnlineStatus
+import net.dv8tion.jda.core.OnlineStatus.DO_NOT_DISTURB
 import net.dv8tion.jda.core.Permission.*
 import okhttp3.OkHttpClient
+import xyz.laxus.command.Command
 import xyz.laxus.jda.ContextEventManager
 import xyz.laxus.jda.listeners.EventWaiter
 import xyz.laxus.jda.util.*
@@ -54,37 +55,76 @@ object Laxus {
         VIEW_AUDIT_LOGS
     )
 
+    val Log = createLogger(Laxus::class)
+
     private lateinit var bot: Bot
     private lateinit var jda: JDA
+    private lateinit var waiter: EventWaiter
     val Bot get() = bot
     val JDA get() = jda
+    val Waiter get() = waiter
 
     fun start() {
         // First we need a config
         val config = checkNotNull(loadConfig("bot.conf").config("bot")) {
             "Could not find 'bot' node for bot.conf!"
         }
-        jda = jda(BOT) {
-            token {
-                checkNotNull(config.string("token")) {
-                    "Could not find 'token' node for bot.conf!"
-                }
+
+        // Load Command.Groups via reflection
+        val groups = config.list("groups")?.mapNotNull groups@ {
+            val klass = it.klass ?: run {
+                Log.warn("Could not load command group class: '${it.string}")
+                return@groups null
             }
 
+            val objectInstance = requireNotNull(klass.objectInstance) {
+                "'$klass' is not an object and therefore not a valid command group!"
+            }
+
+            return@groups requireNotNull(objectInstance as? Command.Group) {
+                "'$klass' is not a subtype of Command.Group and therefore not a valid command group!"
+            }
+        } ?: emptyList()
+
+        val token = checkNotNull(config.string("token")) {
+            "Could not find 'token' node for bot.conf!"
+        }
+
+        this.waiter = EventWaiter()
+
+        // Start JDA
+        this.jda = jda(BOT) {
+            token { token }
             manager { ContextEventManager() }
 
+            groups.forEach { with(it) { configure() } }
+
             bot {
-                this.prefix = TestPrefix.takeIf { config.boolean("test") == true } ?: Prefix
                 this.dBotsKey = config.string("keys.dbots")
                 this.dBotsListKey = config.string("keys.dbotslist")
-                this.callCacheSize = config.int("callCacheSize") ?: 300
-                this.mode = config.enum<RunMode>("mode") ?: RunMode.SERVICE
+
+                if(config.boolean("test") == true) {
+                    this.prefix = TestPrefix
+                }
+
+                config.int("callCacheSize")?.let {
+                    this.callCacheSize = it
+                }
+
+                config.enum<RunMode>("mode")?.let {
+                    this.mode = it
+                }
+
+                this.groups += groups.sorted()
             }
 
-            listener { EventWaiter() }
+            listener { Waiter }
 
             contextMap { null }
-            status { OnlineStatus.DO_NOT_DISTURB }
+
+            // Initializing Status
+            // This will be overwritten by the Bot's ready listener handle.
+            status { DO_NOT_DISTURB }
             watching { "Everything Start Up..." }
         }
     }

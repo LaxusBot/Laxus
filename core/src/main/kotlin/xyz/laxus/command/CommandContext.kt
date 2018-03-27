@@ -33,7 +33,7 @@ import kotlin.coroutines.experimental.CoroutineContext
  */
 class CommandContext internal constructor(
     val event: MessageReceivedEvent,
-    internal var _args: String,
+    private var _args: String,
     val bot: Bot,
     coroutineContext: CoroutineContext
 ): CoroutineContext by coroutineContext {
@@ -88,6 +88,45 @@ class CommandContext internal constructor(
         return channel.sendMessage(message).await().also(::linkMessage)
     }
 
+    fun replyInDM(text: String) {
+        if(channel is PrivateChannel) {
+            return sendMessage(text, channel).queue()
+        }
+        author.openPrivateChannel().queue({ pc ->
+            sendMessage(text, pc).queue()
+        }, {
+            if(isGuild && textChannel.canTalk()) {
+                replyError(BlockingError)
+            }
+        })
+    }
+
+    fun replyInDM(embed: MessageEmbed) {
+        if(channel is PrivateChannel) {
+            return channel.sendMessage(embed).queue({}, {})
+        }
+        author.openPrivateChannel().queue({ pc ->
+            pc.sendMessage(embed).queue({}, {})
+        }, {
+            if(isGuild && textChannel.canTalk()) {
+                replyError(BlockingError)
+            }
+        })
+    }
+
+    fun replyInDM(message: Message) {
+        if(channel is PrivateChannel) {
+            return channel.sendMessage(message).queue({}, {})
+        }
+        author.openPrivateChannel().queue({ pc ->
+            pc.sendMessage(message).queue({}, {})
+        }, {
+            if(isGuild && textChannel.canTalk()) {
+                replyError(BlockingError)
+            }
+        })
+    }
+
     fun replySuccess(text: String) = reply("${Laxus.Success} $text")
     fun replyWarning(text: String) = reply("${Laxus.Warning} $text")
     fun replyError(text: String) = reply("${Laxus.Error} $text")
@@ -97,6 +136,16 @@ class CommandContext internal constructor(
     suspend fun sendError(text: String) = send("${Laxus.Error} $text")
 
     fun linkMessage(message: Message) = bot.linkCall(messageIdLong, message)
+
+    fun reactSuccess() = react(Laxus.Success)
+    fun reactWarning() = react(Laxus.Warning)
+    fun reactError() = react(Laxus.Error)
+
+    inline fun error(type: String, details: () -> String) = replyError("**$type!**\n${details()}")
+
+    internal fun reassignArgs(args: String) {
+        _args = args
+    }
 
     private fun react(string: String) {
         if(emoteRegex matches string) {

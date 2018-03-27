@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        kotlin_version = '1.2.30'
+        kotlin_version = '1.2.31'
         kotlin_json_version = '1.2.1'
         kotlinx_coroutines_version = '0.22.3'
         kotlinx_html_version = '0.6.9'
@@ -47,8 +47,8 @@ subprojects {
     apply plugin: 'idea'
     apply plugin: 'kotlin'
 
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+    sourceCompatibility = 9
+    targetCompatibility = 9
 
     ext {
         repositories {
@@ -72,10 +72,6 @@ subprojects {
 
             // Kotlin Json
             kotlinJson = { "me.kgustave:kotlin-json-core:$kotlin_json_version" }
-
-            // Ktor
-            ktorModule = { String module -> "io.ktor:ktor-$module:$ktor_version" }
-            ktorServer = { String module = "core" -> ktorModule("server-$module") }
 
             // JDA
             jda = { "net.dv8tion:JDA:$jda_version" }
@@ -122,6 +118,7 @@ subprojects {
     }
 
     dependencies {
+        compileOnly kotlinModule('stdlib')
         compileOnly kotlinModule("stdlib-jdk8")
         compileOnly kotlinModule("stdlib-jdk7")
 
@@ -154,7 +151,8 @@ subprojects {
     jar {
         manifest {
             attributes 'Manifest-Version': "${ver.major}.${ver.minor}",
-                       'Implementation-Version': "$version"
+                       'Implementation-Version': "$version",
+                       'Automatic-Module-Name': "laxus${project.path.replace('-', '.').replace(':', '.')}"
         }
     }
 

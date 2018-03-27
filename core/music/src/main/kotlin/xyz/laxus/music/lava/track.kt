@@ -13,17 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.routes
+package xyz.laxus.music.lava
 
-@Target(AnnotationTarget.FUNCTION)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class Route(
-    val method: Method,
-    val path: String
-)
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 
-@Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class Path(
-    val path: String
-)
+inline fun <reified R> AudioTrack.userData(): R? = userData as? R

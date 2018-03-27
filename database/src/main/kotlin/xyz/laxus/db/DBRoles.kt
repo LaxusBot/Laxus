@@ -55,8 +55,8 @@ object DBRoles : Table() {
         return null
     }
 
-    fun getRoles(guildId: Long, type: Type): Set<Long> {
-        val roles = HashSet<Long>()
+    fun getRoles(guildId: Long, type: Type): List<Long> {
+        val roles = ArrayList<Long>()
         connection.prepare(GET_ROLES) { statement ->
             statement[1] = guildId
             statement[2] = type.name
@@ -111,6 +111,10 @@ object DBRoles : Table() {
         }
     }
 
+    fun removeRole(guildId: Long, type: Type) {
+        removeRoles(guildId, type)
+    }
+
     fun removeRoles(guildId: Long, type: Type) {
         connection.prepare(GET_ROLES, SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
@@ -128,6 +132,7 @@ object DBRoles : Table() {
     }
 
     enum class Type {
+        ANNOUNCEMENTS,
         ROLE_ME,
         COLOR_ME,
         MUTED,

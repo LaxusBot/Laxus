@@ -42,17 +42,13 @@ inline fun <reified T> List<T>.listOut(kind: String, argument: String, conversio
     }
 }
 
-inline fun <reified U: User> U.formattedName(boldName: Boolean = false): String {
+fun User.formattedName(boldName: Boolean = false): String {
     return "${if(boldName) "**$name**" else name}#$discriminator"
 }
 
-inline val OffsetDateTime.readableFormat: String inline get() {
-    return "${dayOfWeek.niceName}, ${month.niceName} $dayOfMonth, $year"
-}
+val OffsetDateTime.readableFormat get() = "${dayOfWeek.niceName}, ${month.niceName} $dayOfMonth, $year"
 
-inline val <T: AudioTrackInfo> T.formattedInfo: String inline get() {
-    return "**${filterMassMentions(title)}** `[${formatTrackTime(length)}]`"
-}
+val AudioTrackInfo.formattedInfo get() = "**${filterMassMentions(title)}** `[${formatTrackTime(length)}]`"
 
 fun formatTrackTime(duration: Long): String {
     if(duration == Long.MAX_VALUE) return "LIVE"

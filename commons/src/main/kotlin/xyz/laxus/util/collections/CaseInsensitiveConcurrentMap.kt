@@ -18,5 +18,4 @@ package xyz.laxus.util.collections
 /**
  * @author Kaidan Gustave
  */
-class CaseInsensitiveConcurrentMap<V: Any> : MutableMap<String, V>,
-    AbstractCaseInsensitiveMap<V>(concurrentHashMap<String, V>(), concurrentSet())
+class CaseInsensitiveConcurrentMap<V: Any> : AbstractCaseInsensitiveMap<V>(concurrentHashMap(), concurrentSet())

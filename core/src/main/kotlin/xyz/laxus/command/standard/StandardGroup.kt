@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.routes
+package xyz.laxus.command.standard
 
-import io.ktor.http.HttpMethod as KtorMethod
+import xyz.laxus.command.Command
 
 /**
  * @author Kaidan Gustave
  */
-enum class Method(val ktorMethod: KtorMethod) {
-    GET(KtorMethod.Get),
-    PUT(KtorMethod.Put),
-    POST(KtorMethod.Post),
-    DELETE(KtorMethod.Delete),
-    PATCH(KtorMethod.Patch),
-    OPTIONS(KtorMethod.Options),
-    HEAD(KtorMethod.Head)
+object StandardGroup : Command.Group("Standard") {
+    override val defaultLevel get() = Command.Level.STANDARD
+    override val guildOnly = false
+    override val devOnly = false
+
+    override fun init() {
+        + PingCommand()
+    }
 }

@@ -16,6 +16,9 @@
 package xyz.laxus
 
 import ch.qos.logback.classic.Level
+import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import xyz.laxus.command.Command
+import xyz.laxus.command.CommandContext
 
 /**
  * @author Kaidan Gustave
@@ -23,9 +26,22 @@ import ch.qos.logback.classic.Level
 enum class RunMode(val level: Level): Bot.Listener {
     SERVICE(Level.INFO),
     IDLE(Level.OFF) {
-        // TODO
+        override fun checkCall(event: MessageReceivedEvent, bot: Bot, name: String, args: String): Boolean {
+            return event.author.idLong == Laxus.DevId
+        }
     },
     DEBUG(Level.DEBUG) {
-        // TODO
+        override fun onCommandCall(ctx: CommandContext, command: Command) {
+            Bot.Listener.debug("Call to Command \"${command.name}\"")
+        }
+
+        override fun onCommandTerminated(ctx: CommandContext, command: Command, msg: String) {
+            super.onCommandTerminated(ctx, command, msg)
+            Bot.Listener.debug("Terminated Command \"${command.name}\" with message: \"$msg\"")
+        }
+
+        override fun onCommandCompleted(ctx: CommandContext, command: Command) {
+            Bot.Listener.debug("Completed Command \"${command.name}\"")
+        }
     };
 }

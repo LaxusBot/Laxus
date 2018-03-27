@@ -55,8 +55,8 @@ object DBChannels : Table() {
         return null
     }
 
-    fun getChannels(guildId: Long, type: Type): Set<Long> {
-        val channels = HashSet<Long>()
+    fun getChannels(guildId: Long, type: Type): List<Long> {
+        val channels = ArrayList<Long>()
         connection.prepare(GET_CHANNELS) { statement ->
             statement[1] = guildId
             statement[2] = type.name
@@ -98,6 +98,10 @@ object DBChannels : Table() {
                 }
             }
         }
+    }
+
+    fun removeChannel(guildId: Long, type: Type) {
+        removeChannels(guildId, type)
     }
 
     fun removeChannel(guildId: Long, channelId: Long, type: Type) {

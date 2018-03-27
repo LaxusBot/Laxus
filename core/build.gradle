@@ -25,7 +25,10 @@ dependencies {
 
     // Kotlin
     compileOnly kotlinModule('reflect')
+    compileOnly kotlinModule("script-runtime")
+    compileOnly kotlinModule("script-util")
     compileOnly kotlinJson()
+    runtimeOnly kotlinModule("compiler-embeddable")
 
     // Kotlin Coroutines
     compileOnly kotlinxCoroutines('core')
@@ -47,4 +50,5 @@ dependencies {
     compileOnly project(':commons')
     compileOnly project(':commons:jda')
     compileOnly project(':database')
+    compileOnly project(':database:bot')
 }

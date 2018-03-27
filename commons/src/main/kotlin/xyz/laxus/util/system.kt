@@ -21,9 +21,15 @@ import kotlin.concurrent.thread
 val lineSeparator get() = System.lineSeparator() ?: "\n"
 val currentTime get() = System.currentTimeMillis()
 
+val runtime: Runtime get() = Runtime.getRuntime()
+
+val Runtime.totalMemory get() = totalMemory()
+val Runtime.freeMemory get() = freeMemory()
+val Runtime.maxMemory get() = maxMemory()
+
 fun propertyOf(key: String): String? = System.getProperty(key)
 
 inline fun onJvmShutdown(name: String, crossinline event: () -> Unit) {
     val thread = thread(name = name, start = false, isDaemon = true) { event() }
-    Runtime.getRuntime().addShutdownHook(thread)
+    runtime.addShutdownHook(thread)
 }

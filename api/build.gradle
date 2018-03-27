@@ -15,7 +15,6 @@
  */
 repositories {
     jitpack()
-    maven { url "https://dl.bintray.com/kotlin/ktor" }
 }
 
 dependencies {
@@ -31,14 +30,7 @@ dependencies {
     compileOnly kotlinxCoroutines('core')
     compileOnly kotlinxCoroutines('io')
 
-    // Kotlin Html
-    compileOnly kotlinxHtml()
-
-    // Ktor
-    compileOnly ktorModule('html-builder')
-    compileOnly ktorServer()
-    compileOnly ktorServer('netty')
-    compileOnly ktorServer('host-common')
+    compileOnly "com.sparkjava:spark-core:2.7.2"
 
     // Database
     compileOnly h2()
@@ -51,6 +43,7 @@ dependencies {
     compileOnly project(':commons:jda')
     compileOnly project(':core')
     compileOnly project(':database')
+    compileOnly project(':database:bot')
 
     // Test compile OkHttp for testing REST requests
     testCompile okHttp()

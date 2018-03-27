@@ -18,5 +18,4 @@ package xyz.laxus.util.collections
 /**
  * @author Kaidan Gustave
  */
-class CaseInsensitiveHashMap<V: Any>: MutableMap<String, V>,
-    AbstractCaseInsensitiveMap<V>(hashMapOf<String, V>(), hashSetOf())
+class CaseInsensitiveHashMap<V: Any>: AbstractCaseInsensitiveMap<V>(hashMapOf(), hashSetOf())

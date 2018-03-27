@@ -13,18 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.modules
+package xyz.laxus.music.lava
 
-import com.typesafe.config.Config
-import io.ktor.application.Application
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
+import com.sedmelluq.discord.lavaplayer.track.playback.AudioFrame
+import net.dv8tion.jda.core.audio.AudioSendHandler
 
 /**
+ * Simple concrete implementation of [AudioSendHandler].
+ *
  * @author Kaidan Gustave
  */
-interface KtorModule {
-    fun Application.load(config: Config)
+open class SimpleAudioSendHandler(private val player: AudioPlayer): AudioSendHandler {
+    private lateinit var lastFrame: AudioFrame
 
-    interface Provider<out M: KtorModule> {
-        fun provide(): M
+    override fun isOpus(): Boolean = true
+    override fun provide20MsAudio(): ByteArray = lastFrame.data
+    override fun canProvide(): Boolean {
+        lastFrame = player.provide() ?: return false
+        return true
     }
 }

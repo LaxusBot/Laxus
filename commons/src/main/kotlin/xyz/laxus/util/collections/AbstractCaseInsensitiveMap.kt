@@ -22,13 +22,10 @@ abstract class AbstractCaseInsensitiveMap<V> protected constructor(
     private val map: MutableMap<String, V>,
     private val savedEntries: MutableSet<MutableMap.MutableEntry<String, V>>
 ): MutableMap<String, V> {
-    override val size: Int get() = map.size
-    override val entries: MutableSet<MutableMap.MutableEntry<String, V>>
-        get() = savedEntries
-    override val keys: MutableSet<String>
-        get() = savedEntries.mapTo(hashSetOf()) { it.key }
-    override val values: MutableCollection<V>
-        get() = savedEntries.mapTo(hashSetOf()) { it.value }
+    override val size get() = map.size
+    override val entries get() = savedEntries
+    override val keys get() = savedEntries.mapTo(hashSetOf()) { it.key }
+    override val values get() = savedEntries.mapTo(hashSetOf()) { it.value }
 
     override fun containsKey(key: String): Boolean = map.containsKey(key.toLowerCase())
     override fun containsValue(value: V): Boolean = map.containsValue(value)
@@ -52,11 +49,17 @@ abstract class AbstractCaseInsensitiveMap<V> protected constructor(
     override fun remove(key: String): V? = map.remove(key.toLowerCase())
 
     private inner class Entry(override val key: String, value: V): MutableMap.MutableEntry<String, V> {
-        override var value: V = value
-            get() = map[key.toLowerCase()] ?: field
+        override var value = value
+            get() = map[key.toLowerCase()]?.also {
+                if(field != it) field = it
+            } ?: field
+            set(value) {
+                map[key.toLowerCase()] = value
+                field = value
+            }
+
         override fun setValue(newValue: V): V {
             val oldValue = value
-            map[key.toLowerCase()] = newValue
             value = newValue
             return oldValue
         }
