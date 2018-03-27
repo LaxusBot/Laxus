@@ -13,9 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.commands.music
+package xyz.laxus.command.music
+
+import xyz.laxus.command.CommandContext
+import xyz.laxus.music.MusicManager
 
 /**
  * @author Kaidan Gustave
  */
-class PlayCommand {}
+class StopCommand(manager: MusicManager): MusicCommand(manager) {
+    override val name = "Stop"
+    override val defaultLevel = Level.ADMINISTRATOR
+
+    override suspend fun execute(ctx: CommandContext) {
+        if(!ctx.guild.isPlaying) return ctx.replyWarning {
+            "I cannot execute this command because am not playing anything!"
+        }
+
+        manager.stop(ctx.guild)
+        ctx.replySuccess("Stopped playing.")
+    }
+}

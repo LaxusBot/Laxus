@@ -20,7 +20,8 @@ package xyz.laxus.music
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.event.*
-import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager
+import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceManager as SoundCloud
+import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager as YouTube
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason.*
 import kotlinx.coroutines.experimental.newSingleThreadContext
@@ -45,7 +46,6 @@ class MusicManager : IMusicManager<MusicManager, MusicQueue>,
 
     internal companion object {
         internal val LOG = createLogger(MusicManager::class)
-        internal val context by lazy { newSingleThreadContext("AudioCloseContext") }
 
         private fun logTrackInfo(track: AudioTrack): String {
             return "Title: ${track.info.title} | Length: ${formatTrackTime(track.duration)} | State: ${track.state}"
@@ -53,13 +53,15 @@ class MusicManager : IMusicManager<MusicManager, MusicQueue>,
     }
 
     private val queueMap = ConcurrentHashMap<Long, MusicQueue>()
+    internal val context by lazy { newSingleThreadContext("AudioCloseContext") }
 
     init {
-        registerSourceManager(YoutubeAudioSourceManager())
+        registerSourceManager(YouTube())
+        registerSourceManager(SoundCloud())
     }
 
     override operator fun get(guild: Guild): MusicQueue? = queueMap[guild.idLong]
-    override operator fun contains(guild: Guild): Boolean = guild.idLong in queueMap
+    override operator fun contains(guild: Guild): Boolean = this[guild] !== null
 
     override fun stop(guild: Guild) {
         val musicQueue = queueMap[guild.idLong] ?: return

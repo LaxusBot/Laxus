@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.commands.music
+package xyz.laxus.command.music
 
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
@@ -22,6 +22,9 @@ import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Member
+import net.dv8tion.jda.core.entities.VoiceChannel
+import xyz.laxus.command.Command
+import xyz.laxus.command.CommandContext
 import xyz.laxus.jda.util.connectedChannel
 import xyz.laxus.music.MusicManager
 import kotlin.coroutines.experimental.Continuation
@@ -30,19 +33,34 @@ import kotlin.coroutines.experimental.suspendCoroutine
 /**
  * @author Kaidan Gustave
  */
-abstract class MusicCommand(protected val manager: MusicManager) {
+abstract class MusicCommand(protected val manager: MusicManager): Command(MusicGroup) {
     private companion object {
         private const val YT_SEARCH_PREFIX = "ytsearch:"
     }
 
-    val Guild.isPlaying: Boolean get() = this in this@MusicCommand.manager
-    val Member.inPlayingChannel: Boolean get() {
+    protected val Guild.isPlaying get() = this in this@MusicCommand.manager
+    protected val Member.inPlayingChannel: Boolean get() {
         val chan = connectedChannel ?: return false
-        val self = guild.selfMember
-        return chan == self.connectedChannel
+        return chan == guild.selfMember.connectedChannel
     }
 
-    suspend fun loadTrack(member: Member, query: String): AudioItem? = suspendCoroutine { cont ->
+    protected val CommandContext.voiceChannel: VoiceChannel? get() {
+        return member.connectedChannel
+    }
+
+    protected fun CommandContext.notPlaying(): Unit = replyError {
+        "I must be playing music to use that command!"
+    }
+
+    protected fun CommandContext.notInVoiceChannel(): Unit = replyError {
+        "You must be in a VoiceChannel to use music commands!"
+    }
+
+    protected fun CommandContext.notInPlayingChannel(): Unit = replyError {
+        "You must be in ${selfMember.connectedChannel?.name} to use music commands!"
+    }
+
+    protected suspend fun loadTrack(member: Member, query: String): AudioItem? = suspendCoroutine { cont ->
         val handle = SearchHandler(cont, member, query, query.startsWith(YT_SEARCH_PREFIX))
         manager.loadItemOrdered(member.guild, query, handle)
     }

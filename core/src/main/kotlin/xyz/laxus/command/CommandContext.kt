@@ -141,6 +141,16 @@ class CommandContext internal constructor(
     fun reactWarning() = react(Laxus.Warning)
     fun reactError() = react(Laxus.Error)
 
+    inline fun reply(block: () -> String) = reply(block())
+    inline fun replySuccess(block: () -> String) = replySuccess(block())
+    inline fun replyWarning(block: () -> String) = replyWarning(block())
+    inline fun replyError(block: () -> String) = replyError(block())
+
+    suspend inline fun send(block: () -> String) = send(block())
+    suspend inline fun sendSuccess(block: () -> String) = sendSuccess(block())
+    suspend inline fun sendWarning(block: () -> String) = sendWarning(block())
+    suspend inline fun sendError(block: () -> String) = sendError(block())
+
     inline fun error(type: String, details: () -> String) = replyError("**$type!**\n${details()}")
 
     internal fun reassignArgs(args: String) {

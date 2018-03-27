@@ -75,7 +75,6 @@ class CoroutineMusicQueue(
 
     init {
         channel.connect(sender = this)
-        player.playTrack(track)
     }
 
     override val currentTrack: AudioTrack get() = track

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 @file:Suppress("MemberVisibilityCanBePrivate")
-package xyz.laxus.commands.music
+package xyz.laxus.command.music
 
 import net.dv8tion.jda.core.JDABuilder
 import xyz.laxus.command.Command
@@ -29,13 +29,14 @@ object MusicGroup : Command.Group("Music") {
     override val devOnly = false
     override val guildOnly = true
 
-    val manager = MusicManager()
+    val Manager by lazy { MusicManager() }
 
     override fun JDABuilder.configure() {
-        listener { manager }
+        listener { Manager }
     }
 
     override fun init() {
-
+        + PlayCommand(Manager)
+        + StopCommand(Manager)
     }
 }

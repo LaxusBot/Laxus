@@ -163,7 +163,7 @@ class MusicQueue(
 
     override fun close() {
         // JDA Audio Connections MUST be closed on a separate thread
-        launch(MusicManager.context) { channel.guild.audioManager.closeAudioConnection() }
+        launch(manager.context) { guild.audioManager.closeAudioConnection() }
         player.destroy()
         dead = true
     }
