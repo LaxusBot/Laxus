@@ -16,6 +16,7 @@
 @file:Suppress("LeakingThis", "unused", "MemberVisibilityCanBePrivate")
 package xyz.laxus.command
 
+import com.typesafe.config.Config
 import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.Permission
 import xyz.laxus.Laxus
@@ -336,7 +337,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
             commands += this
         }
 
-        abstract fun init()
+        abstract fun init(config: Config)
 
         override fun compareTo(other: Group): Int {
             if(name == "Standard") {

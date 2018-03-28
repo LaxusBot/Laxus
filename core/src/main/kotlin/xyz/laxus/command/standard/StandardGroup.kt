@@ -15,7 +15,9 @@
  */
 package xyz.laxus.command.standard
 
+import com.typesafe.config.Config
 import xyz.laxus.command.Command
+import xyz.laxus.util.string
 
 /**
  * @author Kaidan Gustave
@@ -25,7 +27,18 @@ object StandardGroup : Command.Group("Standard") {
     override val guildOnly = false
     override val devOnly = false
 
-    override fun init() {
+    override fun init(config: Config) {
+        + AboutCommand()
+        + ColorMeCommand()
+        + EmoteCommand()
+        + ImageCommand()
+        + HelpCommand()
+        + InfoCommand()
+        + InviteCommand()
         + PingCommand()
+        + QuoteCommand()
+        + RoleMeCommand()
+        + TagCommand()
+        + YouTubeCommand(config.string("keys.youtube"))
     }
 }

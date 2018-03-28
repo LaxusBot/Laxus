@@ -36,6 +36,7 @@ object Laxus {
     const val Prefix = "|"
     const val TestPrefix = "||"
     const val ServerInvite = "https://discord.gg/xkkw54u"
+    const val GitHub = "https://github.com/TheMonitorLizard/Laxus"
 
     val Package = packageOf(Laxus::class)
     val Version = Package.version.implementation ?: "BETA"
@@ -115,7 +116,7 @@ object Laxus {
                     this.mode = it
                 }
 
-                this.groups += groups.sorted()
+                this.groups += groups.onEach { it.init(config) }.sorted()
             }
 
             listener { Waiter }

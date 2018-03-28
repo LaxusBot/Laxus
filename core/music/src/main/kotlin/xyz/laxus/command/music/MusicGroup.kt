@@ -16,6 +16,7 @@
 @file:Suppress("MemberVisibilityCanBePrivate")
 package xyz.laxus.command.music
 
+import com.typesafe.config.Config
 import net.dv8tion.jda.core.JDABuilder
 import xyz.laxus.command.Command
 import xyz.laxus.jda.util.listener
@@ -35,8 +36,9 @@ object MusicGroup : Command.Group("Music") {
         listener { Manager }
     }
 
-    override fun init() {
+    override fun init(config: Config) {
         + PlayCommand(Manager)
+        + SkipCommand(Manager)
         + StopCommand(Manager)
     }
 }

@@ -17,6 +17,8 @@
 
 package xyz.laxus
 
+import com.jagrosh.jagtag.Parser
+import com.jagrosh.jagtag.ParserBuilder
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.newSingleThreadContext
@@ -76,11 +78,13 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
 
     private val dBotsKey = builder.dBotsKey
     private val dBotsListKey = builder.dBotsListKey
-    val prefix = builder.prefix
 
+    val prefix = builder.prefix
     val httpClient: OkHttpClient = Laxus.HttpClientBuilder.build()
     val startTime: OffsetDateTime = now()
-    val commands: Map<String, Command> = CommandMap(*builder.groups.onEach(Command.Group::init).sorted().toTypedArray())
+    val groups: List<Command.Group> = builder.groups.sorted()
+    val commands: Map<String, Command> = CommandMap(*groups.toTypedArray())
+    val parser: Parser = ParserBuilder().build()
 
     val messageCacheSize get() = callCache.size
 

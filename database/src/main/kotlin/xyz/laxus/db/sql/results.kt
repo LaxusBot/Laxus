@@ -84,3 +84,24 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: Double?)
         updateDouble(column, value)
     }
 }
+
+inline fun <reified R: ResultSet> R.getNullShort(column: String): Short? {
+    val s = getShort(column)
+    if(wasNull())
+        return null
+    return s
+}
+
+inline fun <reified R: ResultSet> R.getNullInt(column: String): Int? {
+    val i = getInt(column)
+    if(wasNull())
+        return null
+    return i
+}
+
+inline fun <reified R: ResultSet> R.getNullLong(column: String): Long? {
+    val l = getLong(column)
+    if(wasNull())
+        return null
+    return l
+}

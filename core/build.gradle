@@ -45,6 +45,7 @@ dependencies {
 
     // Other
     compileOnly jagtag()
+    compileOnly youtube()
 
     // Projects
     compileOnly project(':commons')

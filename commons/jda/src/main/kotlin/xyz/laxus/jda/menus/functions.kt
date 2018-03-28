@@ -13,25 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.command.owner
-
-import com.typesafe.config.Config
-import xyz.laxus.command.Command
-import xyz.laxus.command.CommandContext
+package xyz.laxus.jda.menus
 
 /**
  * @author Kaidan Gustave
  */
-object OwnerGroup: Command.Group("Owner") {
-    override val defaultLevel = Command.Level.SHENGAERO
-    override val guildOnly = false
-    override val devOnly = true
+inline fun paginatorBuilder(block: Paginator.Builder.() -> Unit): Paginator.Builder {
+    val builder = Paginator.Builder()
+    builder.block()
+    return builder
+}
 
-    override fun check(ctx: CommandContext): Boolean = ctx.isDev
-
-    override fun init(config: Config) {
-        + EvalCommand()
-        + MemoryCommand()
-        + ShutdownCommand()
-    }
+inline fun orderedMenuBuilder(block: OrderedMenu.Builder.() -> Unit): OrderedMenu.Builder {
+    val builder = OrderedMenu.Builder()
+    builder.block()
+    return builder
 }
