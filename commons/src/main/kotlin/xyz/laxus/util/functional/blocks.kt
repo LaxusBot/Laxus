@@ -24,6 +24,10 @@ interface AdditionBlock<in T> {
     operator fun T.unaryPlus() {
         add(this)
     }
+
+    operator fun Iterable<T>.unaryPlus() {
+        for(e in this) + e
+    }
 }
 
 /**
@@ -34,6 +38,10 @@ interface RemovalBlock<in T> {
 
     operator fun T.unaryMinus() {
         remove(this)
+    }
+
+    operator fun Iterable<T>.unaryMinus() {
+        for(e in this) - e
     }
 }
 

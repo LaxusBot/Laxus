@@ -16,6 +16,7 @@
 @file:Suppress("Unused")
 package xyz.laxus.util
 
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo
 import net.dv8tion.jda.core.entities.*
 import xyz.laxus.jda.util.filterMassMentions
@@ -48,7 +49,10 @@ fun User.formattedName(boldName: Boolean = false): String {
 
 val OffsetDateTime.readableFormat get() = "${dayOfWeek.niceName}, ${month.niceName} $dayOfMonth, $year"
 
-val AudioTrackInfo.formattedInfo get() = "**${filterMassMentions(title)}** `[${formatTrackTime(length)}]`"
+val AudioTrack.trackTime get() = formatTrackTime(duration)
+val AudioTrack.progression get() = "${formatTrackTime(position)}/$trackTime"
+val AudioTrackInfo.displayTitle get() = "**${filterMassMentions(title)}**"
+val AudioTrackInfo.formattedInfo get() = "$displayTitle `[${formatTrackTime(length)}]`"
 
 fun formatTrackTime(duration: Long): String {
     if(duration == Long.MAX_VALUE) return "LIVE"

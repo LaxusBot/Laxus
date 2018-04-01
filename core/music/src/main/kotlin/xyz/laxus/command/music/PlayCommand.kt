@@ -23,19 +23,17 @@ import kotlinx.coroutines.experimental.async
 import net.dv8tion.jda.core.Permission
 import xyz.laxus.Laxus
 import xyz.laxus.command.CommandContext
-import xyz.laxus.command.MustHaveArguments
 import xyz.laxus.jda.util.editMessage
 import xyz.laxus.music.MusicManager
-import xyz.laxus.util.formattedInfo
-import xyz.laxus.util.noMatch
+import xyz.laxus.util.*
 
 /**
  * @author Kaidan Gustave
  */
-@MustHaveArguments("Specify a song name, or URL link.")
 class PlayCommand(manager: MusicManager): MusicCommand(manager) {
     override val name = "Play"
     override val arguments = "[Song|URL]"
+    override val help = "Plays a song in your connected voice channel."
     override val botPermissions = arrayOf(
         Permission.VOICE_CONNECT,
         Permission.VOICE_SPEAK
@@ -45,6 +43,31 @@ class PlayCommand(manager: MusicManager): MusicCommand(manager) {
         val guild = ctx.guild
         val member = ctx.member
         val query = ctx.args
+
+        if(query.isEmpty()) {
+            // Allow this command to act as a stand-in for a separate "unpause" command
+            if(Level.MODERATOR.test(ctx)) {
+                if(!guild.isPlaying) return ctx.notPlaying()
+                if(!member.inPlayingChannel) return ctx.notInPlayingChannel()
+
+                val queue = checkNotNull(manager[ctx.guild]) {
+                    "Got a null MusicQueue after checking for playing!"
+                }
+
+                val currentTrack = queue.currentTrack
+                val currentTrackInfo = currentTrack.info
+
+                if(queue.paused) {
+                    queue.paused = false
+                    return ctx.replySuccess {
+                        "Unpaused ${currentTrackInfo.displayTitle} at `[${currentTrack.progression}]`!"
+                    }
+                }
+            }
+            // Empty args for nothing
+            return ctx.missingArgs { "Specify a song name, or URL link." }
+        }
+
         val voiceChannel = ctx.voiceChannel
 
         if(!member.inPlayingChannel || voiceChannel === null) {

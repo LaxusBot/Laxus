@@ -43,7 +43,7 @@ class CoroutineMusicQueue(
     private var track: AudioTrack,
     override val player: AudioPlayer = manager.newPlayer()
 ): AudioSendHandler by SimpleAudioSendHandler(player),
-    IMusicQueue<CoroutineMusicQueue, CoroutineMusicManager> {
+    IMusicQueue {
     @Volatile private lateinit var suspension: Continuation<Unit>
     @Volatile private var dead = false
 
@@ -88,9 +88,10 @@ class CoroutineMusicQueue(
         return skipping.size
     }
 
-    override var volume: Int
-        get() = player.volume
-        set(value) { player.volume = value }
+    override fun shuffle(userId: Long): Int {
+        // TODO
+        return 1
+    }
 
     override fun queue(track: AudioTrack): Int {
         queue += track
@@ -122,7 +123,7 @@ class CoroutineMusicQueue(
     override fun hashCode(): Int = channel.idLong.hashCode()
 
     override fun equals(other: Any?): Boolean {
-        if(other !is IMusicQueue<*, *>)
+        if(other !is IMusicQueue)
             return false
 
         return channel == other.channel

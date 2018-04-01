@@ -18,7 +18,7 @@ package xyz.laxus.jda.util
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.Role
 import net.dv8tion.jda.core.managers.GuildController
-import net.dv8tion.jda.core.managers.RoleManagerUpdatable
+import net.dv8tion.jda.core.managers.RoleManager
 import net.dv8tion.jda.core.requests.RestAction
 import net.dv8tion.jda.core.requests.restaction.RoleAction
 import xyz.laxus.util.functional.AddRemoveBlock
@@ -28,8 +28,8 @@ inline fun GuildController.createRole(block: RoleAction.() -> Unit): RoleAction 
     return createRole().apply(block)
 }
 
-inline fun Role.edit(init: RoleManagerUpdatable.() -> Unit): RestAction<Void> {
-    return managerUpdatable.apply(init).update()
+inline fun Role.edit(init: RoleManager.() -> Unit): RestAction<Void> {
+    return manager.apply(init)
 }
 
 inline fun RoleAction.name(lazy: () -> String?): RoleAction = setName(lazy())
@@ -58,27 +58,27 @@ inline fun RoleAction.permissions(lazy: AddRemoveBlock<Permission>.() -> Unit) {
     setPermissions(block.set)
 }
 
-inline fun RoleManagerUpdatable.name(lazy: () -> String): RoleManagerUpdatable {
-    nameField.value = lazy().takeUnless { it.length > 32 || it.isEmpty() } ?: nameField.originalValue
+inline fun RoleManager.name(lazy: () -> String): RoleManager {
+    lazy().takeUnless { it.length > 32 || it.isEmpty() }?.let { setName(it) }
     return this
 }
 
-inline fun RoleManagerUpdatable.color(lazy: () -> Color?): RoleManagerUpdatable {
-    colorField.value = lazy()
+inline fun RoleManager.color(lazy: () -> Color?): RoleManager {
+    setColor(lazy())
     return this
 }
 
-inline fun RoleManagerUpdatable.hoisted(lazy: () -> Boolean): RoleManagerUpdatable {
-    hoistedField.value = lazy()
+inline fun RoleManager.hoisted(lazy: () -> Boolean): RoleManager {
+    setHoisted(lazy())
     return this
 }
 
-inline fun RoleManagerUpdatable.mentionable(lazy: () -> Boolean): RoleManagerUpdatable {
-    mentionableField.value = lazy()
+inline fun RoleManager.mentionable(lazy: () -> Boolean): RoleManager {
+    setMentionable(lazy())
     return this
 }
 
-inline fun RoleManagerUpdatable.set(lazy: AddRemoveBlock<Permission>.() -> Unit): RoleManagerUpdatable {
+inline fun RoleManager.set(lazy: AddRemoveBlock<Permission>.() -> Unit): RoleManager {
     val block = object : AddRemoveBlock<Permission> {
         val give = HashSet<Permission>()
         val revoke = HashSet<Permission>()
@@ -100,10 +100,8 @@ inline fun RoleManagerUpdatable.set(lazy: AddRemoveBlock<Permission>.() -> Unit)
 
     block.lazy()
 
-    with(permissionField) {
-        givePermissions(block.give)
-        revokePermissions(block.revoke)
-    }
+    givePermissions(block.give)
+    revokePermissions(block.revoke)
 
     return this
 }

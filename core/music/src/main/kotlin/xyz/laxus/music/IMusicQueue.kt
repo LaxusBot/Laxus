@@ -26,10 +26,8 @@ import xyz.laxus.util.modifyIf
 /**
  * @author Kaidan Gustave
  */
-interface IMusicQueue<Q, M>: AudioSendHandler, AutoCloseable
-    where Q: IMusicQueue<Q, M>, M: IMusicManager<M, Q> {
-
-    val manager: M
+interface IMusicQueue: AudioSendHandler, AutoCloseable {
+    val manager: IMusicManager
     val channel: VoiceChannel
     val currentTrack: AudioTrack
     val isDead: Boolean
@@ -38,6 +36,11 @@ interface IMusicQueue<Q, M>: AudioSendHandler, AutoCloseable
     val player: AudioPlayer
 
     var volume: Int
+        get() = player.volume
+        set(value) { player.volume = value }
+    var paused: Boolean
+        get() = player.isPaused
+        set(value) { player.isPaused = value }
 
     val size: Int get() = tracks.size
 
@@ -58,6 +61,7 @@ interface IMusicQueue<Q, M>: AudioSendHandler, AutoCloseable
         return (totalMembers / 2).modifyIf(totalMembers % 2 != 0) { it + 1 }
     }
 
+    fun shuffle(userId: Long): Int
     fun queue(track: AudioTrack): Int
     fun isSkipping(member: Member): Boolean
     fun voteToSkip(member: Member): Int

@@ -29,6 +29,7 @@ import xyz.laxus.db.sql.ResultSetType.*
 @Columns(
     Column("CASE_NUMBER", INT, unique = true),
     Column("GUILD_ID", BIGINT, unique = true),
+    Column("MESSAGE_ID", BIGINT),
     Column("MOD_ID", BIGINT),
     Column("TARGET_ID", BIGINT),
     Column("IS_ON_USER", BOOLEAN),
@@ -82,6 +83,20 @@ object DBCases : Table() {
     fun getCasesByModId(guildId: Long, modId: Long): List<Case> {
         val cases = ArrayList<Case>()
         connection.prepare(GET_CASES_BY_MOD_ID) { statement ->
+            statement[1] = guildId
+            statement[2] = modId
+            statement.executeQuery {
+                it.whileNext {
+                    cases += Case(it)
+                }
+            }
+        }
+        return cases
+    }
+
+    fun getCasesWithoutReasonByModId(guildId: Long, modId: Long): List<Case> {
+        val cases = ArrayList<Case>()
+        connection.prepare("SELECT * FROM CASES WHERE GUILD_ID = ? AND MOD_ID = ? AND REASON IS NULL ORDER BY CASE_NUMBER DESC") { statement ->
             statement[1] = guildId
             statement[2] = modId
             statement.executeQuery {

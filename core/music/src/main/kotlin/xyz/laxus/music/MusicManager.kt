@@ -20,30 +20,27 @@ package xyz.laxus.music
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.event.*
-import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceManager as SoundCloud
-import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager as YouTube
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
-import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason.*
 import kotlinx.coroutines.experimental.newSingleThreadContext
 import net.dv8tion.jda.core.entities.Guild
-import net.dv8tion.jda.core.entities.Member
 import net.dv8tion.jda.core.entities.VoiceChannel
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.events.ShutdownEvent
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.core.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceLeaveEvent
-import xyz.laxus.music.lava.userData
+import xyz.laxus.music.lava.member
 import xyz.laxus.util.createLogger
 import xyz.laxus.util.formatTrackTime
+import xyz.laxus.util.niceName
 import java.util.concurrent.ConcurrentHashMap
+import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceManager as SoundCloud
+import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager as YouTube
 
 /**
  * @author Kaidan Gustave
  */
-class MusicManager : IMusicManager<MusicManager, MusicQueue>,
-    AudioPlayerManager by DefaultAudioPlayerManager() {
-
+class MusicManager : IMusicManager, AutoCloseable, AudioPlayerManager by DefaultAudioPlayerManager() {
     internal companion object {
         internal val LOG = createLogger(MusicManager::class)
 
@@ -53,7 +50,7 @@ class MusicManager : IMusicManager<MusicManager, MusicQueue>,
     }
 
     private val queueMap = ConcurrentHashMap<Long, MusicQueue>()
-    internal val context by lazy { newSingleThreadContext("AudioCloseContext") }
+    internal val context by lazy { newSingleThreadContext("AudioClose Context") }
 
     init {
         registerSourceManager(YouTube())
@@ -93,11 +90,7 @@ class MusicManager : IMusicManager<MusicManager, MusicQueue>,
     override fun onEvent(event: Event) {
         when(event) {
         // Dispose on shutdown
-            is ShutdownEvent -> {
-                queueMap.forEach { _, u -> u.close() }
-                context.close()
-                shutdown()
-            }
+            is ShutdownEvent -> close()
 
         // Dispose if we leave a guild for whatever reason
             is GuildLeaveEvent -> removeGuild(event.guild.idLong)
@@ -110,17 +103,16 @@ class MusicManager : IMusicManager<MusicManager, MusicQueue>,
     override fun onEvent(event: AudioEvent) {
         when(event) {
             is TrackStartEvent -> {
-                LOG.debug("Track Started | Title: ${event.track.info.title}")
+                LOG.debug("Track Started | ${logTrackInfo(event.track)}")
             }
             is TrackEndEvent -> {
-                when(event.endReason) {
-                    null        -> return
-                    FINISHED    -> onTrackFinished(event)
-                    LOAD_FAILED -> LOG.debug("Track Load Failed | ${logTrackInfo(event.track)}")
-                    STOPPED     -> LOG.debug("Track Stopped | ${logTrackInfo(event.track)}")
-                    REPLACED    -> LOG.debug("Track Replaced | ${logTrackInfo(event.track)}")
-                    CLEANUP     -> LOG.debug("Track Cleanup | ${logTrackInfo(event.track)}")
+                val endReason = event.endReason
+                if(endReason === null) {
+                    LOG.debug("Track Ended With Null Reason | ${logTrackInfo(event.track)}")
+                } else {
+                    LOG.debug("Track ${endReason.niceName} | ${logTrackInfo(event.track)}")
                 }
+                onTrackFinished(event)
             }
             is TrackExceptionEvent -> {
                 LOG.error("Track Exception | ${logTrackInfo(event.track)}", event.exception)
@@ -129,6 +121,12 @@ class MusicManager : IMusicManager<MusicManager, MusicQueue>,
                 LOG.debug("Track Stuck | ${logTrackInfo(event.track)} | ${event.thresholdMs}ms")
             }
         }
+    }
+
+    override fun close() {
+        queueMap.forEach { _, u -> u.close() }
+        context.close()
+        shutdown()
     }
 
     private fun setupPlayer(voiceChannel: VoiceChannel, firstTrack: AudioTrack) {
@@ -147,14 +145,13 @@ class MusicManager : IMusicManager<MusicManager, MusicQueue>,
     }
 
     private fun onTrackFinished(event: TrackEndEvent) {
-        LOG.debug("Track Finished | ${logTrackInfo(event.track)}")
-
-        val member = event.track?.userData<Member>() ?: return
-        val guildQueue = queueMap[member.guild.idLong] ?: return
+        val member = event.track.member
+        val guild = member.guild
+        val guildQueue = this[guild] ?: return
 
         guildQueue.poll()
         if(guildQueue.isDead) {
-            queueMap.remove(guildQueue.channel.guild.idLong)
+            queueMap -= guild.idLong
         }
     }
 

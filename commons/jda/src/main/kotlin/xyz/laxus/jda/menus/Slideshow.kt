@@ -26,10 +26,10 @@ import net.dv8tion.jda.core.requests.RestAction
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.embed
 import xyz.laxus.jda.util.message
+import xyz.laxus.util.collections.unmodifiableList
 import xyz.laxus.util.functional.AddRemoveBlock
 import xyz.laxus.util.ignored
 import java.awt.Color
-import kotlin.coroutines.experimental.coroutineContext
 import kotlin.math.max
 import kotlin.math.min
 
@@ -38,7 +38,8 @@ import kotlin.math.min
  *
  * @author Kaidan Gustave
  */
-class Slideshow private constructor(builder: Slideshow.Builder): Menu(builder) {
+class Slideshow
+@PublishedApi internal constructor(builder: Slideshow.Builder): Menu(builder) {
     private companion object {
         const val BIG_LEFT = Paginator.BIG_LEFT
         const val LEFT = Paginator.LEFT
@@ -50,7 +51,7 @@ class Slideshow private constructor(builder: Slideshow.Builder): Menu(builder) {
     private val color: PageFunction<Color?> = builder.colorFun
     private val text: PageFunction<String?> = builder.textFun
     private val description: PageFunction<String?> = builder.descriptionFun
-    private val urls: List<String> = builder.urls
+    private val urls: List<String> = unmodifiableList(builder.urls)
     private val showPageNumbers: Boolean = builder.showPageNumbers
     private val waitOnSinglePage: Boolean = builder.waitOnSinglePage
     private val bulkSkipNumber: Int = builder.bulkSkipNumber
@@ -59,28 +60,25 @@ class Slideshow private constructor(builder: Slideshow.Builder): Menu(builder) {
     private val rightText: String? = builder.textToRight
     private val allowTextInput: Boolean = builder.allowTextInput
     private val finalAction: FinalAction? = builder.finalAction
-    private val pages = urls.size
+    private val pages: Int = urls.size
 
-    constructor(builder: Slideshow.Builder = Slideshow.Builder(),
-                build: Slideshow.Builder.() -> Unit): this(builder.apply(build))
+    override fun displayIn(channel: MessageChannel) = paginate(channel, 1)
 
-    override suspend fun displayIn(channel: MessageChannel) = paginate(channel, 1)
+    override fun displayAs(message: Message) = paginate(message, 1)
 
-    override suspend fun displayAs(message: Message) = paginate(message, 1)
-
-    suspend fun paginate(message: Message, pageNum: Int) {
+    fun paginate(message: Message, pageNum: Int) {
         val num = min(max(pageNum, 1), pages)
         initialize(message.editMessage(renderPage(num)), num)
     }
 
-    suspend fun paginate(channel: MessageChannel, pageNum: Int) {
+    fun paginate(channel: MessageChannel, pageNum: Int) {
         val num = min(max(pageNum, 1), pages)
         initialize(channel.sendMessage(renderPage(num)), num)
     }
 
-    private suspend fun initialize(action: RestAction<Message>, pageNum: Int) {
-        val m = action.await()
-        launch(coroutineContext) {
+    private fun initialize(action: RestAction<Message>, pageNum: Int) {
+        launch(waiter) {
+            val m = action.await()
             when {
                 pages > 1 -> {
                     ignored {
@@ -104,7 +102,7 @@ class Slideshow private constructor(builder: Slideshow.Builder): Menu(builder) {
     }
 
     private suspend fun pagination(message: Message, pageNum: Int) {
-        if(allowTextInput || leftText !== null && rightText !== null)
+        if(allowTextInput || (leftText !== null && rightText !== null))
             paginationWithTextInput(message, pageNum)
         else
             paginationWithoutTextInput(message, pageNum)

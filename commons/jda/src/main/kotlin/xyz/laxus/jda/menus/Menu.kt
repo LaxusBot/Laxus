@@ -21,6 +21,7 @@ import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.Role
 import net.dv8tion.jda.core.entities.User
 import xyz.laxus.jda.listeners.EventWaiter
+import xyz.laxus.util.collections.unmodifiableSet
 import java.util.concurrent.TimeUnit
 
 /**
@@ -30,13 +31,18 @@ import java.util.concurrent.TimeUnit
  */
 abstract class Menu(builder: Builder<*,*>) {
     protected val waiter: EventWaiter = builder.waiter
-    internal val users: Set<User> = builder.users
-    internal val roles: Set<Role> = builder.roles
+    internal val users: Set<User> = unmodifiableSet(builder.users)
+    internal val roles: Set<Role> = unmodifiableSet(builder.roles)
     protected val timeout: Long = builder.timeout
     protected val unit: TimeUnit = builder.unit
 
-    abstract suspend fun displayIn(channel: MessageChannel)
-    abstract suspend fun displayAs(message: Message)
+    init {
+        builder.users.clear()
+        builder.roles.clear()
+    }
+
+    abstract fun displayIn(channel: MessageChannel)
+    abstract fun displayAs(message: Message)
 
     @Menu.Dsl
     abstract class Builder<B: Builder<B, M>, M: Menu> {

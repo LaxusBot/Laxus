@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("Unused", "MemberVisibilityCanBePrivate")
+@file:Suppress("MemberVisibilityCanBePrivate", "unused")
 package xyz.laxus.jda.menus
 
 import kotlinx.coroutines.experimental.launch
@@ -26,10 +26,10 @@ import net.dv8tion.jda.core.requests.RestAction
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.embed
 import xyz.laxus.jda.util.message
+import xyz.laxus.util.collections.unmodifiableList
 import xyz.laxus.util.functional.AddRemoveBlock
 import xyz.laxus.util.ignored
 import java.awt.Color
-import kotlin.coroutines.experimental.coroutineContext
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
@@ -40,7 +40,8 @@ import kotlin.math.roundToInt
  *
  * @author Kaidan Gustave
  */
-class Paginator private constructor(builder: Paginator.Builder): Menu(builder) {
+class Paginator
+@PublishedApi internal constructor(builder: Paginator.Builder): Menu(builder) {
     internal companion object {
         const val BIG_LEFT = "\u23EA"
         const val LEFT = "\u25C0"
@@ -51,7 +52,7 @@ class Paginator private constructor(builder: Paginator.Builder): Menu(builder) {
 
     private val color: PageFunction<Color?> = builder.colorFun
     private val text: PageFunction<String?> = builder.textFun
-    private val items: List<String> = builder.items
+    private val items: List<String> = unmodifiableList(builder.items)
     private val columns: Int = builder.columns
     private val itemsPerPage: Int = builder.itemsPerPage
     private val numberItems: Boolean = builder.numberItems
@@ -65,30 +66,27 @@ class Paginator private constructor(builder: Paginator.Builder): Menu(builder) {
     private val finalAction: FinalAction? = builder.finalAction
     private val pages: Int = ceil(items.size.toDouble() / itemsPerPage).roundToInt()
 
-    constructor(builder: Paginator.Builder = Paginator.Builder(),
-                build: Paginator.Builder.() -> Unit): this(builder.apply(build))
-
     init {
         require(items.isNotEmpty()) { "Must include at least one item to paginate." }
     }
 
-    override suspend fun displayIn(channel: MessageChannel) = paginate(channel, 1)
+    override fun displayIn(channel: MessageChannel) = paginate(channel, 1)
 
-    override suspend fun displayAs(message: Message) = paginate(message, 1)
+    override fun displayAs(message: Message) = paginate(message, 1)
 
-    suspend fun paginate(message: Message, pageNum: Int) {
+    fun paginate(message: Message, pageNum: Int) {
         val num = min(max(pageNum, 1), pages)
         initialize(message.editMessage(renderPage(num)), num)
     }
 
-    suspend fun paginate(channel: MessageChannel, pageNum: Int) {
+    fun paginate(channel: MessageChannel, pageNum: Int) {
         val num = min(max(pageNum, 1), pages)
         initialize(channel.sendMessage(renderPage(num)), num)
     }
 
-    private suspend fun initialize(action: RestAction<Message>, pageNum: Int) {
-        val m = action.await()
-        launch(coroutineContext) {
+    private fun initialize(action: RestAction<Message>, pageNum: Int) {
+        launch(waiter) {
+            val m = action.await()
             when {
                 pages > 1 -> {
                     ignored {
@@ -122,7 +120,8 @@ class Paginator private constructor(builder: Paginator.Builder): Menu(builder) {
         val deferred = waiter.receive<GenericMessageEvent>(delay = timeout, unit = unit) { event ->
             if(event is MessageReactionAddEvent) {
                 return@receive checkReaction(event, message)
-            } else if(event is MessageReceivedEvent) {
+            }
+            if(event is MessageReceivedEvent) {
                 if(event.channel != message.channel)
                     return@receive false
 
@@ -144,8 +143,9 @@ class Paginator private constructor(builder: Paginator.Builder): Menu(builder) {
             }
 
             // Default return false
-            false
+            return@receive false
         }
+
 
         val event = deferred.await()
 
@@ -163,7 +163,7 @@ class Paginator private constructor(builder: Paginator.Builder): Menu(builder) {
                 val received = event.message
                 val content = received.contentRaw
 
-                val targetPage: Int = when {
+                val targetPage = when {
                     leftText !== null && content.equals(leftText, true) && (1 < pageNum || wrapPageEnds) -> {
                         if(pageNum - 1 < 1 && wrapPageEnds) pages else pageNum - 1
                     }

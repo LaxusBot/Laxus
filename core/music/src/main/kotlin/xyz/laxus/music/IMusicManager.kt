@@ -27,9 +27,8 @@ import net.dv8tion.jda.core.hooks.EventListener
 /**
  * @author Kaidan Gustave
  */
-interface IMusicManager<M, Q> : AudioEventListener, EventListener, AudioPlayerManager
-    where M: IMusicManager<M, Q>, Q: IMusicQueue<Q, M> {
-    operator fun get(guild: Guild): Q?
+interface IMusicManager : AudioEventListener, EventListener, AudioPlayerManager {
+    operator fun get(guild: Guild): IMusicQueue?
     operator fun contains(guild: Guild): Boolean
 
     fun stop(guild: Guild)

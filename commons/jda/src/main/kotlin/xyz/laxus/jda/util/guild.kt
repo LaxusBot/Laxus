@@ -39,14 +39,14 @@ fun Category.muteRole(role: Role) {
         if(cannotWrite && cannotAddReaction && cannotSpeak)
             return
 
-        with(overrides.managerUpdatable) {
+        with(overrides.manager) {
             if(!cannotWrite)
                 deny(MESSAGE_WRITE)
             if(!cannotAddReaction)
                 deny(MESSAGE_ADD_REACTION)
             if(!cannotSpeak)
                 deny(VOICE_SPEAK)
-            update().queue()
+            queue()
         }
     } else createPermissionOverride(role).setDeny(MESSAGE_WRITE, MESSAGE_ADD_REACTION, VOICE_SPEAK).queue()
 }
@@ -64,14 +64,14 @@ fun TextChannel.muteRole(role: Role) {
         if(cannotWrite && cannotAddReaction)
             return
 
-        with(overrides.managerUpdatable) {
+        with(overrides.manager) {
             if(!cannotWrite) {
                 deny(MESSAGE_WRITE)
             }
             if(!cannotAddReaction) {
                 deny(MESSAGE_ADD_REACTION)
             }
-            update().queue()
+            queue()
         }
     } else createPermissionOverride(role).setDeny(MESSAGE_WRITE, MESSAGE_ADD_REACTION).queue()
 }
@@ -83,9 +83,7 @@ fun VoiceChannel.muteRole(role: Role) {
     val overrides = getPermissionOverride(role)
     val denied = overrides?.denied
     if(denied !== null) {
-        val cannotSpeak = VOICE_SPEAK in denied
-
-        if(cannotSpeak)
+        if(VOICE_SPEAK in denied)
             return
 
         overrides.manager.deny(VOICE_SPEAK).queue()

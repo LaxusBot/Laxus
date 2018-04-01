@@ -25,16 +25,14 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason.*
 import kotlinx.coroutines.experimental.asCoroutineDispatcher
 import kotlinx.coroutines.experimental.newSingleThreadContext
 import net.dv8tion.jda.core.entities.Guild
-import net.dv8tion.jda.core.entities.Member
 import net.dv8tion.jda.core.entities.VoiceChannel
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.events.ShutdownEvent
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.core.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceLeaveEvent
-import net.dv8tion.jda.core.hooks.EventListener
 import xyz.laxus.music.IMusicManager
-import xyz.laxus.music.lava.userData
+import xyz.laxus.music.lava.member
 import xyz.laxus.util.createLogger
 import xyz.laxus.util.error
 import xyz.laxus.util.formatTrackTime
@@ -46,9 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * @author Kaidan Gustave
  */
-class CoroutineMusicManager : AudioEventListener, EventListener,
-    IMusicManager<CoroutineMusicManager, CoroutineMusicQueue>,
-    AudioPlayerManager by DefaultAudioPlayerManager() {
+class CoroutineMusicManager : IMusicManager, AudioPlayerManager by DefaultAudioPlayerManager() {
     internal companion object {
         internal val LOG = createLogger(CoroutineMusicManager::class)
 
@@ -165,7 +161,7 @@ class CoroutineMusicManager : AudioEventListener, EventListener,
     private fun onTrackFinished(event: TrackEndEvent) {
         LOG.debug("Track Finished | ${logTrackInfo(event.track)}")
 
-        val member = event.track?.userData<Member>() ?: return
+        val member = event.track.member
         val guildQueue = queueMap[member.guild.idLong] ?: return
 
         guildQueue.awaken()

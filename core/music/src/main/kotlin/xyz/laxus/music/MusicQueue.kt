@@ -25,18 +25,18 @@ import net.dv8tion.jda.core.entities.Member
 import net.dv8tion.jda.core.entities.VoiceChannel
 import xyz.laxus.jda.util.connect
 import xyz.laxus.music.lava.SimpleAudioSendHandler
-import xyz.laxus.music.lava.userData
+import xyz.laxus.music.lava.member
 import xyz.laxus.util.collections.swap
+import xyz.laxus.util.randomInt
 import java.util.*
 
-class MusicQueue(
+class MusicQueue internal constructor(
     override val manager: MusicManager,
     override val channel: VoiceChannel,
     override val player: AudioPlayer,
     private var track: AudioTrack
 ): AudioSendHandler by SimpleAudioSendHandler(player),
-    List<AudioTrack>, Queue<AudioTrack>,
-    IMusicQueue<MusicQueue, MusicManager> {
+    List<AudioTrack>, Queue<AudioTrack>, IMusicQueue {
     private var dead = false
 
     private val skipping = HashSet<Long>()
@@ -47,6 +47,7 @@ class MusicQueue(
 
     init {
         channel.connect(sender = this)
+        volume = 75
         player.playTrack(track)
     }
 
@@ -58,33 +59,24 @@ class MusicQueue(
         return skipping.size
     }
 
-    override var volume: Int
-        get() = player.volume
-        set(value) { player.volume = value }
-
     override fun queue(track: AudioTrack): Int {
         add(track)
         return indexOf(track) + 1
     }
 
-    fun shuffle(userId: Long): Int {
-
-        // Credit to jagrosh for the original shuffle code
-
-        val indexList = ArrayList<Int>()
-
-        @Suppress("LoopToCallChain")
+    override fun shuffle(userId: Long): Int {
+        val indexList = ArrayList<Int>(size)
         for(i in indices) {
-            val member = this[i].userData<Member>() ?: continue
+            val member = this[i].member
             if(member.user.idLong == userId) {
                 indexList += i
             }
         }
-
-        for(i in indexList.indices) {
-            val first = indexList[i]
-            val second = indexList[(Math.random() * indexList.size).toInt()]
-            tracks.swap(first, second)
+        indexList.trimToSize()
+        for(i in indexList) {
+            val j = randomInt(max = indexList.size)
+            val places = i to indexList[j]
+            tracks swap places
         }
 
         return indexList.size
@@ -121,11 +113,11 @@ class MusicQueue(
             if(current.state != AudioTrackState.FINISHED) {
                 current.stop()
             }
-            track = remove()
+            track = tracks.remove()
             player.playTrack(currentTrack)
             skipping.clear()
             return currentTrack
-        } else close()
+        } else clear()
         return null
     }
 
@@ -173,7 +165,7 @@ class MusicQueue(
     override fun hashCode(): Int = channel.idLong.hashCode()
 
     override fun equals(other: Any?): Boolean {
-        if(other !is IMusicQueue<*, *>)
+        if(other !is IMusicQueue)
             return false
 
         return channel == other.channel

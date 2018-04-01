@@ -25,6 +25,7 @@ import java.sql.ResultSet
 data class Case(
     val number: Int,
     val guildId: Long,
+    val messageId: Long,
     val modId: Long,
     val targetId: Long,
     val isOnUser: Boolean,
@@ -34,6 +35,7 @@ data class Case(
     internal constructor(results: ResultSet): this(
         number = results.getInt("CASE_NUMBER"),
         guildId = results.getLong("GUILD_ID"),
+        messageId = results.getLong("MESSAGE_ID"),
         modId = results.getLong("MOD_ID"),
         targetId = results.getLong("TARGET_ID"),
         isOnUser = results.getBoolean("IS_ON_USER"),

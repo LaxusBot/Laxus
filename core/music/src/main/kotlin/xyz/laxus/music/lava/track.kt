@@ -16,5 +16,31 @@
 package xyz.laxus.music.lava
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
+import net.dv8tion.jda.core.entities.Guild
+import net.dv8tion.jda.core.entities.Member
+import xyz.laxus.jda.util.embed
+import xyz.laxus.util.progression
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 inline fun <reified R> AudioTrack.userData(): R? = userData as? R
+
+val AudioTrack.member: Member get() = checkNotNull(userData()) {
+    "User-data of type Member was null!"
+}
+
+fun Guild.trackEmbed(track: AudioTrack) = embed {
+    color { selfMember.color }
+    title { "$name `[${track.progression}]`" }
+    val pos = track.position
+    val dur = track.duration
+
+    val per = (((pos.toDouble() * 100) / dur.toDouble()) / 10).roundToInt()
+    repeat(per) {
+        append('\u2588')
+    }
+    append("\uD83D\uDD18")
+    repeat(10 - (min(per + 1, 10))) {
+        append("\\_")
+    }
+}

@@ -13,23 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-dependencies {
-    compileOnly kotlinxCoroutines('core')
+package xyz.laxus.util.db
 
-    // JDA & Lavaplayer
-    compileOnly jda()
-    compileOnly lavaplayer()
+import net.dv8tion.jda.core.entities.Guild
+import xyz.laxus.db.DBGuilds
+import xyz.laxus.db.DBGuilds.Type.*
 
-    // Configuration
-    compileOnly hocon()
+var Guild.isMusic: Boolean
+    get() = DBGuilds.isGuild(idLong, MUSIC)
+    set(value) = setGuildTypeOf(value, MUSIC)
 
-    // Logging
-    compileOnly slf4j()
-
-    // Projects
-    compileOnly project(":core")
-    compileOnly project(":database")
-    compileOnly project(":database:bot")
-    compileOnly project(':commons')
-    compileOnly project(':commons:jda')
+private fun Guild.setGuildTypeOf(value: Boolean, type: DBGuilds.Type) {
+    if(value) DBGuilds.addGuild(idLong, type) else DBGuilds.removeGuild(idLong, type)
 }

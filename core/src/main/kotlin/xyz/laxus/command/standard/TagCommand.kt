@@ -22,7 +22,7 @@ import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
 import xyz.laxus.entities.TagErrorException
-import xyz.laxus.jda.menus.Paginator
+import xyz.laxus.jda.menus.paginator
 import xyz.laxus.jda.menus.paginatorBuilder
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.findMembers
@@ -250,10 +250,10 @@ class TagCommand: Command(StandardGroup) {
         override val cooldown = 10
 
         private val builder = paginatorBuilder {
-            waiter           { Laxus.Waiter }
-            timeout          { delay { 20 } }
-            showPageNumbers  { true }
-            numberItems      { true }
+            waiter { Laxus.Waiter }
+            timeout { delay { 20 } }
+            showPageNumbers { true }
+            numberItems { true }
             waitOnSinglePage { true }
         }
 
@@ -298,16 +298,19 @@ class TagCommand: Command(StandardGroup) {
 
             builder.clearItems()
 
-            val paginator = Paginator(builder) {
+            val paginator = paginator(builder) {
                 text { _, _ -> "Tags owned by ${user.formattedName(true)}" }
                 items {
-                    localTags?.forEach { + it }
-                    globalTags.forEach { + it }
+                    + (localTags ?: emptyList())
+                    + globalTags
                 }
-                finalAction {
-                    ctx.linkMessage(it)
-                    if(ctx.isGuild && ctx.selfMember.hasPermission(ctx.textChannel, MESSAGE_MANAGE))
-                        it.clearReactions()
+                finalAction { message ->
+                    ctx.linkMessage(message)
+                    message.guild?.let {
+                        if(it.selfMember.hasPermission(message.textChannel, MESSAGE_MANAGE)) {
+                            message.clearReactions().queue()
+                        }
+                    }
                 }
                 user { ctx.author }
             }

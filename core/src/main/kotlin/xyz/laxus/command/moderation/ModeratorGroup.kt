@@ -13,40 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("MemberVisibilityCanBePrivate")
-package xyz.laxus.command.music
+package xyz.laxus.command.moderation
 
 import com.typesafe.config.Config
 import net.dv8tion.jda.core.JDABuilder
 import xyz.laxus.command.Command
-import xyz.laxus.command.CommandContext
+import xyz.laxus.entities.ModLog
 import xyz.laxus.jda.util.listener
-import xyz.laxus.music.MusicManager
-import xyz.laxus.util.db.isMusic
 
 /**
  * @author Kaidan Gustave
  */
-object MusicGroup : Command.Group("Music") {
-    override val defaultLevel get() = Command.Level.STANDARD
-    override val devOnly = false
+object ModeratorGroup : Command.Group("Moderation") {
+    override val defaultLevel get() = Command.Level.MODERATOR
     override val guildOnly = true
-
-    val Manager by lazy { MusicManager() }
-
-    override fun check(ctx: CommandContext): Boolean = ctx.isDev || (ctx.isGuild && ctx.guild.isMusic)
+    override val devOnly = false
 
     override fun JDABuilder.configure() {
-        listener { Manager }
+        listener { ModLog }
     }
 
     override fun init(config: Config) {
-        + PauseCommand(Manager)
-        + PlayCommand(Manager)
-        + QueueCommand(Manager)
-        + RemoveCommand(Manager)
-        + SkipCommand(Manager)
-        + StopCommand(Manager)
-        + VolumeCommand(Manager)
+        + BanCommand()
+        + CleanCommand()
+        + KickCommand()
+        + ReasonCommand()
     }
 }

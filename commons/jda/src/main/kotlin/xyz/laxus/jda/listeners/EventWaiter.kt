@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.experimental.CoroutineContext
 import kotlin.reflect.KClass
-import kotlin.reflect.full.superclasses
+import kotlin.reflect.full.allSuperclasses
 
 /**
  * @author Kaidan Gustave
@@ -109,7 +109,7 @@ private constructor(dispatcher: CoroutineDispatcher): EventListener, CoroutineCo
         launch(this) {
             val klazz = event::class
             dispatchEventType(event, klazz)
-            klazz.superclasses.forEach { dispatchEventType(event, it) }
+            klazz.allSuperclasses.forEach { dispatchEventType(event, it) }
         }
     }
 

@@ -13,19 +13,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:Suppress("unused")
+
 package xyz.laxus.jda.menus
 
-/**
- * @author Kaidan Gustave
- */
+@Menu.Dsl
 inline fun paginatorBuilder(block: Paginator.Builder.() -> Unit): Paginator.Builder {
     val builder = Paginator.Builder()
     builder.block()
     return builder
 }
 
+@Menu.Dsl
 inline fun orderedMenuBuilder(block: OrderedMenu.Builder.() -> Unit): OrderedMenu.Builder {
     val builder = OrderedMenu.Builder()
     builder.block()
     return builder
 }
+
+@Menu.Dsl
+inline fun slideshowBuilder(block: Slideshow.Builder.() -> Unit): Slideshow.Builder {
+    val builder = Slideshow.Builder()
+    builder.block()
+    return builder
+}
+
+@Menu.Dsl
+inline fun paginator(
+    builder: Paginator.Builder = Paginator.Builder(),
+    block: Paginator.Builder.() -> Unit
+): Paginator = Paginator(builder.apply(block))
+
+@Menu.Dsl
+inline fun orderedMenu(
+    builder: OrderedMenu.Builder,
+    block: OrderedMenu.Builder.() -> Unit
+): OrderedMenu = OrderedMenu(builder.apply(block))
+
+@Menu.Dsl
+inline fun slideshow(
+    builder: Slideshow.Builder,
+    block: Slideshow.Builder.() -> Unit
+): Slideshow = Slideshow(builder.apply(block))

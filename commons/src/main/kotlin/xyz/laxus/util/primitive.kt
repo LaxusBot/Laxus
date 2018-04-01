@@ -17,6 +17,8 @@
 @file:JvmName("PrimitivesKt")
 package xyz.laxus.util
 
+import kotlin.math.roundToInt
+
 val Int.name: String? get() = Character.getName(this)
 val Long.length: Int get() = "$this".length
 
@@ -32,3 +34,65 @@ fun arrayOf(vararg bytes: Byte): ByteArray = bytes
 fun arrayOf(vararg shorts: Short): ShortArray = shorts
 fun arrayOf(vararg ints: Int): IntArray = ints
 fun arrayOf(vararg longs: Long): LongArray = longs
+
+/**
+ * Generates a pseudo-random [Double] in the range [[min], [max]).
+ *
+ * This uses the following relatively common lower-upper-bounded equation:
+ *
+ * ```
+ * min + (r * (max - min))
+ * ```
+ *
+ * where `r` is a random decimal in the range [0.0, 1.0).
+ *
+ * @param min The minimum [integer][Int] that can be generated (inclusive).
+ * @param max The maximum [integer][Int] that can be generated (exclusive).
+ *
+ * @return A pseudo-random [Double] in the range [[min], [max]).
+ *
+ * @see Math.random
+ */
+fun random(min: Int = 0, max: Int = 1): Double {
+    require(min < max) { "Invalid range: $min is not less than $max!" }
+
+    return min + (Math.random() * (max - min))
+}
+
+/**
+ * Generates a pseudo-random [Int] in the range [0, [max]).
+ *
+ * @param max The maximum [integer][Int] that can be generated (exclusive).
+ *
+ * @return A pseudo-random [Int] in the range [0, [max]).
+ *
+ * @see random
+ * @see Math.random
+ */
+fun randomInt(max: Int): Int = randomInt(0, max)
+
+/**
+ * Generates a pseudo-random [Int] in the range [[min], [max]).
+ *
+ * @param min The minimum [integer][Int] that can be generated (inclusive).
+ * @param max The maximum [integer][Int] that can be generated (exclusive).
+ *
+ * @return A pseudo-random [Int] in the range [[min], [max]).
+ *
+ * @see random
+ * @see Math.random
+ */
+fun randomInt(min: Int, max: Int): Int = random(min, max).roundToInt()
+
+/**
+ * Generates a pseudo-random [Int] in this range.
+ *
+ * @receiver An [IntRange] to generate from.
+ *
+ * @return A pseudo-random [Int] in this range.
+ *
+ * @see random
+ * @see randomInt
+ * @see Math.random
+ */
+fun IntRange.random(): Int = randomInt(min = first, max = last)

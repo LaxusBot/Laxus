@@ -34,14 +34,14 @@ import xyz.laxus.util.collections.unmodifiableList
 import xyz.laxus.util.modifyIf
 import java.awt.Color
 import java.util.*
-import kotlin.coroutines.experimental.coroutineContext
 
 /**
  * Modeled after jagrosh's OrderedMenu in JDA-Utilities
  *
  * @author Kaidan Gustave
  */
-class OrderedMenu private constructor(builder: OrderedMenu.Builder): Menu(builder) {
+class OrderedMenu
+@PublishedApi internal constructor(builder: OrderedMenu.Builder): Menu(builder) {
     private companion object {
         val numbers = arrayOf(
             "1\u20E3", "2\u20E3",
@@ -65,16 +65,13 @@ class OrderedMenu private constructor(builder: OrderedMenu.Builder): Menu(builde
     private val color: Color? = builder.color
     private val text: String? = builder.text
     private val description: String? = builder.description
-    private val choices: List<OrderedMenu.Choice> = builder.choices
+    private val choices: List<OrderedMenu.Choice> = unmodifiableList(builder.choices)
     private val useLetters: Boolean = builder.useLetters
     private val allowTypedInput: Boolean = builder.allowTypedInput
     private val useCancel: Boolean = builder.useCancel
     private val finalAction: FinalAction? = builder.finalAction
 
-    constructor(builder: OrderedMenu.Builder = OrderedMenu.Builder(),
-                build: OrderedMenu.Builder.() -> Unit): this(builder.apply(build))
-
-    override suspend fun displayIn(channel: MessageChannel) {
+    override fun displayIn(channel: MessageChannel) {
         if(channel is TextChannel && !allowTypedInput &&
            !channel.guild.selfMember.hasPermission(channel, MESSAGE_ADD_REACTION)) {
             throw PermissionException("Must be able to add reactions if not allowing typed input!")
@@ -82,7 +79,7 @@ class OrderedMenu private constructor(builder: OrderedMenu.Builder): Menu(builde
         initialize(channel.sendMessage(message))
     }
 
-    override suspend fun displayAs(message: Message) {
+    override fun displayAs(message: Message) {
         // This check is basically for whether or not the menu can even display.
         // Is from text channel
         // Does not allow typed input
@@ -94,9 +91,9 @@ class OrderedMenu private constructor(builder: OrderedMenu.Builder): Menu(builde
         initialize(message.editMessage(this.message))
     }
 
-    private suspend fun initialize(action: RestAction<Message>) {
-        val m = action.await()
-        launch(coroutineContext) {
+    private fun initialize(action: RestAction<Message>) {
+        launch(waiter) {
+            val m = action.await()
             try {
                 // From 0 until the number of choices.
                 // The last run of this loop will be used to queue

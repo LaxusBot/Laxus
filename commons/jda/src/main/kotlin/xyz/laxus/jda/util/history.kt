@@ -21,13 +21,11 @@ import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.channels.ProducerScope
 import kotlinx.coroutines.experimental.channels.ReceiveChannel
 import kotlinx.coroutines.experimental.channels.produce
-import kotlinx.coroutines.experimental.selects.select
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.MessageHistory
 import kotlin.coroutines.experimental.CoroutineContext
-import kotlin.coroutines.experimental.coroutineContext
 
 interface HistoryScope : ProducerScope<List<Message>> {
     val history: MessageHistory
@@ -104,6 +102,7 @@ inline fun MessageChannel.producePast(
         if(left in 1..retrieveLimit) {
             sendPast(left)
         }
+        close()
     }
 }
 
@@ -130,27 +129,6 @@ inline fun MessageChannel.produceFuture(
         if(left in 1..retrieveLimit) {
             sendFuture(left)
         }
-    }
-}
-
-suspend fun example(channel: MessageChannel, function: suspend (List<Message>) -> Unit) {
-    // Start producing history asynchronously
-    val history = channel.produceHistory(coroutineContext, 200) {
-        var toGet = 200
-        val perRequest = 20
-        while(toGet > perRequest) {
-            sendPast(perRequest)
-            toGet -= perRequest
-        }
-
-        if(toGet > 0) {
-            sendPast(toGet)
-        }
         close()
-    }
-
-    while(!history.isClosedForReceive) {
-        val retrieved = history.receive()
-        function(retrieved)
     }
 }

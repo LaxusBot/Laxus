@@ -29,8 +29,14 @@ val Guild.currentCaseNumber: Int get() {
     return DBCases.getCurrentCaseNumber(idLong)
 }
 
+val Guild.lastCaseNumber: Int get() = currentCaseNumber - 1
+
 val Member.cases: List<Case> get() {
     return DBCases.getCasesByModId(guild.idLong, user.idLong)
+}
+
+val Member.casesWithoutReason: List<Case> get() {
+    return DBCases.getCasesWithoutReasonByModId(guild.idLong, user.idLong)
 }
 
 fun Guild.addCase(case: Case) {

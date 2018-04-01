@@ -161,6 +161,15 @@ fun <T> MutableList<T>.swap(i1: Int, i2: Int) {
     this[i2] = v1
 }
 
+infix fun <T> Array<T>.swap(indices: Pair<Int, Int>) {
+    val (first, second) = indices
+    swap(first, second)
+}
+infix fun <T> MutableList<T>.swap(indices: Pair<Int, Int>) {
+    val (first, second) = indices
+    swap(first, second)
+}
+
 // Shortcuts
 
 fun <T> unmodifiableList(list: List<T>): List<T> {
@@ -169,6 +178,10 @@ fun <T> unmodifiableList(list: List<T>): List<T> {
 
 fun <T> unmodifiableList(vararg elements: T): List<T> {
     return FixedSizeArrayList(*elements)
+}
+
+fun <T> unmodifiableSet(set: Set<T>): Set<T> {
+    return Collections.unmodifiableSet(set)
 }
 
 // Note that T: Any is because ConcurrentHashMap.newKeySet() only
@@ -189,4 +202,22 @@ fun <K: Any, V: Any> concurrentHashMap(): ConcurrentHashMap<K, V> {
 
 fun <K: Any, V: Any> concurrentHashMap(vararg pairs: Pair<K, V>): ConcurrentHashMap<K, V> {
     return concurrentHashMap<K, V>().also { it += pairs }
+}
+
+// O(2n)
+inline fun <reified T> Array<T?>.filterNulls(): Array<T> {
+    val notNull = count { it !== null }     // Count how many are not null in the array
+    if(notNull == 0) return emptyArray()    // All elements are null
+    var index = 0                           // Start with an index 0
+    return Array<T>(notNull) new@ { i ->
+        while(index <= lastIndex) {         // While we haven't passed the last index of the original Array
+            val e = this[index]             // Retrieve element at index
+            index++                         // Increment
+            if(e !== null) {                // If it's not null
+                return@new e                // return it as the element at "i" in this new Array
+            }
+        }
+        // If somehow this fails, throw an AssertionError
+        throw AssertionError("Could not find element for index '${index - 1}' to be inserted at '$i'!")
+    }
 }

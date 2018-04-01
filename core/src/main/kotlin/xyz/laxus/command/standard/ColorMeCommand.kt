@@ -21,7 +21,7 @@ import xyz.laxus.command.AutoCooldown
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
-import xyz.laxus.jda.menus.Paginator
+import xyz.laxus.jda.menus.paginator
 import xyz.laxus.jda.menus.paginatorBuilder
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.findRoles
@@ -202,7 +202,7 @@ class ColorMeCommand: Command(StandardGroup) {
 
             builder.clearItems()
 
-            val paginator = Paginator(builder) {
+            val paginator = paginator(builder) {
                 text { _,_ -> "ColorMe Roles On ${ctx.guild.name}" }
                 items { colorMeRoles.forEach { + it.name } }
                 finalAction { ctx.linkMessage(it) }

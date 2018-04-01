@@ -23,7 +23,8 @@ import xyz.laxus.music.MusicManager
  */
 class StopCommand(manager: MusicManager): MusicCommand(manager) {
     override val name = "Stop"
-    override val defaultLevel = Level.ADMINISTRATOR
+    override val help = "Stops playing music in the server."
+    override val defaultLevel get() = Level.ADMINISTRATOR
 
     override suspend fun execute(ctx: CommandContext) {
         if(!ctx.guild.isPlaying) return ctx.replyWarning {

@@ -15,11 +15,10 @@
  */
 package xyz.laxus.command.music
 
-import net.dv8tion.jda.core.entities.Member
 import xyz.laxus.command.CommandContext
 import xyz.laxus.music.MusicManager
-import xyz.laxus.music.lava.userData
-import xyz.laxus.util.formattedInfo
+import xyz.laxus.music.lava.member
+import xyz.laxus.util.displayTitle
 import xyz.laxus.util.formattedName
 
 /**
@@ -38,17 +37,16 @@ class SkipCommand(manager: MusicManager): MusicCommand(manager) {
             "Expected non-null guild queue for Guild (ID: ${ctx.guild.idLong})"
         }
 
-        if(member == queue.currentTrack.userData<Member>()) {
+        if(member == queue.currentTrack.member) {
             val skipped = queue.skip()
-            return ctx.replySuccess("Skipped ${skipped.info.formattedInfo}")
+            return ctx.replySuccess("Skipped ${skipped.info.displayTitle}")
         }
 
         val totalToSkip = queue.totalToSkip
         if(totalToSkip == 1) {
             val skipped = queue.skip()
-            val m = skipped.userData as Member
             return ctx.replySuccess {
-                "Skipped ${skipped.info.formattedInfo} (Queued by: ${m.user.formattedName(true)})"
+                "Skipped ${skipped.info.displayTitle} (Queued by: ${skipped.member.user.formattedName(true)})"
             }
         }
 
@@ -60,13 +58,12 @@ class SkipCommand(manager: MusicManager): MusicCommand(manager) {
 
         if(totalToSkip == skips) {
             val skipped = queue.skip()
-            val m = skipped.userData as Member
             ctx.replySuccess {
-                "Skipped ${skipped.info.formattedInfo} (Queued by: ${m.user.formattedName(true)})"
+                "Skipped ${skipped.info.displayTitle} (Queued by: ${skipped.member.user.formattedName(true)})"
             }
         } else {
             ctx.replySuccess {
-                "Voted to skip ${queue.currentTrack.info.formattedInfo} " +
+                "Voted to skip ${queue.currentTrack.info.displayTitle} " +
                 "(`$skips/$totalToSkip` votes, `${totalToSkip - skips}` more needed to skip)"
             }
         }
