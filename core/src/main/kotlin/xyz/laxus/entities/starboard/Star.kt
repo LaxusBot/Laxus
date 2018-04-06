@@ -13,26 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.command.owner
+package xyz.laxus.entities.starboard
 
-import com.typesafe.config.Config
-import xyz.laxus.command.Command
-import xyz.laxus.command.CommandContext
+import net.dv8tion.jda.core.entities.Message
 
 /**
  * @author Kaidan Gustave
  */
-object OwnerGroup: Command.Group("Owner") {
-    override val defaultLevel = Command.Level.SHENGAERO
-    override val guildOnly = false
-    override val devOnly = true
-
-    override fun check(ctx: CommandContext): Boolean = ctx.isDev
-
-    override fun init(config: Config) {
-        + EvalCommand()
-        + GuildListCommand()
-        + MemoryCommand()
-        + ShutdownCommand()
-    }
-}
+data class Star(val message: Message, val userId: Long)

@@ -25,7 +25,6 @@ import ch.qos.logback.classic.Level.*
  * @author Kaidan Gustave
  */
 class SimpleHL : ForegroundCompositeConverterBase<ILoggingEvent>() {
-    @Suppress("UseExpressionBody")
     override fun getForegroundColorCode(event: ILoggingEvent): String {
         return when(event.level.levelInt) {
             ERROR_INT -> BOLD + RED_FG

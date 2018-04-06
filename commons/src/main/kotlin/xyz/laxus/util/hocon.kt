@@ -59,6 +59,14 @@ fun Config.int(path: String): Int? {
     return getInt(path)
 }
 
+fun Config.long(path: String): Long? {
+    if(!hasPath(path) || getIsNull(path))
+        return null
+    return getLong(path)
+}
+
+fun Config.klass(path: String): KClass<*>? = string(path)?.let { loadClass(it) }
+
 fun <E: Enum<E>> Config.enum(path: String, type: KClass<E>): E? {
     return string(path)?.let { enum ->
         type.java.enumConstants.firstOrNull { it.name.equals(enum, ignoreCase = true) }

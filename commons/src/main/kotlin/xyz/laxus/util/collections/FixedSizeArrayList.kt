@@ -19,9 +19,6 @@ package xyz.laxus.util.collections
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * @author Kaidan Gustave
- */
 internal open class FixedSizeArrayList<T>(vararg elements: T): List<T> {
     private val elements = elements.copyOf()
 

@@ -37,6 +37,9 @@ object ModeratorGroup : Command.Group("Moderation") {
         + BanCommand()
         + CleanCommand()
         + KickCommand()
+        + MuteCommand()
         + ReasonCommand()
+        + UnbanCommand()
+        + UnmuteCommand()
     }
 }

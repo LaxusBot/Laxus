@@ -34,7 +34,7 @@ import xyz.laxus.db.sql.ResultSetType.*
     Column("TARGET_ID", BIGINT),
     Column("IS_ON_USER", BOOLEAN),
     Column("ACTION", "$VARCHAR(50)"),
-    Column("REASON", "$VARCHAR(300)", nullable = true, default = "NULL")
+    Column("REASON", "$VARCHAR(300)", nullable = true, def = "NULL")
 )
 object DBCases : Table() {
     private const val GET_CASES           = "SELECT * FROM CASES WHERE GUILD_ID = ? ORDER BY CASE_NUMBER DESC"
@@ -130,7 +130,7 @@ object DBCases : Table() {
             statement[1] = case.number
             statement[2] = case.guildId
             statement.executeQuery {
-                if(it.next()) {
+                if(it.next()) it.update {
                     it["REASON"] = case.reason
                 }
             }

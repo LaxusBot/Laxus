@@ -16,20 +16,21 @@
 @file:Suppress("MemberVisibilityCanBePrivate")
 package xyz.laxus.util.internal.impl
 
+import xyz.laxus.annotation.Implementation
 import xyz.laxus.util.hashAll
 import xyz.laxus.util.reflect.KPackage
 import java.net.URL
-import kotlin.reflect.KAnnotatedElement
 import kotlin.reflect.KClass
 
 @PublishedApi
+@Implementation
 internal class KPackageImpl(
     internal val javaPackage: Package,
     override val name: String,
     override val version: KPackage.VersionInfo,
     override val title: KPackage.TitleInfo,
     override val vendor: KPackage.VendorInfo
-): KAnnotatedElement, KPackage {
+): KPackage {
     override val annotations: List<Annotation> get() = javaPackage.annotations.toList()
 
     constructor(klazz: KClass<*>): this(klazz.java.`package`)
@@ -60,8 +61,8 @@ internal class KPackageImpl(
             return false
         }
 
-        return name == other.name && version == other.version &&
-               title == other.title && vendor == other.vendor
+        return name  ==  other.name && version == other.version &&
+               title == other.title && vendor  == other.vendor
     }
 
     private data class VersionInfoImpl(

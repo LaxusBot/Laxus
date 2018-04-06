@@ -20,6 +20,7 @@ import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
 import xyz.laxus.jda.util.connectedChannel
+import xyz.laxus.util.collections.splitWith
 import xyz.laxus.util.modifyIf
 import java.util.concurrent.TimeUnit
 import javax.script.ScriptEngine
@@ -76,10 +77,14 @@ class EvalCommand: Command(OwnerGroup) {
                 engineContext.clear()
                 try {
                     engineContext.load(ctx)
-                    val output = engine.eval("${engineContext.scriptPrefix}\n$args")
+                    val lines = args.split('\n').splitWith { it.startsWith("import ") }
+                    lines.first.forEach { engineContext.import(it.substring(7)) }
+                    val script = lines.second.joinToString("\n")
+                    val evaluation = "${engineContext.scriptPrefix}\n$script"
+                    val output = engine.eval(evaluation)
                     ctx.reply("```kotlin\n$args```Evaluated:\n```\n$output```")
                 } catch (e: ScriptException) {
-                    ctx.reply("```kotlin\n$args```A ScriptException was thrown:\n```\n${e.message}```")
+                    ctx.reply("```kotlin\n$args```A ScriptException was thrown:\n```\n${e.message?.split('\n')}```")
                 } catch (e: Exception) {
                     ctx.reply("```kotlin\n$args```An exception was thrown:\n```\n$e```")
                 }
@@ -127,6 +132,12 @@ class EvalCommand: Command(OwnerGroup) {
                 }
             }
             engine.put(key, value)
+        }
+
+        fun import(import: String) {
+            if(import !in imports) {
+                imports += import
+            }
         }
 
         fun clear() {

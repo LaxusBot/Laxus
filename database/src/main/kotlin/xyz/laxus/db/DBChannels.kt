@@ -76,7 +76,7 @@ object DBChannels : Table() {
                     it["GUILD_ID"] = guildId
                     it["CHANNEL_ID"] = channelId
                     it["TYPE"] = type.name
-                } else {
+                } else it.update {
                     it["GUILD_ID"] = guildId
                     it["CHANNEL_ID"] = channelId
                     it["TYPE"] = type.name

@@ -15,8 +15,9 @@
  */
 package xyz.laxus.db.sql
 
-import org.h2.value.Value
+import org.h2.value.Value.*
 import org.intellij.lang.annotations.Language
+import xyz.laxus.db.Database
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
@@ -26,7 +27,10 @@ inline fun <reified R> Connection.prepare(
     type: ResultSetType = ResultSetType.FORWARD_ONLY,
     concur: ResultSetConcur = ResultSetConcur.READ_ONLY,
     block: (PreparedStatement) -> R
-): R = prepareStatement(sql, type.resultSetInt, concur.resultSetInt).use(block)
+): R {
+    Database.LOG.debug("Preparing statement: '$sql' (Type: $type, Concur: $concur)")
+    return prepareStatement(sql, type.resultSetInt, concur.resultSetInt).use(block)
+}
 
 inline fun <reified R> PreparedStatement.executeQuery(block: (ResultSet) -> R): R {
     return executeQuery().use(block)
@@ -34,7 +38,7 @@ inline fun <reified R> PreparedStatement.executeQuery(block: (ResultSet) -> R): 
 
 inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: String?) {
     if(value === null) {
-        setNull(index, Value.STRING)
+        setNull(index, STRING)
     } else {
         setString(index, value)
     }
@@ -42,7 +46,7 @@ inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Stri
 
 inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Short?) {
     if(value === null) {
-        setNull(index, Value.SHORT)
+        setNull(index, SHORT)
     } else {
         setShort(index, value)
     }
@@ -50,7 +54,7 @@ inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Shor
 
 inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Int?) {
     if(value === null) {
-        setNull(index, Value.INT)
+        setNull(index, INT)
     } else {
         setInt(index, value)
     }
@@ -58,7 +62,7 @@ inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Int?
 
 inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Long?) {
     if(value === null) {
-        setNull(index, Value.LONG)
+        setNull(index, LONG)
     } else {
         setLong(index, value)
     }
@@ -66,7 +70,7 @@ inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Long
 
 inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Float?) {
     if(value === null) {
-        setNull(index, Value.FLOAT)
+        setNull(index, FLOAT)
     } else {
         setFloat(index, value)
     }
@@ -74,7 +78,7 @@ inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Floa
 
 inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Double?) {
     if(value === null) {
-        setNull(index, Value.DOUBLE)
+        setNull(index, DOUBLE)
     } else {
         setDouble(index, value)
     }

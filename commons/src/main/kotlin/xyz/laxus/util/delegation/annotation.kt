@@ -18,36 +18,51 @@ package xyz.laxus.util.delegation
 
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
+import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.full.starProjectedType
 
-class AnnotationDelegate<A: Annotation, out R> @PublishedApi internal constructor(
+class AnnotationDelegate<A: Annotation, out R>
+@PublishedApi
+internal constructor(
     private val type: KClass<A>,
     private val nullable: Boolean,
+    private val checkProperty: Boolean,
     private val function: (A) -> R
 ) {
     @Volatile private var initialized = false
     @Volatile private var cached: R? = null
         get() {
-            if(!initialized)
-                throw UninitializedPropertyAccessException("Delegated value has not been initialized!")
-            if(field == null && !nullable)
-                throw IllegalStateException("Unable to retrieve null value cached for not-null Annotation Delegate!")
+            // Is this even initialized yet?
+            check(initialized) {
+                "Delegated value has not been initialized!"
+            }
+
+            // If it isn't nullable but is null, then somehow we initialized
+            //the value incorrectly.
+            // This should be impossible, but if it happens we shouldn't let
+            //this throw an NPE.
+            check(field !== null || !nullable) {
+                "Unable to retrieve null value cached for not-null Annotation Delegate!"
+            }
             return field
         }
 
     operator fun getValue(instance: Any, property: KProperty<*>): R {
         if(!initialized) {
-            val annotation = instance::class.annotations.firstOrNull { it::class == type }
-            check(annotation !== null) { "Annotation $type was not found on ${instance::class}" }
-            cached = function(annotation as A)
-            initialized = true
+            val annotations = instance::class.annotations
+            val annotation = checkNotNull(annotations.firstOrNull { it::class.isSubclassOf(type) } ?: if(checkProperty) {
+                property.annotations.firstOrNull { it::class.isSubclassOf(type) }
+            } else null) {
+                "Annotation $type was not found on ${instance::class}"
+            }
+            this.cached = function(annotation as A)
+            this.initialized = true
         }
         return cached as R
     }
 }
 
-inline fun <reified A: Annotation, reified R> annotation(crossinline function: (A) -> R): AnnotationDelegate<A, R> {
-    return AnnotationDelegate(A::class, R::class.starProjectedType.isMarkedNullable) {
-        function(it)
-    }
+inline fun <reified A: Annotation, reified R>
+    annotation(checkProperty: Boolean = true, noinline function: (A) -> R): AnnotationDelegate<A, R> {
+    return AnnotationDelegate(A::class, R::class.starProjectedType.isMarkedNullable, checkProperty, function)
 }

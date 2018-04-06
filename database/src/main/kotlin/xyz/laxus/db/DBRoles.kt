@@ -76,7 +76,7 @@ object DBRoles : Table() {
                     it["GUILD_ID"] = guildId
                     it["ROLE_ID"] = roleId
                     it["TYPE"] = type.name
-                } else {
+                } else it.update {
                     it["GUILD_ID"] = guildId
                     it["ROLE_ID"] = roleId
                     it["TYPE"] = type.name

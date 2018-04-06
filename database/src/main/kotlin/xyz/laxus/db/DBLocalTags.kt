@@ -100,7 +100,7 @@ object DBLocalTags : Table() {
             statement[1] = tag.name
             statement[2] = tag.guildId
             statement.executeQuery {
-                if(it.next()) {
+                if(it.next()) it.update {
                     it["CONTENT"] = tag.content
                 }
             }
@@ -124,7 +124,7 @@ object DBLocalTags : Table() {
             statement[1] = tag.name
             statement[2] = tag.guildId
             statement.executeQuery {
-                if(it.next()) {
+                if(it.next()) it.update {
                     it["OWNER_ID"] = tag.ownerId
                 }
             }

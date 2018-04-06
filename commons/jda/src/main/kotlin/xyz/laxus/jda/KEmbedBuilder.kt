@@ -17,6 +17,7 @@
 package xyz.laxus.jda
 
 import net.dv8tion.jda.core.EmbedBuilder
+import net.dv8tion.jda.core.EmbedBuilder.ZERO_WIDTH_SPACE
 import net.dv8tion.jda.core.entities.IMentionable
 import net.dv8tion.jda.core.entities.MessageEmbed
 import xyz.laxus.jda.util.MessageDsl
@@ -34,7 +35,18 @@ import java.time.temporal.TemporalAccessor
 class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
     @PublishedApi
     internal val fields = mutableListOf<MessageEmbed.Field>()
-    private val description = StringBuilder()
+
+    val description = StringBuilder()
+    val length: Int get() {
+        var length = description.length
+        synchronized(fields) {
+            length = fields.stream().map { f -> f.name.length + f.value.length }.reduce(length) { a, b -> a + b }
+        }
+        title?.let { length += it.length }
+        author?.let { length += it.value.length }
+        footer?.let { length += it.value.length }
+        return length
+    }
 
     var title: String? = null
     var url: String? = null
@@ -146,7 +158,7 @@ class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
         return this
     }
 
-    inline fun field(name: String = EmbedBuilder.ZERO_WIDTH_SPACE,
+    inline fun field(name: String = ZERO_WIDTH_SPACE,
                      inline: Boolean = true,
                      lazy: Field.() -> Unit): KEmbedBuilder {
         val builder = Field(name = name, inline = inline)
@@ -156,12 +168,12 @@ class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
     }
 
     @MessageDsl
-    data class Entity @PublishedApi internal constructor(var value: String = EmbedBuilder.ZERO_WIDTH_SPACE,
+    data class Entity @PublishedApi internal constructor(var value: String = ZERO_WIDTH_SPACE,
                                                          var url: String? = null,
                                                          var icon: String? = null) {
         inline fun value(lazy: () -> String): Entity {
             val value = lazy()
-            this.value = value.modifyIf(value.isBlank()) { EmbedBuilder.ZERO_WIDTH_SPACE }
+            this.value = value.modifyIf(value.isBlank()) { ZERO_WIDTH_SPACE }
             return this
         }
 
@@ -178,7 +190,7 @@ class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
 
     @MessageDsl
     data class Field @PublishedApi internal constructor(
-        var name: String = EmbedBuilder.ZERO_WIDTH_SPACE,
+        var name: String = ZERO_WIDTH_SPACE,
         var inline: Boolean = true
     ): Appendable {
         @PublishedApi

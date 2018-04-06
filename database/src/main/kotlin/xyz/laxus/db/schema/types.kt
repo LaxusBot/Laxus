@@ -17,5 +17,7 @@ package xyz.laxus.db.schema
 
 const val BIGINT = "BIGINT"
 const val INT = "INT"
+const val SMALLINT = "SMALLINT"
 const val BOOLEAN = "BOOLEAN"
 const val VARCHAR = "VARCHAR"
+const val ARRAY = "ARRAY"

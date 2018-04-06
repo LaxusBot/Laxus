@@ -18,4 +18,4 @@ package xyz.laxus.util.collections
 /**
  * @author Kaidan Gustave
  */
-class CaseInsensitiveHashMap<V: Any>: AbstractCaseInsensitiveMap<V>(hashMapOf(), hashSetOf())
+class CaseInsensitiveHashMap<V>: AbstractCaseInsensitiveMap<V>(hashMapOf(), hashSetOf())

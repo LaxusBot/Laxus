@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("MemberVisibilityCanBePrivate", "unused")
+@file:Suppress("MemberVisibilityCanBePrivate")
 package xyz.laxus
 
 import net.dv8tion.jda.core.AccountType.BOT
@@ -22,10 +22,12 @@ import net.dv8tion.jda.core.OnlineStatus.DO_NOT_DISTURB
 import net.dv8tion.jda.core.Permission.*
 import okhttp3.OkHttpClient
 import xyz.laxus.command.Command
+import xyz.laxus.entities.starboard.StarboardManager
 import xyz.laxus.jda.ContextEventManager
 import xyz.laxus.jda.listeners.EventWaiter
 import xyz.laxus.jda.util.*
 import xyz.laxus.util.*
+import xyz.laxus.util.collections.concurrentHashMap
 import xyz.laxus.util.reflect.packageOf
 
 object Laxus {
@@ -91,7 +93,24 @@ object Laxus {
             "Could not find 'token' node for bot.conf!"
         }
 
+        // Create EventWaiter
         this.waiter = EventWaiter()
+
+        // Build Bot
+        this.bot = bot {
+            this.dBotsKey = config.string("keys.dbots")
+            this.dBotsListKey = config.string("keys.dbotslist")
+            if(config.boolean("test") == true) {
+                this.prefix = TestPrefix
+            }
+            config.int("callCacheSize")?.let {
+                this.callCacheSize = it
+            }
+            config.enum<RunMode>("mode")?.let {
+                this.mode = it
+            }
+            this.groups += groups.onEach { it.init(config) }.sorted()
+        }
 
         // Start JDA
         this.jda = jda(BOT) {
@@ -100,28 +119,11 @@ object Laxus {
 
             groups.forEach { with(it) { configure() } }
 
-            bot {
-                this.dBotsKey = config.string("keys.dbots")
-                this.dBotsListKey = config.string("keys.dbotslist")
-
-                if(config.boolean("test") == true) {
-                    this.prefix = TestPrefix
-                }
-
-                config.int("callCacheSize")?.let {
-                    this.callCacheSize = it
-                }
-
-                config.enum<RunMode>("mode")?.let {
-                    this.mode = it
-                }
-
-                this.groups += groups.onEach { it.init(config) }.sorted()
-            }
-
             listener { Waiter }
+            listener { Bot }
+            listener { StarboardManager }
 
-            contextMap { null }
+            contextMap { concurrentHashMap() }
 
             // Initializing Status
             // This will be overwritten by the Bot's ready listener handle.
@@ -134,9 +136,5 @@ object Laxus {
         if(::jda.isInitialized) {
             JDA.shutdown()
         }
-    }
-
-    internal fun initBot(bot: Bot) {
-        this.bot = bot
     }
 }

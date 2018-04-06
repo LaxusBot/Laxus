@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("unused")
+@file:Suppress("unused", "MemberVisibilityCanBePrivate")
 package xyz.laxus.util.reflect
 
+import xyz.laxus.annotation.Experimental
 import xyz.laxus.util.internal.impl.KPackageImpl
 import java.net.URL
 import kotlin.reflect.KAnnotatedElement
@@ -27,9 +28,24 @@ import kotlin.reflect.KAnnotatedElement
  * @author Kaidan Gustave
  * @since  0.1.0
  */
+@Experimental(
+    "In the event that kotlin.reflect adds their own Package " +
+    "reflection entities, this may be subject to deprecation " +
+    "and/or removal."
+)
 interface KPackage : KAnnotatedElement {
     companion object {
-        @get:JvmStatic val all: List<KPackage> get() = Package.getPackages().map { KPackageImpl(it) }
+        @Deprecated(
+            message = "Naming convention has been changed.",
+            replaceWith = ReplaceWith(
+                expression = "KPackage.All",
+                imports = ["xyz.laxus.reflect.KPackage"]
+            ),
+            level = DeprecationLevel.HIDDEN
+        )
+        @get:JvmName("getAll_Deprecated")
+        @get:JvmStatic val all: List<KPackage> get() = All
+        @get:JvmStatic val All: List<KPackage> get() = Package.getPackages().map { KPackageImpl(it) }
     }
 
     val name: String

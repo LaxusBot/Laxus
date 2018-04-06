@@ -29,6 +29,11 @@ inline fun <reified R: ResultSet> R.insert(block: (R) -> Unit) {
     insertRow()
 }
 
+inline fun <reified R: ResultSet> R.update(block: (R) -> Unit) {
+    block(this)
+    updateRow()
+}
+
 inline operator fun <reified R: ResultSet> R.set(column: String, value: Boolean?) {
     if(value === null) {
         updateNull(column)
@@ -82,6 +87,14 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: Double?)
         updateNull(column)
     } else {
         updateDouble(column, value)
+    }
+}
+
+inline operator fun <reified R: ResultSet> R.set(column: String, value: Array<*>?) {
+    if(value === null) {
+        updateNull(column)
+    } else {
+        updateObject(column, value)
     }
 }
 

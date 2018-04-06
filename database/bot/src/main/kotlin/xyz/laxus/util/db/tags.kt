@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 @file:Suppress("unused")
-
 package xyz.laxus.util.db
 
 import net.dv8tion.jda.core.JDA

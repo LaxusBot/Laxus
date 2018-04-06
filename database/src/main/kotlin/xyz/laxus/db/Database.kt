@@ -30,6 +30,7 @@ import kotlin.reflect.full.findAnnotation
  * @author Kaidan Gustave
  */
 object Database : AutoCloseable {
+    @PublishedApi
     internal val LOG = createLogger(Database::class)
 
     private lateinit var _connection: Connection
@@ -112,7 +113,7 @@ object Database : AutoCloseable {
                 append("CREATE TABLE IF NOT EXISTS $tableName(")
                 columns.forEachIndexed { index, column ->
                     append("${column.name} ${column.type}")
-                    val default = column.default
+                    val default = column.def
 
                     if(default == "null" || column.nullable) {
                         append(" NULL")

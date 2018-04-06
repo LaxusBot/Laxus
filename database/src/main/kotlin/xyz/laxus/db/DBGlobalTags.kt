@@ -93,7 +93,7 @@ object DBGlobalTags : Table() {
         connection.prepare("SELECT * FROM GLOBAL_TAGS WHERE LOWER(NAME) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = tag.name
             statement.executeQuery {
-                if(it.next()) {
+                if(it.next()) it.update {
                     it["CONTENT"] = tag.content
                 }
             }
@@ -115,7 +115,7 @@ object DBGlobalTags : Table() {
         connection.prepare("SELECT * FROM GLOBAL_TAGS WHERE LOWER(NAME) = LOWER(NAME)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = tag.name
             statement.executeQuery {
-                if(it.next()) {
+                if(it.next()) it.update {
                     it["OWNER_ID"] = tag.ownerId
                 }
             }

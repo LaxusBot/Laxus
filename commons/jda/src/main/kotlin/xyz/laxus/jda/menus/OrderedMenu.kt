@@ -204,7 +204,7 @@ class OrderedMenu
     private val message get() = message {
         text?.let { append { text } }
         embed {
-            description?.let { append(it) }
+            description.let { append(it) }
 
             this.color = this@OrderedMenu.color
 

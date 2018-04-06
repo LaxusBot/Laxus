@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:Suppress("UNCHECKED_CAST")
 package xyz.laxus.util.collections
 
 import java.util.function.BiConsumer
 
-@Suppress("UNCHECKED_CAST")
 class FixedSizeCache<K, V>(size: Int): MutableMap<K, V> {
     init {
         require(size > 0) { "Cache size must be at least 1!" }

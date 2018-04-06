@@ -18,4 +18,12 @@ package xyz.laxus.util.collections
 /**
  * @author Kaidan Gustave
  */
-class CaseInsensitiveConcurrentMap<V: Any> : AbstractCaseInsensitiveMap<V>(concurrentHashMap(), concurrentSet())
+@Deprecated(
+    message = "Naming inconsistency",
+    replaceWith = ReplaceWith(
+        expression = "CaseInsensitiveConcurrentHashMap",
+        imports = ["xyz.laxus.util.collections.CaseInsensitiveConcurrentHashMap"]
+    ),
+    level = DeprecationLevel.WARNING
+)
+typealias CaseInsensitiveConcurrentMap<V> = CaseInsensitiveConcurrentHashMap<V>

@@ -20,11 +20,57 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import kotlin.reflect.KClass
 
+/**
+ * Creates a [Logger] with the provided [name]
+ * using slf4j's [LoggerFactory].
+ *
+ * @param name The name of the [Logger].
+ *
+ * @return A [Logger] with the provided [name].
+ */
 fun createLogger(name: String): Logger = LoggerFactory.getLogger(name)
-fun <T: Any> createLogger(klazz: KClass<T>): Logger = LoggerFactory.getLogger(klazz.java)
 
-inline fun Logger.info(block: () -> String) = info(block())
-inline fun Logger.warn(block: () -> String) = warn(block())
-inline fun Logger.error(block: () -> String) = error(block())
-inline fun Logger.debug(block: () -> String) = debug(block())
-inline fun Logger.trace(block: () -> String) = trace(block())
+/**
+ * Creates a [Logger] with the provided [class][KClass]
+ * using slf4j's [LoggerFactory].
+ *
+ * @param klazz The [class][KClass] of the [Logger].
+ *
+ * @return A [Logger] with the provided [class][KClass].
+ */
+fun <T: Any> createLogger(klazz: KClass<out T>): Logger = LoggerFactory.getLogger(klazz.java)
+
+/**
+ * Log a message at INFO level.
+ *
+ * @param msg the message string to be logged
+ */
+inline fun Logger.info(msg: () -> String) = info(msg())
+
+/**
+ * Log a message at WARN level.
+ *
+ * @param msg the message string to be logged
+ */
+inline fun Logger.warn(msg: () -> String) = warn(msg())
+
+/**
+ * Log a message at ERROR level.
+ *
+ * @param msg the message string to be logged
+ */
+inline fun Logger.error(msg: () -> String) = error(msg())
+
+/**
+ * Log a message at DEBUG level.
+ *
+ * @param msg the message string to be logged
+ */
+inline fun Logger.debug(msg: () -> String) = debug(msg())
+
+/**
+ * Log a message at TRACE level.
+ *
+ * @param msg the message string to be logged
+ */
+inline fun Logger.trace(msg: () -> String) = trace(msg())

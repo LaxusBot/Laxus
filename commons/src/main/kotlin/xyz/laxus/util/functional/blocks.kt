@@ -15,10 +15,11 @@
  */
 package xyz.laxus.util.functional
 
-/**
- * @author Kaidan Gustave
- */
-interface AdditionBlock<in T> {
+import xyz.laxus.util.internal.impl.SimpleAddRemoveBlockWrapperImpl as AddRemoveImpl
+import xyz.laxus.util.internal.impl.SimpleAddBlockWrapperImpl as AddImpl
+import xyz.laxus.util.internal.impl.SimpleRemoveBlockWrapperImpl as RemoveImpl
+
+interface AddBlock<in T> {
     fun add(element: T)
 
     operator fun T.unaryPlus() {
@@ -30,9 +31,6 @@ interface AdditionBlock<in T> {
     }
 }
 
-/**
- * @author Kaidan Gustave
- */
 interface RemovalBlock<in T> {
     fun remove(element: T)
 
@@ -45,7 +43,8 @@ interface RemovalBlock<in T> {
     }
 }
 
-/**
- * @author Kaidan Gustave
- */
-interface AddRemoveBlock<in T> : AdditionBlock<T>, RemovalBlock<T>
+interface AddRemoveBlock<in T> : AddBlock<T>, RemovalBlock<T>
+
+fun <T> additionBlock(collection: MutableCollection<T>): AddBlock<T> = AddImpl(collection)
+fun <T> removalBlock(collection: MutableCollection<T>): RemovalBlock<T> = RemoveImpl(collection)
+fun <T> addRemoveBlock(collection: MutableCollection<T>): AddRemoveBlock<T> = AddRemoveImpl(collection)

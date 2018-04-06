@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 @file:Suppress("MemberVisibilityCanBePrivate", "unused")
-
 package xyz.laxus
 
+import com.jagrosh.jagtag.JagTag
 import com.jagrosh.jagtag.Parser
-import com.jagrosh.jagtag.ParserBuilder
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.newSingleThreadContext
@@ -26,7 +25,6 @@ import me.kgustave.json.JSObject
 import me.kgustave.json.jsonObject
 import me.kgustave.json.readJSObject
 import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.OnlineStatus
 import net.dv8tion.jda.core.Permission.*
 import net.dv8tion.jda.core.entities.ChannelType
@@ -46,6 +44,7 @@ import org.slf4j.Logger
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.CommandMap
+import xyz.laxus.entities.tagMethods
 import xyz.laxus.jda.listeners.SuspendedListener
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.listeningTo
@@ -54,6 +53,7 @@ import xyz.laxus.logging.NormalFilter
 import xyz.laxus.util.await
 import xyz.laxus.util.collections.CaseInsensitiveHashMap
 import xyz.laxus.util.collections.FixedSizeCache
+import xyz.laxus.util.collections.concurrentHashMap
 import xyz.laxus.util.collections.sumByLong
 import xyz.laxus.util.commandArgs
 import xyz.laxus.util.createLogger
@@ -64,14 +64,13 @@ import java.time.OffsetDateTime
 import java.time.OffsetDateTime.now
 import java.time.temporal.ChronoUnit.SECONDS
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit.HOURS
 import kotlin.coroutines.experimental.coroutineContext
 
 class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedListener {
-    companion object LOG: Logger by createLogger(Bot::class)
+    companion object Log: Logger by createLogger(Bot::class)
 
-    private val cooldowns = ConcurrentHashMap<String, OffsetDateTime>()
+    private val cooldowns = concurrentHashMap<String, OffsetDateTime>()
     private val uses = CaseInsensitiveHashMap<Int>()
     private val callCache = FixedSizeCache<Long, HashSet<Message>>(builder.callCacheSize)
     private val cycleContext = newSingleThreadContext("CycleContext")
@@ -84,21 +83,19 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
     val startTime: OffsetDateTime = now()
     val groups: List<Command.Group> = builder.groups.sorted()
     val commands: Map<String, Command> = CommandMap(*groups.toTypedArray())
-    val parser: Parser = ParserBuilder().build()
+    val parser: Parser = JagTag.newDefaultBuilder().addMethods(tagMethods).build()
 
     val messageCacheSize get() = callCache.size
 
     var totalGuilds = 0L
         private set
-    var mode = RunMode.SERVICE
+    var mode = builder.mode
         set(value) {
             field = value
             NormalFilter.level = LogLevel.byLevel(field.level)
         }
 
-    init {
-        Laxus.initBot(this)
-    }
+    init { NormalFilter.level = LogLevel.byLevel(mode.level) }
 
     fun getRemainingCooldown(name: String): Int {
         cooldowns[name]?.let { cooldown ->
@@ -208,12 +205,12 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
         }
 
         val si = event.jda.shardInfo
-        LOG.info("${si?.let { "[${it.shardId} / ${it.shardTotal - 1}]" } ?: "NightFury"} is Online!")
+        Log.info("${si?.let { "[${it.shardId} / ${it.shardTotal - 1}]" } ?: "Laxus"} is Online!")
 
         val toLeave = event.jda.guilds.filter { !it.isGood }
         if(toLeave.isNotEmpty()) {
             toLeave.forEach { it.leave().queue() }
-            LOG.info("Left ${toLeave.size} bad guilds!")
+            Log.info("Left ${toLeave.size} bad guilds!")
         }
 
         // Clear Caches every hour
@@ -241,7 +238,7 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
 
     private fun onShutdown(event: ShutdownEvent) {
         val identifier = event.jda.shardInfo?.let { "Shard [${it.shardId} / ${it.shardTotal - 1}]" } ?: "JDA"
-        LOG.info("$identifier has shutdown.")
+        Log.info("$identifier has shutdown.")
         cycleContext.close()
     }
 
@@ -267,7 +264,7 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
                         header("Content-Type", "application/json")
                     }).await().close()
                 } catch(e: IOException) {
-                    LOG.error("Failed to send information to bots.discord.pw", e)
+                    Log.error("Failed to send information to bots.discord.pw", e)
                 }
             }
         }
@@ -284,7 +281,7 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
                         header("Content-Type", "application/json")
                     }).await().close()
                 } catch(e: IOException) {
-                    LOG.error("Failed to send information to discordbots.org", e)
+                    Log.error("Failed to send information to discordbots.org", e)
                 }
             }
         }
@@ -303,18 +300,18 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
                 header("Content-Type", "application/json")
             }.await().body()?.charStream()?.use {
                 val json = it.readJSObject()
-                LOG.debug("Received JSON from bots.discord.pw:\n${json.toJsonString(2)}")
+                Log.debug("Received JSON from bots.discord.pw:\n${json.toJsonString(2)}")
                 totalGuilds = json.array("stats").mapNotNull {
                     val obj = it as? JSObject
                     obj?.takeIf { "server_count" in obj && !obj.isNull("server_count") }
                 }.sumByLong { it.int("server_count").toLong() }
             }
         } catch (t: Throwable) {
-            LOG.error("Failed to retrieve bot shard information from bots.discord.pw", t)
+            Log.error("Failed to retrieve bot shard information from bots.discord.pw", t)
         }
     }
 
-    private inline val Guild.isGood: Boolean inline get() {
+    private val Guild.isGood: Boolean get() {
         /*if(isBlacklisted)
             return false
         if(isJoinWhitelisted)
@@ -328,14 +325,14 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
     }
 
     interface Listener {
-        companion object LOG: Logger by createLogger(Bot.Listener::class)
+        companion object Log: Logger by createLogger(Bot.Listener::class)
 
         fun checkCall(event: MessageReceivedEvent, bot: Bot, name: String, args: String): Boolean = true
         fun onCommandCall(ctx: CommandContext, command: Command) {}
         fun onCommandTerminated(ctx: CommandContext, command: Command, msg: String) { ctx.reply(msg) }
         fun onCommandCompleted(ctx: CommandContext, command: Command) {}
         fun onException(ctx: CommandContext, command: Command, exception: Throwable) {
-            LOG.error("${command.fullname} encountered an exception:", exception)
+            Log.error("${command.fullname} encountered an exception:", exception)
         }
     }
 
@@ -349,8 +346,4 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
     }
 }
 
-inline fun JDABuilder.bot(build: Bot.Builder.() -> Unit): JDABuilder {
-    val bot = Bot(Bot.Builder().apply(build))
-    addEventListener(bot)
-    return this
-}
+inline fun bot(build: Bot.Builder.() -> Unit): Bot = Bot(Bot.Builder().apply(build))

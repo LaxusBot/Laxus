@@ -92,9 +92,17 @@ inline fun <reified K, reified V> Iterable<V>.multikeyToMap(function: (V) -> Ite
     return map
 }
 
-inline fun <reified T> Array<T>.sumByLong(transform: (T) -> Long): Long = map(transform).sum()
+inline fun <reified T> Array<T>.sumByLong(transform: (T) -> Long): Long {
+    var t = 0L
+    for(e in this) t += transform(e)
+    return t
+}
 
-inline fun <reified T> Iterable<T>.sumByLong(transform: (T) -> Long): Long = map(transform).sum()
+inline fun <reified T> Iterable<T>.sumByLong(transform: (T) -> Long): Long {
+    var t = 0L
+    for(e in this) t += transform(e)
+    return t
+}
 
 @Deprecated(
     message = "Array.forAllButLast((T) -> Unit) is deprecated.",
@@ -148,23 +156,38 @@ inline fun <reified T> Collection<T>.forAllButLast(function: (T) -> Unit, last: 
     }
 }
 
-fun <T> Array<T>.swap(i1: Int, i2: Int) {
-    val temp = this[i1]
-    this[i1] = this[i2]
-    this[i2] = temp
+/**
+ * Swaps the [first] index with the [second] index.
+ */
+fun <T> Array<T>.swap(first: Int, second: Int) {
+    val temp = this[first]
+    this[first] = this[second]
+    this[second] = temp
 }
 
-fun <T> MutableList<T>.swap(i1: Int, i2: Int) {
-    val v1 = this[i1]
-    val v2 = this[i2]
-    this[i1] = v2
-    this[i2] = v1
+/**
+ * Swaps the [first] index with the [second] index.
+ */
+fun <T> MutableList<T>.swap(first: Int, second: Int) {
+    val v1 = this[first]
+    val v2 = this[second]
+    this[first] = v2
+    this[second] = v1
 }
 
+/**
+ * Swaps the [first][Pair.first] index with the
+ * [second][Pair.second] index.
+ */
 infix fun <T> Array<T>.swap(indices: Pair<Int, Int>) {
     val (first, second) = indices
     swap(first, second)
 }
+
+/**
+ * Swaps the [first][Pair.first] index with the
+ * [second][Pair.second] index.
+ */
 infix fun <T> MutableList<T>.swap(indices: Pair<Int, Int>) {
     val (first, second) = indices
     swap(first, second)
@@ -172,40 +195,53 @@ infix fun <T> MutableList<T>.swap(indices: Pair<Int, Int>) {
 
 // Shortcuts
 
-fun <T> unmodifiableList(list: List<T>): List<T> {
-    return Collections.unmodifiableList(list)
-}
-
-fun <T> unmodifiableList(vararg elements: T): List<T> {
-    return FixedSizeArrayList(*elements)
-}
-
-fun <T> unmodifiableSet(set: Set<T>): Set<T> {
-    return Collections.unmodifiableSet(set)
-}
+fun <T> unmodifiableList(list: List<T>): List<T> = Collections.unmodifiableList(list)
+fun <T> unmodifiableList(vararg elements: T): List<T> = FixedSizeArrayList(*elements)
+fun <T> unmodifiableSet(set: Set<T>): Set<T> = Collections.unmodifiableSet(set)
 
 // Note that T: Any is because ConcurrentHashMap.newKeySet() only
 // supports non-null entries.
-fun <T: Any> concurrentSet(): MutableSet<T> {
-    return ConcurrentHashMap.newKeySet()
-}
-
+fun <T: Any> concurrentSet(): MutableSet<T> = ConcurrentHashMap.newKeySet()
 fun <T: Any> concurrentSet(vararg elements: T): MutableSet<T> {
     return concurrentSet<T>().also { it += elements }
 }
 
 // Note that T: Any is because ConcurrentHashMap only
 // supports non-null entries.
-fun <K: Any, V: Any> concurrentHashMap(): ConcurrentHashMap<K, V> {
-    return ConcurrentHashMap()
-}
-
+fun <K: Any, V: Any> concurrentHashMap(): ConcurrentHashMap<K, V> = ConcurrentHashMap()
 fun <K: Any, V: Any> concurrentHashMap(vararg pairs: Pair<K, V>): ConcurrentHashMap<K, V> {
     return concurrentHashMap<K, V>().also { it += pairs }
 }
 
-// O(2n)
+fun <V> caseInsensitiveHashMap(): CaseInsensitiveHashMap<V> = CaseInsensitiveHashMap()
+fun <V> caseInsensitiveHashMap(vararg pairs: Pair<String, V>): CaseInsensitiveHashMap<V> {
+    return caseInsensitiveHashMap<V>().also { it += pairs }
+}
+
+// Note that T: Any is because ConcurrentHashMap only
+// supports non-null entries.
+fun <V: Any> caseInsensitiveConcurrentHashMap(): CaseInsensitiveConcurrentHashMap<V> = CaseInsensitiveConcurrentHashMap()
+fun <V: Any> caseInsensitiveConcurrentHashMap(vararg pairs: Pair<String, V>): CaseInsensitiveConcurrentHashMap<V> {
+    return caseInsensitiveConcurrentHashMap<V>().also { it += pairs }
+}
+
+/**
+ * Filters all null values from the [Array].
+ *
+ * Note that unlike [Array.mapNotNull] this returns a new
+ * [Array] as opposed to a [List] and is more optimized
+ * and efficient.
+ *
+ * @receiver The original [Array] to filter from.
+ *
+ * @return An [Array] containing only non-null elements of the receiver.
+ */
 inline fun <reified T> Array<T?>.filterNulls(): Array<T> {
+    // This entire operation is O(2n)
+    // According to Kotlin's source, Array.mapNotNull
+    // and toTypedArray can be any type of big-oh.
+    // overall, this operation should definitely
+    // be more resource efficient when used minimally.
     val notNull = count { it !== null }     // Count how many are not null in the array
     if(notNull == 0) return emptyArray()    // All elements are null
     var index = 0                           // Start with an index 0
@@ -221,3 +257,40 @@ inline fun <reified T> Array<T?>.filterNulls(): Array<T> {
         throw AssertionError("Could not find element for index '${index - 1}' to be inserted at '$i'!")
     }
 }
+
+/**
+ * Splits an [Iterable] based on the provided [filter] into two [Lists][List].
+ *
+ * The [first][Pair.first] is elements that match the [filter], while the
+ * [second][Pair.second] is elements that do not.
+ *
+ * @param filter The filter to split by.
+ *
+ * @return A [Pair] of two [Lists][List] that match and do not match the [filter].
+ */
+inline fun <reified T> Iterable<T>.splitWith(filter: (T) -> Boolean): Pair<List<T>, List<T>> {
+    val l1 = ArrayList<T>()
+    val l2 = ArrayList<T>()
+    for(e in this) if(filter(e)) l1 += e else l2 += e
+    return l1 to l2
+}
+
+/**
+ * Splits an [Array] based on the provided [filter] into two [Lists][List].
+ *
+ * The [first][Pair.first] is elements that match the [filter], while the
+ * [second][Pair.second] is elements that do not.
+ *
+ * @param filter The filter to split by.
+ *
+ * @return A [Pair] of two [Lists][List] that match and do not match the [filter].
+ */
+inline fun <reified T> Array<T>.splitWith(filter: (T) -> Boolean): Pair<List<T>, List<T>> {
+    val l1 = ArrayList<T>()
+    val l2 = ArrayList<T>()
+    for(e in this) if(filter(e)) l1 += e else l2 += e
+    return l1 to l2
+}
+
+inline operator fun <reified T> Iterable<T>.div(filter: (T) -> Boolean): Pair<List<T>, List<T>> = splitWith(filter)
+inline operator fun <reified T> Array<T>.div(filter: (T) -> Boolean): Pair<List<T>, List<T>> = splitWith(filter)

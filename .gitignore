@@ -20,8 +20,9 @@
 /**/src/main/resources/*.conf
 
 ### Log Files ###
-/logs/
-/test-logs/
+/**/logs/
+/**/test-logs/
+/**/test-requests/
 
 ### Data Files ###
 *.txt

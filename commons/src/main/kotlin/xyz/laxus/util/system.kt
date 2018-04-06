@@ -18,18 +18,55 @@ package xyz.laxus.util
 
 import kotlin.concurrent.thread
 
-val lineSeparator get() = System.lineSeparator() ?: "\n"
-val currentTime get() = System.currentTimeMillis()
+/**
+ * Gets the system's [line separator][System.lineSeparator].
+ */
+val lineSeparator: String get() = System.lineSeparator()
 
+/**
+ * Gets the system's [current time][System.currentTimeMillis] (in milliseconds).
+ */
+val currentTime: Long get() = System.currentTimeMillis()
+
+/**
+ * Gets the current [Runtime].
+ */
 val runtime: Runtime get() = Runtime.getRuntime()
 
-val Runtime.totalMemory get() = totalMemory()
-val Runtime.freeMemory get() = freeMemory()
-val Runtime.maxMemory get() = maxMemory()
+/**
+ * Gets the [Runtime's][Runtime] [total memory][Runtime.totalMemory].
+ */
+val Runtime.totalMemory: Long get() = totalMemory()
 
+/**
+ * Gets the [Runtime's][Runtime] [free memory][Runtime.freeMemory].
+ */
+val Runtime.freeMemory: Long get() = freeMemory()
+
+/**
+ * Gets the [Runtime's][Runtime] [max memory][Runtime.maxMemory].
+ */
+val Runtime.maxMemory: Long get() = maxMemory()
+
+/**
+ * Gets a [system property][System.getProperty] mapped to
+ * the provided [key], or `null` if one doesn't match.
+ */
 fun propertyOf(key: String): String? = System.getProperty(key)
 
-inline fun onJvmShutdown(name: String, crossinline event: () -> Unit) {
-    val thread = thread(name = name, start = false, isDaemon = true) { event() }
-    runtime.addShutdownHook(thread)
+/**
+ * Adds a [shutdown hook][Runtime.addShutdownHook]
+ * to the JVM [Runtime].
+ */
+fun onJvmShutdown(thread: Thread) = runtime.addShutdownHook(thread)
+
+/**
+ * Creates and adds a [shutdown hook][Runtime.addShutdownHook]
+ * to the JVM [Runtime].
+ *
+ * This creates a new thread with the provided [name] that
+ * executes the provided [block].
+ */
+fun onJvmShutdown(name: String, block: () -> Unit) {
+    onJvmShutdown(thread(name = name, start = false, isDaemon = true, block = block))
 }

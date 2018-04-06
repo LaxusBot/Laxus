@@ -13,37 +13,125 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:Suppress("unused")
 package xyz.laxus.util.concurrent
 
+import xyz.laxus.annotation.Implementation
 import kotlin.coroutines.experimental.Continuation
 import kotlin.coroutines.experimental.suspendCoroutine
 
 /**
+ * Continuation interface that allows secure locking of resumption
+ * with a key.
+ *
  * @author Kaidan Gustave
  */
 interface KeyLockedContinuation<in K, in T> : Continuation<T> {
+    /**
+     * Whether or not this continuation is currently locked.
+     *
+     * Resuming a [KeyLockedContinuation] by very nature of the
+     * type is restricted until this returns `false`, signaling
+     * it is now unlocked and available to resume.
+     */
     val locked: Boolean
 
+    /**
+     * Unlocks this continuation matching the provided [key]
+     * to the one that locked it initially.
+     *
+     * If the key is incorrect, this throws an [IllegalArgumentException].
+     *
+     * @param key The key to unlock this with.
+     */
     fun unlock(key: K)
+
+    /**
+     * Tries to unlock this continuation matching the provided [key]
+     * to the one that locked it initially.
+     *
+     * If the key is incorrect, then [locked] will remain `true`.
+     *
+     * @param key The key to unlock this with.
+     */
     fun tryUnlock(key: K)
 
+    /**
+     * Unlocks and resumes this continuation with the provided [value], and
+     * by matching the provided [key] to the one that locked it initially.
+     *
+     * If the key is incorrect, this throws an [IllegalArgumentException].
+     *
+     * @param key The key to unlock this with.
+     * @param value The value to resume with.
+     */
     fun unlockAndResume(key: K, value: T)
 
+    /**
+     * Unlocks and resumes this continuation exceptionally with the provided
+     * [exception], and by matching the provided [key] to the one that locked
+     * it initially.
+     *
+     * If the key is incorrect, this throws an [IllegalArgumentException].
+     *
+     * @param key The key to unlock this with.
+     * @param exception The exception to resume with.
+     */
     fun unlockAndResumeWithException(key: K, exception: Throwable)
 
+    /**
+     * Tries to unlock this continuation matching the provided [key]
+     * to the one that locked it initially.
+     *
+     * If this succeeds then the continuation will be resumed successfully
+     * with the provided [value].
+     *
+     * If the key is incorrect, then [locked] will remain `true`
+     * and the continuation will remain un-resumed.
+     *
+     * @param key The key to unlock this with.
+     * @param value The value to resume with.
+     */
     fun tryUnlockAndResume(key: K, value: T)
 
+    /**
+     * Tries to unlock this continuation matching the provided [key]
+     * to the one that locked it initially.
+     *
+     * If this succeeds then the continuation will be resumed exceptionally
+     * with the provided [exception].
+     *
+     * If the key is incorrect, then [locked] will remain `true`
+     * and the continuation will remain un-resumed.
+     *
+     * @param key The key to unlock this with.
+     * @param exception The exception to resume with.
+     */
     fun tryUnlockAndResumeWithException(key: K, exception: Throwable)
 
+    /**
+     * Forcibly resumes the continuation with an [exception].
+     *
+     * This is the only way to unlock a [KeyLockedContinuation]
+     * without knowledge of the key, and certain implementations
+     * may choose to not support this, throwing an
+     * [UnsupportedOperationException] instead of providing the
+     * functionality.
+     *
+     * @param exception The exception to unlock with.
+     */
     fun forceResume(exception: Throwable)
 }
 
 @PublishedApi
+@Implementation
 internal class KeyLockedContinuationImpl<in K, in T>(
     private val key: K,
     private val continuation: Continuation<T>
 ): KeyLockedContinuation<K, T> {
     @Volatile override var locked = true
+        private set
+
     override val context get() = continuation.context
 
     override fun resume(value: T) {
@@ -121,12 +209,41 @@ internal class KeyLockedContinuationImpl<in K, in T>(
     }
 }
 
-suspend inline fun <reified K, reified T> suspendAndLockCoroutine(
-    key: K,
-    crossinline block: (KeyLockedContinuation<K, T>) -> Unit
-): T {
-    return suspendCoroutine { cont ->
-        val keyCont = KeyLockedContinuationImpl(key, cont)
-        block(keyCont)
-    }
+/**
+ * Suspends the calling coroutine, waiting for the continuation
+ * provided in the [block] to resume.
+ *
+ * In order for this to resume, the same key provided here must
+ * be provided when [unlocking][KeyLockedContinuation.unlock]
+ * the continuation.
+ *
+ * The following example shows how this can be used:
+ * ```kotlin
+ * lateinit var loginLock: KeyLockedContinuation<String, String>
+ *
+ * fun authorize(password: String) = runBlocking<Unit> {
+ *     val accountInfo = suspendAndLockCoroutine<String, AccountInfo>(PasswordManager.encryptedPassword(password)) {
+ *         loginLock = it
+ *         logIn(password)
+ *     }
+ *     println("Logged into: $accountInfo")
+ * }
+ *
+ * fun logIn(password: String) {
+ *     loginLock.unlock(PasswordManager.encryptedPassword(password))
+ *     loginLock.resume(PasswordManager.retrieveAccountInfo(password))
+ * }
+ * ```
+ *
+ * @param K The type of key to lock with.
+ * @param T The type of value to resume with.
+ * @param key The key to lock with.
+ * @param block The block to run.
+ *
+ * @return The value after the continuation is [resumed][KeyLockedContinuation.resume].
+ */
+suspend inline fun <K, T> suspendAndLockCoroutine(
+    key: K, crossinline block: (KeyLockedContinuation<K, T>) -> Unit
+): T = suspendCoroutine { cont ->
+    block(KeyLockedContinuationImpl(key, cont))
 }

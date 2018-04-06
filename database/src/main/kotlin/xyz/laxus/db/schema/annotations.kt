@@ -27,7 +27,7 @@ annotation class Column(
     val type: String,
     val nullable: Boolean = false,
     val unique: Boolean = false,
-    val default: String = ""
+    val def: String = ""
 )
 
 @Retention(AnnotationRetention.RUNTIME)
