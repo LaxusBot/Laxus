@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:Suppress("unused")
 package xyz.laxus.entities
 
 import com.jagrosh.jagtag.*
@@ -30,24 +31,31 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException
 import kotlin.streams.toList
 
-val tagMethods: Collection<Method> by lazy {
+internal val tagMethods: Collection<Method> by lazy {
     arrayListOf(
-        Method("user", ParseFunction { env ->
-            env.get<User>("user").name
-        }, ParseBiFunction { env, input ->
-            if(input[0].isEmpty())
+        method("user", { get<User>("user").name }, { input ->
+            if(input[0].isEmpty()) {
                 throw ParseException("Invalid 'user' statement")
-            userSearch(env, input).name
+            }
+            return@method userSearch(this, input).name
         }),
 
-        Method("nick", ParseFunction { env ->
-            if(!env.contains("guild")) env.get<User>("user").name
-            else env.get<Guild>("guild").getMember(env.get<User>("user"))!!.run { nickname?:user.name }
-        }, ParseBiFunction { env, input ->
+        method("nick", function = {
+            val user = get<User>("user")
+            if("guild" !in this) {
+                user.name
+            } else {
+                return@method get<Guild>("guild").getMember(user)?.nickname ?: user.name
+            }
+        }, biFunction = { input ->
             if(input[0].isEmpty())
                 throw ParseException("Invalid 'nick' statement")
-            if(!env.contains("guild")) userSearch(env, input).name
-            else env.get<Guild>("guild").getMember(userSearch(env, input))!!.run { nickname?:user.name }
+            val user = userSearch(this, input)
+            if("guild" !in this) {
+                user.name
+            } else {
+                get<Guild>("guild").getMember(user)?.nickname ?: user.name
+            }
         }),
 
         Method("discrim", ParseFunction { env ->
@@ -150,7 +158,7 @@ val tagMethods: Collection<Method> by lazy {
     )
 }
 
-val embedMethods: Collection<Method> by lazy {
+internal val embedMethods: Collection<Method> by lazy {
     listOf(
         Method("title", {env, input ->
             if(input[0].isEmpty())
@@ -256,7 +264,7 @@ val embedMethods: Collection<Method> by lazy {
     )
 }
 
-internal fun userSearch(env: Environment, input: Array<out String>): User {
+private fun userSearch(env: Environment, input: Array<out String>): User {
     if(env.contains("guild")) { // is from guild
         with(env.get<Guild>("guild").findMembers(input[0])) {
             if(this.isEmpty())
@@ -276,7 +284,7 @@ internal fun userSearch(env: Environment, input: Array<out String>): User {
     }
 }
 
-internal fun channelSearch(env: Environment, input: Array<out String>): TextChannel? {
+private fun channelSearch(env: Environment, input: Array<out String>): TextChannel? {
     if(!env.contains("guild"))
         return null
     if(input[0].isEmpty())
@@ -290,5 +298,27 @@ internal fun channelSearch(env: Environment, input: Array<out String>): TextChan
         return this[0]
     }
 }
+
+inline fun method(
+    name: String,
+    crossinline function: Environment.() -> String
+) = Method(name, { env -> env.function() })
+
+inline fun method(
+    name: String,
+    crossinline biFunction: Environment.(Array<out String>) -> String,
+    split: Boolean = true
+) = Method(name, { env, args -> env.biFunction(args) }, split)
+
+inline fun method(
+    name: String,
+    crossinline function: Environment.() -> String,
+    crossinline biFunction: Environment.(Array<out String>) -> String,
+    split: Boolean = true
+) = Method(name,
+    ParseFunction { env -> env.function() },
+    ParseBiFunction { env, args -> env.biFunction(args) },
+    split
+)
 
 class TagErrorException(message: String): RuntimeException(message)

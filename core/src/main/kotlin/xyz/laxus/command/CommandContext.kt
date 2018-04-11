@@ -60,7 +60,7 @@ class CommandContext internal constructor(
 
     fun reply(text: String) {
         checkForTalking(channel)
-        sendMessage(text, channel).queue(::linkMessage, {})
+        sendMessage(text, channel).queue(this::linkMessage, {})
     }
 
     fun reply(embed: MessageEmbed) {
@@ -75,17 +75,17 @@ class CommandContext internal constructor(
 
     suspend fun send(text: String): Message {
         checkForTalking(channel)
-        return sendMessage(text, channel).await().also(::linkMessage)
+        return sendMessage(text, channel).await().also(this::linkMessage)
     }
 
     suspend fun send(embed: MessageEmbed): Message {
         checkForTalking(channel)
-        return channel.sendMessage(embed).await().also(::linkMessage)
+        return channel.sendMessage(embed).await().also(this::linkMessage)
     }
 
     suspend fun send(message: Message): Message {
         checkForTalking(channel)
-        return channel.sendMessage(message).await().also(::linkMessage)
+        return channel.sendMessage(message).await().also(this::linkMessage)
     }
 
     fun replyInDM(text: String) {

@@ -24,7 +24,7 @@ import net.dv8tion.jda.core.audio.AudioSendHandler
  *
  * @author Kaidan Gustave
  */
-open class SimpleAudioSendHandler(private val player: AudioPlayer): AudioSendHandler {
+class SimpleAudioSendHandler(private val player: AudioPlayer): AudioSendHandler {
     private lateinit var lastFrame: AudioFrame
 
     override fun isOpus(): Boolean = true

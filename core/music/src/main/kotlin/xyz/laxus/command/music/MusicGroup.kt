@@ -45,6 +45,7 @@ object MusicGroup : Command.Group("Music") {
         + PlayCommand(Manager)
         + QueueCommand(Manager)
         + RemoveCommand(Manager)
+        + SearchCommand(Manager)
         + SkipCommand(Manager)
         + StopCommand(Manager)
         + VolumeCommand(Manager)

@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.db
+package xyz.laxus.command.administrator
 
-import xyz.laxus.db.schema.Column
-import xyz.laxus.db.schema.Columns
-import xyz.laxus.db.schema.TableName
-import xyz.laxus.util.delegation.annotation
+import com.typesafe.config.Config
+import xyz.laxus.command.Command
 
 /**
  * @author Kaidan Gustave
  */
-abstract class Table {
-    protected val connection by lazy { Database.connection }
-    val name by annotation<TableName, String?> { it.value }
-    val columns by annotation<Columns, Array<out Column>?> { it.value }
+object AdministratorGroup : Command.Group("Administrator") {
+    override val defaultLevel = Command.Level.ADMINISTRATOR
+    override val devOnly = false
+    override val guildOnly = true
+    override fun init(config: Config) {
+        + ModeratorCommand()
+    }
 }

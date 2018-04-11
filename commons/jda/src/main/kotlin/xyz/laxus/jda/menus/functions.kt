@@ -39,6 +39,13 @@ inline fun slideshowBuilder(block: Slideshow.Builder.() -> Unit): Slideshow.Buil
 }
 
 @Menu.Dsl
+inline fun updatingMenuBuilder(block: UpdatingMenu.Builder.() -> Unit): UpdatingMenu.Builder {
+    val builder = UpdatingMenu.Builder()
+    builder.block()
+    return builder
+}
+
+@Menu.Dsl
 inline fun paginator(
     builder: Paginator.Builder = Paginator.Builder(),
     block: Paginator.Builder.() -> Unit
@@ -55,3 +62,9 @@ inline fun slideshow(
     builder: Slideshow.Builder,
     block: Slideshow.Builder.() -> Unit
 ): Slideshow = Slideshow(builder.apply(block))
+
+@Menu.Dsl
+inline fun updatingMenu(
+    builder: UpdatingMenu.Builder,
+    block: UpdatingMenu.Builder.() -> Unit
+): UpdatingMenu = UpdatingMenu(builder.apply(block))

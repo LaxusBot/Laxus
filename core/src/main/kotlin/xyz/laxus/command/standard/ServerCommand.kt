@@ -60,9 +60,12 @@ class ServerCommand: Command(StandardGroup) {
     }
 
     override suspend fun execute(ctx: CommandContext) {
+        // The arguments didn't trigger a child command
+        //so they must point to an invalid category.
         if(ctx.args.isNotEmpty()) {
             return ctx.replyError("No server info category matching \"${ctx.args}\" was found.")
         }
+
         builder.clearChoices()
         val menu = orderedMenu(builder) {
             for(child in children) {
@@ -73,9 +76,10 @@ class ServerCommand: Command(StandardGroup) {
                     }
                 }
             }
-            user      { ctx.author }
-            color     { ctx.selfMember.color }
+            user { ctx.author }
+            color { ctx.selfMember.color }
         }
+
         menu.displayIn(ctx.channel)
         ctx.invokeCooldown()
     }
@@ -147,8 +151,17 @@ class ServerCommand: Command(StandardGroup) {
 
                 field("Prefixes", true) {
                     append("`${ctx.bot.prefix}`")
-                    guild.prefixes.forEach {
-                        append(", `$it`")
+                    val prefixes = guild.prefixes
+
+                    for((i, prefix) in prefixes.withIndex()) {
+                        append(", `$prefix`")
+                        if(i + 1 == 5) {
+                            if(prefixes.size > 5) {
+                                append(", and ${prefixes.size - 5} other prefix")
+                                append("${if(prefixes.size > 1) "es" else ""}...")
+                            }
+                            break
+                        }
                     }
                 }
 
@@ -188,37 +201,30 @@ class ServerCommand: Command(StandardGroup) {
                 }
                 color { ctx.member.color }
 
-                field {
+                field("Members", inline = true) {
                     val members = guild.members
-                    name = "Members"
-                    appendln("Total: ${members.size}")
-                    if(guild.hasModRole) {
-                        val modRole = guild.modRole
-                        appendln("Moderators: ${members.filter { modRole in it.roles }.size}")
+                    + "Total: ${members.size}\n"
+                    guild.modRole?.let { modRole ->
+                        + "Moderators: ${members.count { modRole in it.roles }}\n"
                     }
-                    appendln("Administrators: ${members.filter { it.isAdmin }.size}")
-                    appendln("Bots: ${members.filter { it.user.isBot }.size}")
-                    this.inline = true
+                    + "Administrators: ${members.count { it.isAdmin }}\n"
+                    + "Bots: ${members.count { it.user.isBot }}"
                 }
 
-                field {
+                field("Text Channels", inline = true) {
                     val textChannels = guild.textChannels
-                    val visible = textChannels.filter { ctx.member canView it }
-                    name = "Text Channels"
-                    appendln("Total: ${textChannels.size}")
-                    appendln("Visible: ${visible.size}")
-                    appendln("Hidden: ${textChannels.size - visible.size}")
-                    this.inline = true
+                    val visible = textChannels.count { ctx.member canView it }
+                    + "Total: ${textChannels.size}\n"
+                    + "Visible: $visible\n"
+                    + "Hidden: ${textChannels.size - visible}"
                 }
 
-                field {
+                field("Voice Channels", inline = true) {
                     val voiceChannels = ctx.guild.voiceChannels
-                    val unlocked = voiceChannels.filter { ctx.member canJoin it }
-                    name = "Voice Channels"
-                    appendln("Total: ${voiceChannels.size}")
-                    appendln("Unlocked: ${unlocked.size}")
-                    appendln("Locked: ${voiceChannels.size - unlocked.size}")
-                    this.inline = true
+                    val unlocked = voiceChannels.count { ctx.member canJoin it }
+                    + "Total: ${voiceChannels.size}\n"
+                    + "Unlocked: $unlocked\n"
+                    + "Locked: ${voiceChannels.size - unlocked}"
                 }
 
                 footer {

@@ -35,8 +35,7 @@ import xyz.laxus.util.noMatch
 /**
  * @author Kaidan Gustave
  */
-@AutoCooldown
-@MustHaveArguments
+@MustHaveArguments("Specify the name of a role to assign yourself.")
 class RoleMeCommand : Command(StandardGroup) {
     override val name = "RoleMe"
     override val arguments = "[Role Name]"
@@ -53,29 +52,38 @@ class RoleMeCommand : Command(StandardGroup) {
     )
 
     override suspend fun execute(ctx: CommandContext) {
-        val query = ctx.args
-
+        // Get all the guild's RoleMe roles
         val roleMeRoles = ctx.guild.roleMeRoles
 
-        // We have a different error if there is no RoleMe roles at all
+        // Do we have any RoleMe roles to begin with?
         if(roleMeRoles.isEmpty()) {
+            // We have a different error if there is no RoleMe roles at all
             return ctx.replyError("There are no RoleMe roles on this server!")
         }
 
+        // Get the query for roles
+        val query = ctx.args
+        // Search for roles matching the query
         val found = ctx.guild.findRoles(query)
 
-        val roleMeRolesFound = found.filter { it in roleMeRoles }
+        // Filter the roles found so that only RoleMe roles remain
+        val roleMeRolesFound = found.filter { it in roleMeRoles } // From found, only if it is in roleMeRoles
 
+        // When...
         val roleMeRole = when {
+            // The roleMeRolesFound is empty, none match
             roleMeRolesFound.isEmpty() -> return ctx.replyError(noMatch("RoleMe roles", query))
+            // The roleMeRolesFound contains multiple roles, too many match
             roleMeRolesFound.size > 1 -> return ctx.replyError(roleMeRolesFound.multipleRoles(query))
+            // The roleMeRole we are looking for is the first and only value
             else -> roleMeRolesFound[0]
         }
 
+        // The calling member
         val member = ctx.member
 
+        // If the caller doesn't have the role we have to add it
         if(roleMeRole !in member.roles) {
-
             // Check for a limit
             /* TODO Limit
             val roleMeLimit = ctx.guild.getCommandLimit(this) ?: 0
@@ -88,12 +96,19 @@ class RoleMeCommand : Command(StandardGroup) {
             }
             */
 
+            // Give the caller their requested role, suspend until that is done
             member.giveRole(roleMeRole).await()
+            // Respond
             ctx.replySuccess("Successfully gave the **${roleMeRole.name}** role!")
         } else {
+            // The caller has the role, we need to remove it
             member.removeRole(roleMeRole).await()
+            // Respond
             ctx.replySuccess("Successfully removed the **${roleMeRole.name}** role!")
         }
+
+        // Cooldown
+        ctx.invokeCooldown()
     }
 
     @MustHaveArguments
@@ -134,25 +149,38 @@ class RoleMeCommand : Command(StandardGroup) {
         override val botPermissions = arrayOf(Permission.MANAGE_ROLES)
 
         override suspend fun execute(ctx: CommandContext) {
-            val query = ctx.args
+            // Get all the guild's RoleMe roles
             val roleMeRoles = ctx.guild.roleMeRoles
 
+            // Do we have any RoleMe roles to begin with?
             if(roleMeRoles.isEmpty()) {
                 return ctx.replyError("There are no RoleMe roles on this server!")
             }
 
+            // Get the query for roles
+            val query = ctx.args
+
+            // Search for roles matching the query, then filter
+            //so that only RoleMe roles remain.
             val found = ctx.guild.findRoles(query).filter { it in roleMeRoles }
 
+            // When...
             val role = when {
+                // The found roles is empty, none match
                 found.isEmpty() -> return ctx.replyError(noMatch("RoleMe roles", query))
+                // The found roles contains multiple roles, too many match
                 found.size > 1 -> return ctx.replyError(found.multipleRoles(query))
+                // The found role we are looking for is the first and only value
                 else -> found[0]
             }
 
             // We don't need to check if it's not a RoleMe role because we already
-            // filtered out all the non-RoleMe roles
+            //filtered out all the non-RoleMe roles
 
+            // Set isRoleMe to false
             role.isRoleMe = false
+
+            // Respond
             ctx.replySuccess("Successfully removed **${role.name}** from RoleMe roles!")
         }
     }
@@ -217,14 +245,18 @@ class RoleMeCommand : Command(StandardGroup) {
         }
 
         override suspend fun execute(ctx: CommandContext) {
+            // Get all the guild's RoleMe roles
             val roleMeRoles = ctx.guild.roleMeRoles
 
+            // Do we have any RoleMe roles to begin with?
             if(roleMeRoles.isEmpty()) {
                 return ctx.replyError("There are no RoleMe roles on this server!")
             }
 
+            // Clear the builder
             builder.clearItems()
 
+            // Generate paginator
             val paginator = paginator(builder) {
                 text { _,_ -> "RoleMe Roles On ${ctx.guild.name}" }
                 items {
@@ -234,7 +266,10 @@ class RoleMeCommand : Command(StandardGroup) {
                 user { ctx.author }
             }
 
+            // Display
             paginator.displayIn(ctx.channel)
+
+            // Cooldown
             ctx.invokeCooldown()
         }
     }

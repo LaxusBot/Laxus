@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.command.moderation
+package xyz.laxus.command.moderator
 
 import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.Permission

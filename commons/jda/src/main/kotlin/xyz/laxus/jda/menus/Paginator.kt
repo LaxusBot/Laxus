@@ -292,6 +292,7 @@ class Paginator
         }
     }
 
+    @Menu.Dsl
     class Builder : Menu.Builder<Paginator.Builder, Paginator>() {
         var colorFun: PageFunction<Color?> = { _, _ -> null }
         var textFun: PageFunction<String?> = { _, _ -> null }

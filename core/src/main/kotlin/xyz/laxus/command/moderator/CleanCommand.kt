@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.command.moderation
+package xyz.laxus.command.moderator
 
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.Message
@@ -117,8 +117,9 @@ class CleanCommand: Command(ModeratorGroup) {
         val twoWeeksPrior = ctx.message.creationTime.minusWeeks(2).plusMinutes(1)
         val messages = LinkedList<Message>()
         val channel = ctx.textChannel
-        val receiver = channel.producePast(coroutineContext, num, MaxRetrievable) {
-            it[it.lastIndex].creationTime.isBefore(twoWeeksPrior)
+        val receiver = channel.producePast(coroutineContext, num, MaxRetrievable) breakIf@ {
+            if(it.isEmpty()) return@breakIf true
+            return@breakIf it.last().creationTime.isBefore(twoWeeksPrior)
         }
 
         while(!receiver.isClosedForReceive) {

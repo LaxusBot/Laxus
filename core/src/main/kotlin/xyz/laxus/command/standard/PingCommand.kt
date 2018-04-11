@@ -28,8 +28,12 @@ class PingCommand: Command(StandardGroup) {
     override val children = arrayOf(WebSocketPingCommand())
 
     override suspend fun execute(ctx: CommandContext) {
+        // Send "Ping...", suspend until RestAction completes
         val message = ctx.send("Ping...")
+        // Get the creation time of the calling message,
+        //measure the time between it and the calling message
         val ping = ctx.message.creationTime.until(message.creationTime, ChronoUnit.MILLIS)
+        // Edit the message
         message.editMessage("Ping: ${ping}ms").queue()
     }
 

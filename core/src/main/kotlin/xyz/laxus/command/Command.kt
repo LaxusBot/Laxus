@@ -47,11 +47,10 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
                 val help = command.help
                 val arguments = command.arguments
                 val children = command.children.filter {
-                    if(ctx.isPrivate) {
-                        it.defaultLevel.test(ctx) && !it.guildOnly
-                    } else {
-                        //(ctx.guild.getCommandLevel(it) ?: it.defaultLevel).test(ctx) TODO
-                        it.defaultLevel.test(ctx)
+                    it.group.check(ctx) && when {
+                        ctx.isPrivate -> it.defaultLevel.test(ctx) && !it.guildOnly
+                        it.hasAdjustableLevel -> it.defaultLevel.test(ctx)
+                        else -> (ctx.guild.getCommandLevel(it) ?: it.defaultLevel).test(ctx)
                     }
                 }
 
@@ -74,8 +73,6 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
                 if(help != "No help available.") {
                     append("\n**Function:** `$help`\n")
                 }
-
-                //command.docs?.let { append("\n$it\n") }
 
                 if(children.isNotEmpty()) {
                     append("\n**Sub-Commands:**\n\n")
@@ -146,7 +143,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
     private val autoCooldown by lazy { this::class.findAnnotation<AutoCooldown>()?.mode ?: AutoCooldownMode.OFF }
     private val noArgumentError by lazy {
         val annotation = this::class.findAnnotation<MustHaveArguments>() ?: return@lazy null
-        val error = annotation.error
+        val error = annotation.error.takeIf { it.isNotBlank() } ?: return@lazy null
         return@lazy "${Laxus.Error} ${error.replace("%name", fullname).replace("%arguments", arguments)}"
     }
 
@@ -159,7 +156,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
             val parts = ctx.args.split(commandArgs, 2)
             children.forEach {
                 if(it.isForCommand(parts[0])) {
-                    ctx.reassignArgs(if(parts.size>1) parts[1] else "")
+                    ctx.reassignArgs(if(parts.size > 1) parts[1] else "")
                     return it.run(ctx)
                 }
             }
@@ -270,7 +267,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
 
     protected val CommandContext.level: Level get() {
         return if(isGuild && hasAdjustableLevel) {
-            /* TODO guild.getCommandLevel(this@Command) ?:*/ defaultLevel
+            guild.getCommandLevel(this@Command) ?: defaultLevel
         } else defaultLevel
     }
 

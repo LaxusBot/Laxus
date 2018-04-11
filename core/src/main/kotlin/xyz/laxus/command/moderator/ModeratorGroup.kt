@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.command.moderation
+package xyz.laxus.command.moderator
 
 import com.typesafe.config.Config
 import net.dv8tion.jda.core.JDABuilder
@@ -24,7 +24,7 @@ import xyz.laxus.jda.util.listener
 /**
  * @author Kaidan Gustave
  */
-object ModeratorGroup : Command.Group("Moderation") {
+object ModeratorGroup : Command.Group("Moderator") {
     override val defaultLevel get() = Command.Level.MODERATOR
     override val guildOnly = true
     override val devOnly = false

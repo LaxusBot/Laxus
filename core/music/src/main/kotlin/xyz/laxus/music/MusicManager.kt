@@ -18,7 +18,6 @@
 package xyz.laxus.music
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
-import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.event.*
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import kotlinx.coroutines.experimental.newSingleThreadContext
@@ -29,41 +28,34 @@ import net.dv8tion.jda.core.events.ShutdownEvent
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.core.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceLeaveEvent
+import xyz.laxus.music.lava.ServiceAudioSourceManager
 import xyz.laxus.music.lava.member
 import xyz.laxus.util.createLogger
 import xyz.laxus.util.formatTrackTime
 import xyz.laxus.util.niceName
-import java.util.concurrent.ConcurrentHashMap
-import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceManager as SoundCloud
-import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager as YouTube
 
 /**
  * @author Kaidan Gustave
  */
-class MusicManager : IMusicManager, AutoCloseable, AudioPlayerManager by DefaultAudioPlayerManager() {
+class MusicManager : IMusicManager, AutoCloseable, AudioPlayerManager by ServiceAudioSourceManager() {
     internal companion object {
-        internal val LOG = createLogger(MusicManager::class)
+        internal val Log = createLogger(MusicManager::class)
 
         private fun logTrackInfo(track: AudioTrack): String {
             return "Title: ${track.info.title} | Length: ${formatTrackTime(track.duration)} | State: ${track.state}"
         }
     }
 
-    private val queueMap = ConcurrentHashMap<Long, MusicQueue>()
+    private val queueMap = hashMapOf<Long, MusicQueue>()
     internal val context by lazy { newSingleThreadContext("AudioClose Context") }
 
-    init {
-        registerSourceManager(YouTube())
-        registerSourceManager(SoundCloud())
-    }
-
-    override operator fun get(guild: Guild): MusicQueue? = queueMap[guild.idLong]
-    override operator fun contains(guild: Guild): Boolean = this[guild] !== null
+    override operator fun get(guild: Guild): MusicQueue? = synchronized(queueMap) { queueMap[guild.idLong] }
+    override operator fun contains(guild: Guild): Boolean = synchronized(queueMap) { guild.idLong in queueMap }
 
     override fun stop(guild: Guild) {
-        val musicQueue = queueMap[guild.idLong] ?: return
+        val musicQueue = this[guild] ?: return
         musicQueue.close()
-        queueMap.remove(musicQueue.channel.guild.idLong)
+        synchronized(queueMap) { queueMap -= guild.idLong }
     }
 
     override fun addTrack(channel: VoiceChannel, track: AudioTrack): Int {
@@ -71,7 +63,7 @@ class MusicManager : IMusicManager, AutoCloseable, AudioPlayerManager by Default
             setupPlayer(channel, track)
             return 0
         } else {
-            val queue = queueMap[channel.guild.idLong] ?: return -1
+            val queue = this[channel.guild] ?: return -1
             return queue.queue(track)
         }
     }
@@ -89,58 +81,58 @@ class MusicManager : IMusicManager, AutoCloseable, AudioPlayerManager by Default
 
     override fun onEvent(event: Event) {
         when(event) {
-        // Dispose on shutdown
+            // Dispose on shutdown
             is ShutdownEvent -> close()
 
-        // Dispose if we leave a guild for whatever reason
+            // Dispose if we leave a guild for whatever reason
             is GuildLeaveEvent -> removeGuild(event.guild.idLong)
 
-        // Dispose if certain events are fired
+            // Dispose if certain events are fired
             is GuildVoiceLeaveEvent -> if(event.isSelf) removeGuild(event.guild.idLong)
         }
     }
 
     override fun onEvent(event: AudioEvent) {
         when(event) {
-            is TrackStartEvent -> {
-                LOG.debug("Track Started | ${logTrackInfo(event.track)}")
-            }
+            is TrackStartEvent -> Log.debug("Track Started | ${logTrackInfo(event.track)}")
             is TrackEndEvent -> {
                 val endReason = event.endReason
                 if(endReason === null) {
-                    LOG.debug("Track Ended With Null Reason | ${logTrackInfo(event.track)}")
+                    Log.debug("Track Ended With Null Reason | ${logTrackInfo(event.track)}")
                 } else {
-                    LOG.debug("Track ${endReason.niceName} | ${logTrackInfo(event.track)}")
+                    Log.debug("Track ${endReason.niceName} | ${logTrackInfo(event.track)}")
                 }
                 onTrackFinished(event)
             }
-            is TrackExceptionEvent -> {
-                LOG.error("Track Exception | ${logTrackInfo(event.track)}", event.exception)
-            }
+            is TrackExceptionEvent -> Log.error("Track Exception | ${logTrackInfo(event.track)}", event.exception)
             is TrackStuckEvent -> {
-                LOG.debug("Track Stuck | ${logTrackInfo(event.track)} | ${event.thresholdMs}ms")
+                Log.debug("Track Stuck | ${logTrackInfo(event.track)} | ${event.thresholdMs}ms")
+                event.player.stopTrack()
             }
         }
     }
 
     override fun close() {
-        queueMap.forEach { _, u -> u.close() }
+        val queues = synchronized(queueMap) { queueMap.values }
+        queues.forEach { it.close() }
         context.close()
         shutdown()
     }
 
     private fun setupPlayer(voiceChannel: VoiceChannel, firstTrack: AudioTrack) {
-        require(voiceChannel.guild !in this) {
-            "Attempted to join a VoiceChannel on a Guild already being handled!"
-        }
+        require(voiceChannel.guild !in this) { "Attempted to join a VoiceChannel on a Guild already being handled!" }
         val player = createPlayer()
         player.addListener(this)
-        queueMap[voiceChannel.guild.idLong] = MusicQueue(this, voiceChannel, player, firstTrack)
+        synchronized(queueMap) {
+            queueMap[voiceChannel.guild.idLong] = MusicQueue(this, voiceChannel, player, firstTrack)
+        }
     }
 
     private fun removeGuild(guildId: Long) {
-        if(guildId in queueMap) {
-            queueMap.remove(guildId)?.close()
+        synchronized(queueMap) {
+            if(guildId in queueMap) {
+                queueMap.remove(guildId)?.close()
+            }
         }
     }
 
@@ -151,7 +143,9 @@ class MusicManager : IMusicManager, AutoCloseable, AudioPlayerManager by Default
 
         guildQueue.poll()
         if(guildQueue.isDead) {
-            queueMap -= guild.idLong
+            synchronized(queueMap) {
+                queueMap -= guild.idLong
+            }
         }
     }
 

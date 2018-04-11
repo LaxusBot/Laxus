@@ -20,13 +20,18 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
 import com.sedmelluq.discord.lavaplayer.track.AudioItem
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
+import kotlinx.coroutines.experimental.Deferred
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Member
+import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.entities.VoiceChannel
+import xyz.laxus.Laxus
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.jda.util.connectedChannel
+import xyz.laxus.jda.util.editMessage
 import xyz.laxus.music.MusicManager
+import xyz.laxus.util.formattedInfo
 import kotlin.coroutines.experimental.Continuation
 import kotlin.coroutines.experimental.suspendCoroutine
 
@@ -60,8 +65,49 @@ abstract class MusicCommand(protected val manager: MusicManager): Command(MusicG
         "You must be in ${selfMember.connectedChannel?.name} to use music commands!"
     }
 
-    protected suspend fun loadTrack(member: Member, query: String): AudioItem? = suspendCoroutine { cont ->
-        val handle = SearchHandler(cont, member, query, query.startsWith(YT_SEARCH_PREFIX))
+    protected suspend fun CommandContext.singleTrackLoaded(loading: Deferred<Message>, item: AudioTrack) {
+        val voiceChannel = checkNotNull(voiceChannel) {
+            "When rendering response for a loaded track, the voice channel to play in was null!"
+        }
+        item.userData = member
+        val info = item.info.formattedInfo
+        val position = manager.addTrack(voiceChannel, item)
+        loading.await().editMessage {
+            append(Laxus.Success)
+            if(position < 1) {
+                append(" Now playing $info.")
+            } else {
+                append(" Added $info at position $position in the queue.")
+            }
+        }.queue()
+    }
+
+    protected suspend fun CommandContext.playlistLoaded(loading: Deferred<Message>, item: AudioPlaylist) {
+        val voiceChannel = checkNotNull(voiceChannel) {
+            "When rendering response for a loaded playlist, the voice channel to play in was null!"
+        }
+
+        val tracks = item.tracks.onEach { it.userData = member }
+        manager.addTracks(voiceChannel, tracks)
+        loading.await().editMessage {
+            append(Laxus.Success)
+            if(manager[guild]!!.size + 1 == tracks.size) {
+                append(" Now playing `${tracks.size}` tracks from playlist **${item.name}**.")
+            } else {
+                append(" Added `${tracks.size}` tracks from **${item.name}**.")
+            }
+        }.queue()
+    }
+
+    protected suspend fun unsupportedItemType(loading: Deferred<Message>) {
+        loading.await().editMessage("The loaded item is unsupported by this player.").queue()
+    }
+
+    protected suspend fun loadTrack(
+        member: Member, query: String,
+        isSearchList: Boolean = false
+    ): AudioItem? = suspendCoroutine { cont ->
+        val handle = SearchHandler(cont, member, query, isSearchList, query.startsWith(YT_SEARCH_PREFIX))
         manager.loadItemOrdered(member.guild, query, handle)
     }
 
@@ -69,6 +115,7 @@ abstract class MusicCommand(protected val manager: MusicManager): Command(MusicG
         private val continuation: Continuation<AudioItem?>,
         private val member: Member,
         private val query: String,
+        private val isSearchList: Boolean,
         private var ytSearch: Boolean = false
     ): AudioLoadResultHandler {
         private val guild: Guild get() = member.guild
@@ -80,7 +127,7 @@ abstract class MusicCommand(protected val manager: MusicManager): Command(MusicG
         override fun playlistLoaded(playlist: AudioPlaylist) {
             val tracks = playlist.tracks
             val selectedTrack = playlist.selectedTrack
-            if(tracks.size == 1 || playlist.isSearchResult || selectedTrack !== null) {
+            if(tracks.size == 1 || (playlist.isSearchResult && !isSearchList) || selectedTrack !== null) {
                 trackLoaded(selectedTrack ?: tracks[0])
             } else {
                 continuation.resume(playlist)

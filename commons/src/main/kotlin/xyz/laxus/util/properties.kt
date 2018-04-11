@@ -13,17 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("Unused")
-@file:JvmName("Service")
-package xyz.laxus.api
+package xyz.laxus.util
 
-import okhttp3.MediaType
-import spark.Service
+import java.io.InputStream
+import java.util.*
+import kotlin.reflect.KClass
 
-typealias ContentType = MediaType
+fun ClassLoader.loadProperties(resource: String): Properties? {
+    return properties(resourceStreamOf(resource))
+}
 
-internal val service: Service by lazy { Service.ignite() }
+inline fun <reified T: Any> KClass<out T>.properties(resource: String): Properties? {
+    return properties(resourceStreamOf(resource))
+}
 
-fun port(port: Int) {
-    service.port(port)
+fun properties(stream: InputStream?): Properties? {
+    if(stream === null) return null
+    return Properties().also { it.load(stream) }
 }

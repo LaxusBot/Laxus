@@ -43,9 +43,15 @@ inline fun <reified T> List<T>.listOut(kind: String, argument: String, conversio
     }
 }
 
-fun User.formattedName(boldName: Boolean = false): String {
+inline fun <reified U: User> U.formattedName(boldName: Boolean = false): String {
     return "${if(boldName) "**$name**" else name}#$discriminator"
 }
+
+inline fun <reified C: CharSequence> bold(csq: C): String = "**$csq**"
+inline fun <reified C: CharSequence> italic(csq: C): String = "*$csq*"
+inline fun <reified C: CharSequence> strike(csq: C): String = "~~$csq~~"
+inline fun <reified C: CharSequence> underline(csq: C): String = "__${csq}__"
+inline fun <reified C: CharSequence> code(csq: C): String = "`$csq`"
 
 val OffsetDateTime.readableFormat get() = "${dayOfWeek.niceName}, ${month.niceName} $dayOfMonth, $year"
 

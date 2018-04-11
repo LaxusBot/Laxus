@@ -26,7 +26,13 @@ val lineSeparator: String get() = System.lineSeparator()
 /**
  * Gets the system's [current time][System.currentTimeMillis] (in milliseconds).
  */
-val currentTime: Long get() = System.currentTimeMillis()
+val currentTime get() = System.currentTimeMillis()
+
+/**
+ * Gets a [system property][System.getProperty] mapped to
+ * the provided [key], or `null` if one doesn't match.
+ */
+fun propertyOf(key: String): String? = System.getProperty(key)
 
 /**
  * Gets the current [Runtime].
@@ -36,23 +42,22 @@ val runtime: Runtime get() = Runtime.getRuntime()
 /**
  * Gets the [Runtime's][Runtime] [total memory][Runtime.totalMemory].
  */
-val Runtime.totalMemory: Long get() = totalMemory()
+inline val Runtime.totalMemory inline get() = totalMemory()
 
 /**
  * Gets the [Runtime's][Runtime] [free memory][Runtime.freeMemory].
  */
-val Runtime.freeMemory: Long get() = freeMemory()
+inline val Runtime.freeMemory inline get() = freeMemory()
 
 /**
  * Gets the [Runtime's][Runtime] [max memory][Runtime.maxMemory].
  */
-val Runtime.maxMemory: Long get() = maxMemory()
+inline val Runtime.maxMemory inline get() = maxMemory()
 
 /**
- * Gets a [system property][System.getProperty] mapped to
- * the provided [key], or `null` if one doesn't match.
+ * Gets a snapshot [Runtime's][Runtime] [Memory].
  */
-fun propertyOf(key: String): String? = System.getProperty(key)
+val Runtime.memory get() = Memory(maxMemory, freeMemory, totalMemory)
 
 /**
  * Adds a [shutdown hook][Runtime.addShutdownHook]
@@ -70,3 +75,13 @@ fun onJvmShutdown(thread: Thread) = runtime.addShutdownHook(thread)
 fun onJvmShutdown(name: String, block: () -> Unit) {
     onJvmShutdown(thread(name = name, start = false, isDaemon = true, block = block))
 }
+
+/** Runtime snapshot of Memory statistics. */
+data class Memory internal constructor(
+    /** The runtime's maximum memory. */
+    val max: Long,
+    /** The runtime's free memory. */
+    val free: Long,
+    /** The runtime's total memory. */
+    val total: Long
+)

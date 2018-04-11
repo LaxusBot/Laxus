@@ -26,8 +26,7 @@ import me.kgustave.json.jsonObject
 import me.kgustave.json.readJSObject
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.OnlineStatus
-import net.dv8tion.jda.core.Permission.*
-import net.dv8tion.jda.core.entities.ChannelType
+import net.dv8tion.jda.core.Permission.MESSAGE_MANAGE
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.events.Event
@@ -35,8 +34,8 @@ import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.ShutdownEvent
 import net.dv8tion.jda.core.events.guild.GuildJoinEvent
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
-import net.dv8tion.jda.core.events.message.MessageDeleteEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.core.events.message.guild.GuildMessageDeleteEvent
 import net.dv8tion.jda.core.requests.Requester.MEDIA_TYPE_JSON
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
@@ -46,19 +45,18 @@ import xyz.laxus.command.CommandContext
 import xyz.laxus.command.CommandMap
 import xyz.laxus.entities.tagMethods
 import xyz.laxus.jda.listeners.SuspendedListener
-import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.listeningTo
 import xyz.laxus.logging.LogLevel
 import xyz.laxus.logging.NormalFilter
-import xyz.laxus.util.await
+import xyz.laxus.util.*
 import xyz.laxus.util.collections.CaseInsensitiveHashMap
 import xyz.laxus.util.collections.FixedSizeCache
 import xyz.laxus.util.collections.concurrentHashMap
 import xyz.laxus.util.collections.sumByLong
-import xyz.laxus.util.commandArgs
-import xyz.laxus.util.createLogger
+import xyz.laxus.util.db.getCustomCommand
+import xyz.laxus.util.db.isBlacklisted
+import xyz.laxus.util.db.isJoinWhitelisted
 import xyz.laxus.util.db.prefixes
-import xyz.laxus.util.newRequest
 import java.io.IOException
 import java.time.OffsetDateTime
 import java.time.OffsetDateTime.now
@@ -72,7 +70,7 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
 
     private val cooldowns = concurrentHashMap<String, OffsetDateTime>()
     private val uses = CaseInsensitiveHashMap<Int>()
-    private val callCache = FixedSizeCache<Long, HashSet<Message>>(builder.callCacheSize)
+    private val callCache = FixedSizeCache<Long, MutableSet<Message>>(builder.callCacheSize)
     private val cycleContext = newSingleThreadContext("CycleContext")
 
     private val dBotsKey = builder.dBotsKey
@@ -124,7 +122,8 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
             is ReadyEvent -> onReady(event)
             is GuildJoinEvent -> onGuildJoinEvent(event)
             is GuildLeaveEvent -> onGuildLeaveEvent(event)
-            is ShutdownEvent -> onShutdown(event)
+            is GuildMessageDeleteEvent -> onGuildMessageDelete(event) // Does not suspend!
+            is ShutdownEvent -> onShutdown(event) // Does not suspend!
         }
     }
 
@@ -166,7 +165,6 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
                 return command.run(ctx)
             }
 
-            /* TODO Custom Commands
             if(ctx.isGuild) {
                 ctx.guild.getCustomCommand(name)?.let { customCommand ->
                     with(parser) {
@@ -179,21 +177,6 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
 
                     ctx.reply(parser.parse(customCommand))
                 }
-            }*/
-        }
-    }
-
-    private suspend fun onMessageDelete(event: MessageDeleteEvent) {
-        if(!event.isFromType(ChannelType.TEXT))
-            return
-
-        val cached = synchronized(callCache) { callCache[event.messageIdLong] } ?: return
-        launch(coroutineContext) {
-            val channel = event.textChannel
-            if(cached.size > 1 && event.guild.selfMember.hasPermission(channel, MESSAGE_MANAGE)) {
-                channel.deleteMessages(cached).await()
-            } else {
-                cached.forEach { it.delete().await() }
             }
         }
     }
@@ -236,6 +219,16 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
         updateStats(event.jda)
     }
 
+    private fun onGuildMessageDelete(event: GuildMessageDeleteEvent) {
+        val cached = synchronized(callCache) { callCache[event.messageIdLong] } ?: return
+        val channel = event.channel
+        if(cached.size > 1 && event.guild.selfMember.hasPermission(channel, MESSAGE_MANAGE)) {
+            channel.deleteMessages(cached).queue()
+        } else if(cached.size < 3) { // Don't try to delete more than two
+            cached.forEach { it.delete().queue() }
+        }
+    }
+
     private fun onShutdown(event: ShutdownEvent) {
         val identifier = event.jda.shardInfo?.let { "Shard [${it.shardId} / ${it.shardTotal - 1}]" } ?: "JDA"
         Log.info("$identifier has shutdown.")
@@ -250,19 +243,22 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
             body["shard_count"] = it.shardTotal
         }
 
-        val bodyString = "$body"
+        val bodyString = body.toJsonString(0)
+        val requestBody = RequestBody.create(MEDIA_TYPE_JSON, bodyString)
 
         dBotsKey?.let {
             // Run this as a child job
             launch(coroutineContext) {
                 try {
+                    val url = "https://bots.discord.pw/api/bots/${jda.selfUser.id}/stats"
                     // Send POST request to bots.discord.pw
-                    httpClient.newRequest({
-                        post(RequestBody.create(MEDIA_TYPE_JSON, bodyString))
-                        url("https://bots.discord.pw/api/bots/${jda.selfUser.id}/stats")
-                        header("Authorization", dBotsKey)
-                        header("Content-Type", "application/json")
-                    }).await().close()
+                    httpClient.newRequest {
+                        post(requestBody).url(url)
+                        this["Authorization"] = dBotsKey
+                        this["Content-Type"] = "application/json"
+                    }.await().close()
+                    Log.debug("Sent to Discord Bots: POST - '$url'\n" +
+                              bodyString)
                 } catch(e: IOException) {
                     Log.error("Failed to send information to bots.discord.pw", e)
                 }
@@ -273,13 +269,15 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
             // Run this as a child job
             launch(coroutineContext) {
                 try {
+                    val url = "https://discordbots.org/api/bots/${jda.selfUser.id}/stats"
                     // Send POST request to discordbots.org
-                    httpClient.newRequest({
-                        post(RequestBody.create(MEDIA_TYPE_JSON, bodyString))
-                        url("https://discordbots.org/api/bots/${jda.selfUser.id}/stats")
-                        header("Authorization", dBotsListKey)
-                        header("Content-Type", "application/json")
-                    }).await().close()
+                    httpClient.newRequest {
+                        post(requestBody).url(url)
+                        this["Authorization"] = dBotsListKey
+                        this["Content-Type"] = "application/json"
+                    }.await().close()
+                    Log.debug("Sent to Discord Bots List: POST - '$url'\n" +
+                              bodyString)
                 } catch(e: IOException) {
                     Log.error("Failed to send information to discordbots.org", e)
                 }
@@ -288,23 +286,26 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
 
         // If we're not sharded there's no reason to send a GET request
         if(jda.shardInfo === null || dBotsKey === null) {
-            totalGuilds = jda.guildCache.size()
+            this.totalGuilds = jda.guildCache.size()
             return
         }
 
         try {
             // Send GET request to bots.discord.pw
+            val url = "https://bots.discord.pw/api/bots/${jda.selfUser.id}/stats"
             httpClient.newRequest {
-                get().url("https://bots.discord.pw/api/bots/${jda.selfUser.id}/stats")
-                header("Authorization", dBotsKey)
-                header("Content-Type", "application/json")
+                get().url(url)
+                this["Authorization"] = dBotsKey
+                this["Content-Type"] = "application/json"
             }.await().body()?.charStream()?.use {
                 val json = it.readJSObject()
                 Log.debug("Received JSON from bots.discord.pw:\n${json.toJsonString(2)}")
-                totalGuilds = json.array("stats").mapNotNull {
+                this.totalGuilds = json.array("stats").mapNotNull {
                     val obj = it as? JSObject
                     obj?.takeIf { "server_count" in obj && !obj.isNull("server_count") }
                 }.sumByLong { it.int("server_count").toLong() }
+                Log.debug("Got from Discord Bots: GET - '$url'\n" +
+                          json.toJsonString(0))
             }
         } catch (t: Throwable) {
             Log.error("Failed to retrieve bot shard information from bots.discord.pw", t)
@@ -312,10 +313,10 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
     }
 
     private val Guild.isGood: Boolean get() {
-        /*if(isBlacklisted)
+        if(isBlacklisted)
             return false
         if(isJoinWhitelisted)
-            return true*/
+            return true
         return members.count { it.user.isBot } <= 30 || getMemberById(Laxus.DevId) !== null
     }
 
@@ -325,8 +326,6 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
     }
 
     interface Listener {
-        companion object Log: Logger by createLogger(Bot.Listener::class)
-
         fun checkCall(event: MessageReceivedEvent, bot: Bot, name: String, args: String): Boolean = true
         fun onCommandCall(ctx: CommandContext, command: Command) {}
         fun onCommandTerminated(ctx: CommandContext, command: Command, msg: String) { ctx.reply(msg) }
@@ -336,7 +335,7 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
         }
     }
 
-    class Builder @PublishedApi internal constructor() {
+    class Builder internal constructor() {
         val groups = LinkedList<Command.Group>()
         var prefix = Laxus.Prefix
         var dBotsKey: String? = null
@@ -346,4 +345,4 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
     }
 }
 
-inline fun bot(build: Bot.Builder.() -> Unit): Bot = Bot(Bot.Builder().apply(build))
+internal inline fun bot(build: Bot.Builder.() -> Unit): Bot = Bot(Bot.Builder().apply(build))

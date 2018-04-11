@@ -18,6 +18,7 @@ package xyz.laxus.jda.util
 
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Message
+import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.MessageEmbed
 import net.dv8tion.jda.core.requests.restaction.MessageAction
 import xyz.laxus.jda.KEmbedBuilder
@@ -41,10 +42,44 @@ inline fun MessageBuilder.embed(crossinline init: KEmbedBuilder.() -> Unit): Mes
 }
 
 @MessageDsl
+inline fun MessageAction.embed(crossinline init: KEmbedBuilder.() -> Unit): MessageAction {
+    val builder = KEmbedBuilder()
+    builder.init()
+    return embed(builder.build())
+}
+
+@MessageDsl
 inline fun embed(init: KEmbedBuilder.() -> Unit): MessageEmbed = KEmbedBuilder().apply(init).build()
 
-inline fun <reified M: Message> M.editMessage(block: MessageBuilder.() -> Unit): MessageAction {
-    return editMessage(MessageBuilder().apply(block).build())
+@MessageDsl
+inline fun <reified M: Message> M.editMessage(block: MessageAction.() -> Unit): MessageAction {
+    return editMessage(this).also(block)
+}
+
+@MessageDsl
+inline fun MessageChannel.sendTextFile(filename: String, block: StringBuilder.() -> Unit): MessageAction {
+    return sendTextFile(filename, buildString(block))
+}
+
+@MessageDsl
+fun MessageChannel.sendTextFile(filename: String, content: String): MessageAction {
+    val f = createTempFile(prefix = filename, suffix = ".txt")
+    f.writeText(content)
+    return sendFile(f, filename)
+}
+
+@MessageDsl
+inline fun MessageAction.addTextFile(filename: String, block: StringBuilder.() -> Unit): MessageAction {
+    return addTextFile(filename, buildString(block))
+}
+
+@MessageDsl
+fun MessageAction.addTextFile(filename: String, content: String): MessageAction {
+    val f = createTempFile(prefix = filename, suffix = ".txt")
+    f.writeText(content)
+    val mThis = addFile(f, filename)
+    f.delete()
+    return mThis
 }
 
 fun filterMassMentions(string: String): String {

@@ -155,7 +155,7 @@ class OrderedMenu
             if(num < 0 || num > choices.size) {
                 finalAction?.invoke(message)
             } else {
-                val choice = choices[num]
+                val choice = choices[num - 1]
                 choice(message)
             }
         }
@@ -219,9 +219,7 @@ class OrderedMenu
     }
 
     private val String.number: Int get() {
-        return numbers.modifyIf(useLetters) { letters }.withIndex().firstOrNull {
-            it.value == this
-        }?.index ?: -1
+        return numbers.modifyIf(useLetters) { letters }.withIndex().firstOrNull { it.value == this }?.index ?: -1
     }
 
     private val String.messageNumber: Int get() {
@@ -242,6 +240,7 @@ class OrderedMenu
         }
     }
 
+    @Menu.Dsl
     class Builder : Menu.Builder<OrderedMenu.Builder, OrderedMenu>() {
         var color: Color? = null
         var text: String? = null

@@ -21,11 +21,10 @@ import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import kotlinx.coroutines.experimental.async
 import net.dv8tion.jda.core.Permission
-import xyz.laxus.Laxus
 import xyz.laxus.command.CommandContext
-import xyz.laxus.jda.util.editMessage
 import xyz.laxus.music.MusicManager
 import xyz.laxus.util.*
+import kotlin.coroutines.experimental.coroutineContext
 
 /**
  * @author Kaidan Gustave
@@ -46,7 +45,7 @@ class PlayCommand(manager: MusicManager): MusicCommand(manager) {
 
         if(query.isEmpty()) {
             // Allow this command to act as a stand-in for a separate "unpause" command
-            if(Level.MODERATOR.test(ctx)) {
+            if(Level.MODERATOR.test(ctx)) { // FIXME when implementing levels this might be hard to change
                 if(!guild.isPlaying) return ctx.notPlaying()
                 if(!member.inPlayingChannel) return ctx.notInPlayingChannel()
 
@@ -79,7 +78,7 @@ class PlayCommand(manager: MusicManager): MusicCommand(manager) {
             }
         }
 
-        val loading = async(ctx) {
+        val loading = async(coroutineContext) {
             ctx.send("Loading...")
         }
 
@@ -94,37 +93,12 @@ class PlayCommand(manager: MusicManager): MusicCommand(manager) {
         }
 
         when(item) {
-            null -> return ctx.replyWarning(noMatch("results", query))
-
-            is AudioTrack -> {
-                item.userData = member
-                val info = item.info.formattedInfo
-                val position = manager.addTrack(voiceChannel, item)
-                loading.await().editMessage {
-                    append(Laxus.Success)
-                    if(position < 1) {
-                        append(" Now playing $info.")
-                    } else {
-                        append(" Added $info at position $position in the queue.")
-                    }
-                }.queue()
-            }
-
-            is AudioPlaylist -> {
-                val tracks = item.tracks.onEach { it.userData = member }
-                manager.addTracks(voiceChannel, tracks)
-                loading.await().editMessage {
-                    append(Laxus.Success)
-                    if(manager[ctx.guild]!!.size + 1 == tracks.size) {
-                        append(" Now playing `${tracks.size}` tracks from playlist **${item.name}**.")
-                    } else {
-                        append(" Added `${tracks.size}` tracks from **${item.name}**.")
-                    }
-                }.queue()
-            }
+            null -> ctx.replyWarning(noMatch("results", query))
+            is AudioTrack -> ctx.singleTrackLoaded(loading, item)
+            is AudioPlaylist -> ctx.playlistLoaded(loading, item)
 
             // This shouldn't happen, but...
-            else -> loading.await().editMessage("The loaded item is unsupported by this player.").queue()
+            else -> unsupportedItemType(loading)
         }
     }
 }

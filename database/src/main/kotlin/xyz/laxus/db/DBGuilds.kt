@@ -68,6 +68,8 @@ object DBGuilds : Table() {
     }
 
     enum class Type {
-        MUSIC
+        MUSIC,
+        BLACKLIST,
+        WHITELIST
     }
 }

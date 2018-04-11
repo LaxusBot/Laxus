@@ -247,6 +247,7 @@ class Slideshow
         }
     }
 
+    @Menu.Dsl
     class Builder : Menu.Builder<Slideshow.Builder, Slideshow>() {
         var colorFun: PageFunction<Color?> = { _, _ -> null }
         var textFun: PageFunction<String?> = { _, _ -> null }

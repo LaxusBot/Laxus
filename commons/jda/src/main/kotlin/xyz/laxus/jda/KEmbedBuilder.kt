@@ -167,6 +167,12 @@ class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
         return this
     }
 
+    inline fun code(lang: String, block: () -> Unit) {
+        + "```$lang\n"
+        block()
+        + "```"
+    }
+
     @MessageDsl
     data class Entity @PublishedApi internal constructor(var value: String = ZERO_WIDTH_SPACE,
                                                          var url: String? = null,

@@ -54,6 +54,12 @@ inline fun <reified T: Any> KClass<out T>.resourceStreamOf(name: String): InputS
  */
 inline fun <reified T: Any> KClass<out T>.hasResourceOf(name: String): Boolean = resourceOf(name) !== null
 
+fun ClassLoader.resourceOf(name: String): URL? = getResource(name)
+
+fun ClassLoader.resourceStreamOf(name: String): InputStream? = getResourceAsStream(name)
+
+fun ClassLoader.hasResourceOf(name: String): Boolean = resourceOf(name) !== null
+
 /**
  * Generates a path based on the [first] path segment, plus any number of
  * additional path segments that are part of [more].

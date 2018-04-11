@@ -16,21 +16,24 @@
 package xyz.laxus.util.db
 
 import net.dv8tion.jda.core.entities.Guild
-import xyz.laxus.db.DBGuilds
-import xyz.laxus.db.DBGuilds.Type.*
+import xyz.laxus.db.DBCustomCommands
 
-var Guild.isMusic: Boolean
-    get() = DBGuilds.isGuild(idLong, MUSIC)
-    set(value) = setGuildTypeOf(value, MUSIC)
+fun Guild.hasCustomCommand(name: String): Boolean {
+    return DBCustomCommands.hasCustomCommand(idLong, name)
+}
 
-var Guild.isBlacklisted: Boolean
-    get() = DBGuilds.isGuild(idLong, BLACKLIST)
-    set(value) = setGuildTypeOf(value, BLACKLIST)
+fun Guild.getCustomCommand(name: String): String? {
+    return DBCustomCommands.getCustomCommand(idLong, name)
+}
 
-var Guild.isJoinWhitelisted: Boolean
-    get() = DBGuilds.isGuild(idLong, WHITELIST)
-    set(value) = setGuildTypeOf(value, BLACKLIST)
+fun Guild.addCustomCommand(name: String, content: String) {
+    DBCustomCommands.addCustomCommand(idLong, name, content)
+}
 
-private fun Guild.setGuildTypeOf(value: Boolean, type: DBGuilds.Type) {
-    if(value) DBGuilds.addGuild(idLong, type) else DBGuilds.removeGuild(idLong, type)
+fun Guild.editCustomCommand(name: String, content: String) {
+    DBCustomCommands.editCustomCommand(idLong, name, content)
+}
+
+fun Guild.removeCustomCommand(name: String) {
+    DBCustomCommands.removeCustomCommand(idLong, name)
 }

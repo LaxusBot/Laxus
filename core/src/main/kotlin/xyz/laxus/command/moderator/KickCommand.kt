@@ -13,18 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.command.moderation
+package xyz.laxus.command.moderator
 
 import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.Permission
-import net.dv8tion.jda.core.exceptions.ErrorResponseException
-import net.dv8tion.jda.core.requests.ErrorResponse
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
 import xyz.laxus.entities.ModLog
 import xyz.laxus.jda.util.await
-import xyz.laxus.jda.util.banFrom
+import xyz.laxus.jda.util.kick
 import xyz.laxus.util.formattedName
 import xyz.laxus.util.parseModeratorArgument
 import kotlin.coroutines.experimental.coroutineContext
@@ -33,11 +31,11 @@ import kotlin.coroutines.experimental.coroutineContext
  * @author Kaidan Gustave
  */
 @MustHaveArguments
-class BanCommand: Command(ModeratorGroup) {
-    override val name = "Ban"
+class KickCommand: Command(ModeratorGroup) {
+    override val name = "Kick"
     override val arguments = "[@User] <Reason>"
-    override val help = "Bans a user from the server."
-    override val botPermissions = arrayOf(Permission.BAN_MEMBERS)
+    override val help = "Kicks a user from the server."
+    override val botPermissions = arrayOf(Permission.KICK_MEMBERS)
 
     override suspend fun execute(ctx: CommandContext) {
         val modArgs = parseModeratorArgument(ctx.args) ?: return ctx.invalidArgs()
@@ -45,55 +43,48 @@ class BanCommand: Command(ModeratorGroup) {
         val targetId = modArgs.first
         val reason = modArgs.second
 
-        val target = try {
-            ctx.jda.retrieveUserById(targetId).await()
-        } catch(e: ErrorResponseException) {
-            if(e.errorResponse == ErrorResponse.UNKNOWN_USER) return ctx.replyError {
-                "Could not find a user with ID: $targetId!"
-            }
-            return ctx.replyError("An unexpected error occurred when finding a user with ID: $targetId!")
-        }
+        val member = ctx.guild.getMemberById(targetId)
 
-        if(target === null) {
+        if(member === null) {
+            // Theoretically this should only happen if they use direct ID
+            // as a reference. In the case they don't, well they know what
+            // the fuck they are doing anyways.
+            // Can't cover everything I assume.
             return ctx.replyError("Could not find a user with ID: $targetId")
         }
 
+        val target = member.user
         val guild = ctx.guild
 
         // Error Responses
         when {
             ctx.selfUser == target -> return ctx.replyError {
-                "I cannot ban myself from the server!"
+                "I cannot kick myself from the server!"
             }
             ctx.author == target -> return ctx.replyError {
-                "You cannot ban yourself from the server!"
+                "You cannot kick yourself from the server!"
             }
             guild.owner.user == target -> return ctx.replyError {
-                "You cannot ban ${target.formattedName(true)} because they are the owner of the server!"
+                "You cannot kick ${target.formattedName(true)} because they are the owner of the server!"
             }
-            guild.isMember(target) -> {
-                val member = guild.getMember(target)!! // Should not be null
-                when {
-                    !ctx.selfMember.canInteract(member) -> return ctx.replyError {
-                        "I cannot ban ${target.formattedName(true)}!"
-                    }
-                    !ctx.member.canInteract(member) -> return ctx.replyError {
-                        "You cannot ban ${target.formattedName(true)}!"
-                    }
-                }
+            !ctx.selfMember.canInteract(member) -> return ctx.replyError {
+                "I cannot kick ${target.formattedName(true)}!"
+            }
+            !ctx.member.canInteract(member) -> return ctx.replyError {
+                "You cannot kick ${target.formattedName(true)}!"
             }
         }
 
         try {
-            target.banFrom(guild, 1, reason).await()
+            member.kick(reason).await()
         } catch(t: Throwable) {
-            return ctx.replyError("An error occurred while banning ${target.formattedName(true)}")
+            return ctx.replyError("An error occurred while kicking ${target.formattedName(true)}")
         }
 
-        ctx.replySuccess("${target.formattedName(true)} was banned from the server.")
+        ctx.replySuccess("${target.formattedName(true)} was kicked from the server.")
 
         launch(coroutineContext) {
-            ModLog.newBan(ctx.member, target, reason)
+            ModLog.newKick(ctx.member, target, reason)
         }
     }
 }

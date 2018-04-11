@@ -13,31 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api
+package xyz.laxus.music.lava
 
-import me.kgustave.json.parseJsonObject
-import xyz.laxus.util.createLogger
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
+import com.sedmelluq.discord.lavaplayer.source.AudioSourceManager
+import java.util.*
+import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager as Default
 
 /**
+ * [Default audio player manager][Default] delegate that registers
+ * source managers on initialization using a [ServiceLoader].
+ *
  * @author Kaidan Gustave
  */
-object API {
-    private val Log = createLogger(API::class)
-
-    fun start() {
-        port(8080)
-        path("/api") {
-            get("/hello") {
-                response.respondJson(200) {
-                    "message" to "Hello, World!"
-                }
-            }
-
-            post("/prefixes/:guild.id") {
-                val json = parseJsonObject(request.body)
-                Log.info("\n${json.toJsonString(2)}")
-                response.status(200)
-            }
+open class ServiceAudioSourceManager : AudioPlayerManager by Default() {
+    init {
+        ServiceLoader.load(AudioSourceManager::class.java).forEach {
+            registerSourceManager(it)
         }
     }
 }

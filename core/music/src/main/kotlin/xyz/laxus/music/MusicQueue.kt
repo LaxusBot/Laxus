@@ -18,7 +18,6 @@ package xyz.laxus.music
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
-import com.sedmelluq.discord.lavaplayer.track.AudioTrackState
 import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.audio.AudioSendHandler
 import net.dv8tion.jda.core.entities.Member
@@ -38,19 +37,16 @@ class MusicQueue internal constructor(
 ): AudioSendHandler by SimpleAudioSendHandler(player),
     List<AudioTrack>, Queue<AudioTrack>, IMusicQueue {
     private var dead = false
-
     private val skipping = HashSet<Long>()
-
-    override val isDead get() = dead
-
-    override val tracks = LinkedList<AudioTrack>()
 
     init {
         channel.connect(sender = this)
-        volume = 75
-        player.playTrack(track)
+        player.startTrack(track, false)
     }
 
+    override val tracks = LinkedList<AudioTrack>()
+    
+    override val isDead get() = dead
     override val currentTrack get() = track
 
     override val skips: Int get() {
@@ -91,8 +87,7 @@ class MusicQueue internal constructor(
 
     override fun skip(): AudioTrack {
         val skippedTrack = currentTrack
-        currentTrack.stop()
-        poll()
+        player.stopTrack()
         return skippedTrack
     }
 
@@ -109,12 +104,8 @@ class MusicQueue internal constructor(
     }
     override fun poll(): AudioTrack? {
         if(isNotEmpty()) {
-            val current = currentTrack
-            if(current.state != AudioTrackState.FINISHED) {
-                current.stop()
-            }
             track = tracks.remove()
-            player.playTrack(currentTrack)
+            player.startTrack(currentTrack, false)
             skipping.clear()
             return currentTrack
         } else clear()
@@ -155,9 +146,11 @@ class MusicQueue internal constructor(
 
     override fun close() {
         // JDA Audio Connections MUST be closed on a separate thread
-        launch(manager.context) { guild.audioManager.closeAudioConnection() }
+        launch(manager.context) {
+            guild.audioManager.closeAudioConnection()
+            dead = true
+        }
         player.destroy()
-        dead = true
     }
 
     // Other Implementations

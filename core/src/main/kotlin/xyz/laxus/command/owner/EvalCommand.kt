@@ -16,16 +16,20 @@
 package xyz.laxus.command.owner
 
 import kotlinx.coroutines.experimental.delay
+import kotlinx.coroutines.experimental.launch
+import xyz.laxus.Laxus
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
 import xyz.laxus.jda.util.connectedChannel
 import xyz.laxus.util.collections.splitWith
+import xyz.laxus.util.collections.toArrayOrEmpty
 import xyz.laxus.util.modifyIf
 import java.util.concurrent.TimeUnit
 import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
 import javax.script.ScriptException
+import kotlin.coroutines.experimental.suspendCoroutine
 
 /**
  * @author Kaidan Gustave
@@ -58,6 +62,24 @@ class EvalCommand: Command(OwnerGroup) {
     private val engine: ScriptEngine = ENGINE_MANAGER.getEngineByExtension(SCRIPT_ENGINE_EXT)
     private val engineContext = Context()
 
+    init {
+        launch {
+            // The engine takes some time to start up, so we load it asynchronously here
+            suspendCoroutine<Unit> {
+                try {
+                    engine.put("Log", Laxus.Log)
+                    engine.eval("""
+                        val logger = bindings["Log"] as org.slf4j.Logger
+                        logger.info("Started ScriptEngine")
+                    """.trimIndent())
+                    it.resume(Unit)
+                } catch(e: Throwable) {
+                    it.resumeWithException(e)
+                }
+            }
+        }
+    }
+
     override suspend fun execute(ctx: CommandContext) {
         // Trim off code block if present.
         val args = ctx.args.let { args ->
@@ -84,38 +106,24 @@ class EvalCommand: Command(OwnerGroup) {
                     val output = engine.eval(evaluation)
                     ctx.reply("```kotlin\n$args```Evaluated:\n```\n$output```")
                 } catch (e: ScriptException) {
-                    ctx.reply("```kotlin\n$args```A ScriptException was thrown:\n```\n${e.message?.split('\n')}```")
+                    val error = buildString {
+                        for((i, line) in e.message?.split('\n').toArrayOrEmpty().withIndex()) {
+                            append(line)
+                            if(i == 4) {
+                                appendln()
+                                append("...")
+                                break
+                            } else {
+                                appendln()
+                            }
+                        }
+                    }
+
+                    ctx.reply("```kotlin\n$args```A ScriptException was thrown:\n```\n$error```")
                 } catch (e: Exception) {
                     ctx.reply("```kotlin\n$args```An exception was thrown:\n```\n$e```")
                 }
             }
-        }
-    }
-
-    private fun Context.load(ctx: CommandContext) {
-        // STANDARD
-        this["ctx"] = ctx
-        this["jda"] = ctx.jda
-        this["author"] = ctx.author
-        this["channel"] = ctx.channel
-        this["bot"] = ctx.bot
-
-        // GUILD
-        if(ctx.isGuild) {
-            this["guild"] = ctx.guild
-            this["member"] = ctx.member
-
-            this["textChannel"] = ctx.textChannel
-            // VOICE
-            if(ctx.selfMember.connectedChannel !== null) {
-                this["voiceChannel"] = ctx.selfMember.connectedChannel
-                this["voiceState"] = ctx.member.voiceState
-            }
-        }
-
-        // PRIVATE
-        if(ctx.isPrivate) {
-            this["privateChannel"] = ctx.privateChannel
         }
     }
 
@@ -143,6 +151,44 @@ class EvalCommand: Command(OwnerGroup) {
         fun clear() {
             properties.clear()
             imports.clear()
+        }
+
+        fun load(ctx: CommandContext) {
+            // STANDARD
+            this["ctx"] = ctx
+            this["jda"] = ctx.jda
+            this["author"] = ctx.author
+            this["channel"] = ctx.channel
+            this["bot"] = ctx.bot
+
+            // GUILD
+            if(ctx.isGuild) {
+                this["guild"] = ctx.guild
+                this["member"] = ctx.member
+                this["textChannel"] = ctx.textChannel
+
+                // VOICE
+                if(ctx.selfMember.connectedChannel !== null) {
+                    this["voiceChannel"] = ctx.selfMember.connectedChannel
+                    this["voiceState"] = ctx.member.voiceState
+                } else {
+                    this["voiceChannel"] = null
+                    this["voiceState"] = null
+                }
+            } else {
+                this["guild"] = null
+                this["member"] = null
+                this["textChannel"] = null
+                this["voiceChannel"] = null
+                this["voiceState"] = null
+            }
+
+            // PRIVATE
+            if(ctx.isPrivate) {
+                this["privateChannel"] = ctx.privateChannel
+            } else {
+                this["privateChannel"] = null
+            }
         }
 
         val scriptPrefix get() = buildString {

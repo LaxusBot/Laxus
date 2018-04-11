@@ -54,7 +54,14 @@ class QueueCommand(manager: MusicManager): MusicCommand(manager) {
             "Expected non-null guild queue for Guild (ID: ${ctx.guild.idLong})"
         }
 
+        val tracks = queue.tracks
+
+        if(tracks.isEmpty()) {
+            return ctx.reply("Queue is empty!")
+        }
+
         builder.clearItems()
+
         val paginator = paginator(builder) {
             allowTextInput = true
             textToRight = ">>"
@@ -72,15 +79,8 @@ class QueueCommand(manager: MusicManager): MusicCommand(manager) {
                     append(" `[${current.progression}]`")
                 }
             }
-            items { + queue.tracks.map { t -> t.info.formattedInfo } }
-            finalAction { message ->
-                ctx.linkMessage(message)
-                message.guild?.let {
-                    if(it.selfMember.hasPermission(message.textChannel, MESSAGE_MANAGE)) {
-                        message.clearReactions().queue()
-                    }
-                }
-            }
+            items { + tracks.map { t -> t.info.formattedInfo } }
+            finalAction { message -> message.delete().queue() }
             user { ctx.author }
         }
 

@@ -16,7 +16,7 @@
 @file:Suppress("Unused")
 package xyz.laxus.util.collections
 
-import java.util.Collections
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 // Collections
@@ -225,6 +225,14 @@ fun <V: Any> caseInsensitiveConcurrentHashMap(vararg pairs: Pair<String, V>): Ca
     return caseInsensitiveConcurrentHashMap<V>().also { it += pairs }
 }
 
+fun <T> synchronizedList(list: List<T>): List<T> {
+    return Collections.synchronizedList(list)
+}
+
+fun <T> synchronizedMutableList(list: MutableList<T>): MutableList<T> {
+    return Collections.synchronizedList(list)
+}
+
 /**
  * Filters all null values from the [Array].
  *
@@ -294,3 +302,22 @@ inline fun <reified T> Array<T>.splitWith(filter: (T) -> Boolean): Pair<List<T>,
 
 inline operator fun <reified T> Iterable<T>.div(filter: (T) -> Boolean): Pair<List<T>, List<T>> = splitWith(filter)
 inline operator fun <reified T> Array<T>.div(filter: (T) -> Boolean): Pair<List<T>, List<T>> = splitWith(filter)
+
+inline fun <reified T> Collection<T>?.toArrayOrEmpty(): Array<T> {
+    if(this === null) return emptyArray()
+    return this.toTypedArray()
+}
+
+inline fun <reified T> Iterable<T>.forEachUpTo(
+    max: Int,
+    onMaxReached: () -> Unit = {},
+    operation: (T) -> Unit
+) {
+    for((i, e) in this.withIndex()) {
+        operation(e)
+        if(i + 1 == max) {
+            onMaxReached()
+            break
+        }
+    }
+}

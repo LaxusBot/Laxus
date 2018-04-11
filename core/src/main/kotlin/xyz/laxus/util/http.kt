@@ -19,11 +19,13 @@ import okhttp3.*
 import java.io.IOException
 import kotlin.coroutines.experimental.suspendCoroutine
 
-inline fun OkHttpClient.newRequest(lazy: Request.Builder.() -> Unit) : Call {
+inline fun OkHttpClient.newRequest(lazy: Request.Builder.() -> Unit): Call {
     val builder = Request.Builder()
     builder.lazy()
     return newCall(builder.build())
 }
+
+operator fun Request.Builder.set(header: String, value: String): Request.Builder = header(header, value)
 
 suspend fun Call.await(): Response = suspendCoroutine { cont ->
     enqueue(object : Callback {

@@ -13,6 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api
+package xyz.laxus.command.standard
 
-val appJson: ContentType = ContentType.parse("application/json;charset=utf-8")!!
+import net.dv8tion.jda.core.entities.Message
+import xyz.laxus.util.formattedName
+import xyz.laxus.util.readableFormat
+
+/**
+ * @author Kaidan Gustave
+ */
+class LogCommand {
+    companion object {
+        fun formatMessageForLogFile(message: Message): String = buildString {
+            append("[${message.creationTime.readableFormat}] ${message.author.formattedName()}:")
+            appendln(message.contentStripped)
+        }
+    }
+
+    // TODO
+}

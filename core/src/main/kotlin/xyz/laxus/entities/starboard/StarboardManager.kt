@@ -80,18 +80,17 @@ object StarboardManager : SuspendedListener {
     }
 
     override suspend fun onEvent(event: Event) {
-        if(event !is GenericGuildMessageEvent)
-            return
+        if(event !is GenericGuildMessageEvent) return
 
         val guild = event.guild
         val starboard = getStarboard(guild) ?: return
 
-        if(!guild.selfMember.hasPermission(event.channel, MESSAGE_MANAGE))
-            return
+        if(!guild.selfMember.hasPermission(event.channel, MESSAGE_MANAGE)) return
 
         if(event is GuildMessageDeleteEvent) {
             starboard[event.messageIdLong]?.delete()
         } else if(event is GenericGuildMessageReactionEvent) {
+            if(event.user.isBot) return
 
             val reactionName = event.reaction.reactionEmote.name
 

@@ -74,7 +74,7 @@ object DBGlobalTags : Table() {
         require(name.length <= 50) { "Tag name length exceeds maximum of 50 characters!" }
         require(content.length <= 1900) { "Tag content length exceeds maximum of 50 characters!" }
 
-        connection.prepare("SELECT * FROM GLOBAL_TAGS WHERE LOWER(NAME) = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM GLOBAL_TAGS WHERE LOWER(NAME) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = name
             statement.executeQuery {
                 if(!it.next()) it.insert {
@@ -112,7 +112,7 @@ object DBGlobalTags : Table() {
     fun overrideTag(tag: Tag) {
         require(tag.ownerId === null) { "Cannot override a local tag with non-null ownerId!" }
 
-        connection.prepare("SELECT * FROM GLOBAL_TAGS WHERE LOWER(NAME) = LOWER(NAME)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM GLOBAL_TAGS WHERE LOWER(NAME) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = tag.name
             statement.executeQuery {
                 if(it.next()) it.update {

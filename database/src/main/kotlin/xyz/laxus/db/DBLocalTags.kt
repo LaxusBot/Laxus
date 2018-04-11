@@ -78,7 +78,7 @@ object DBLocalTags : Table() {
         require(name.length <= 50) { "Tag name length exceeds maximum of 50 characters!" }
         require(content.length <= 1900) { "Tag content length exceeds maximum of 50 characters!" }
 
-        connection.prepare("SELECT * FROM LOCAL_TAGS WHERE LOWER(NAME) = ? AND GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM LOCAL_TAGS WHERE LOWER(NAME) = LOWER(?) AND GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = name
             statement[2] = guildId
             statement.executeQuery {
@@ -120,7 +120,7 @@ object DBLocalTags : Table() {
     fun overrideTag(tag: LocalTag) {
         require(tag.ownerId === null) { "Cannot override a local tag with non-null ownerId!" }
 
-        connection.prepare("SELECT * FROM LOCAL_TAGS WHERE LOWER(NAME) = LOWER(NAME) AND GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM LOCAL_TAGS WHERE LOWER(NAME) = LOWER(?) AND GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = tag.name
             statement[2] = tag.guildId
             statement.executeQuery {
