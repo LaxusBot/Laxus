@@ -29,7 +29,6 @@ dependencies {
     // Projects
     compileOnly project(":core")
     compileOnly project(":database")
-    compileOnly project(":database:bot")
     compileOnly project(':commons')
     compileOnly project(':commons:jda')
 }

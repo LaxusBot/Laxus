@@ -51,7 +51,7 @@ object Emojis {
         // TODO Add more countries
         ;
 
-        val country = country ?: niceName
+        val country = country ?: titleName
 
         override fun toString(): String = emoji
 

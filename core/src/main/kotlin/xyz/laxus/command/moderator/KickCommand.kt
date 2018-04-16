@@ -20,7 +20,7 @@ import net.dv8tion.jda.core.Permission
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
-import xyz.laxus.entities.ModLog
+import xyz.laxus.listeners.ModLog
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.kick
 import xyz.laxus.util.formattedName
@@ -30,7 +30,7 @@ import kotlin.coroutines.experimental.coroutineContext
 /**
  * @author Kaidan Gustave
  */
-@MustHaveArguments
+@MustHaveArguments("Specify a user to kick via mention.")
 class KickCommand: Command(ModeratorGroup) {
     override val name = "Kick"
     override val arguments = "[@User] <Reason>"

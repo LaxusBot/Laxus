@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 @file:Suppress("Unused")
+@file:JvmName("CollectionUtils")
 package xyz.laxus.util.collections
 
+import xyz.laxus.util.checkInBounds
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -53,7 +55,7 @@ inline fun <reified T, reified R> Collection<T>.accumulate(function: (T) -> Coll
     replaceWith = ReplaceWith(
         expression = "Array.associateBy((T) -> K)"
     ),
-    level = DeprecationLevel.WARNING
+    level = DeprecationLevel.HIDDEN
 )
 inline fun <reified K, reified V> Array<V>.keyToMap(function: (V) -> K): Map<K, V> {
     return associateBy(function)
@@ -65,7 +67,7 @@ inline fun <reified K, reified V> Array<V>.keyToMap(function: (V) -> K): Map<K, 
     replaceWith = ReplaceWith(
         expression = "Iterable.associateBy((T) -> K)"
     ),
-    level = DeprecationLevel.WARNING
+    level = DeprecationLevel.HIDDEN
 )
 inline fun <reified K, reified V> Iterable<V>.keyToMap(function: (V) -> K): Map<K, V> {
     return associateBy(function)
@@ -110,7 +112,7 @@ inline fun <reified T> Iterable<T>.sumByLong(transform: (T) -> Long): Long {
         expression = "Array.forAllButLast((T) -> Unit, (T) -> Unit)",
         imports = ["xyz.laxus.util.collections.forAllButLast"]
     ),
-    level = DeprecationLevel.WARNING
+    level = DeprecationLevel.HIDDEN
 )
 inline fun <reified T> Array<T>.forAllButLast(function: (T) -> Unit): T {
     require(isNotEmpty()) { "Cannot run on an empty array!" }
@@ -124,7 +126,7 @@ inline fun <reified T> Array<T>.forAllButLast(function: (T) -> Unit): T {
         expression = "Collection.forAllButLast((T) -> Unit, (T) -> Unit)",
         imports = ["xyz.laxus.util.collections.forAllButLast"]
     ),
-    level = DeprecationLevel.WARNING
+    level = DeprecationLevel.HIDDEN
 )
 inline fun <reified T> Collection<T>.forAllButLast(function: (T) -> Unit): T {
     require(isNotEmpty()) { "Cannot run on an empty array!" }
@@ -156,10 +158,39 @@ inline fun <reified T> Collection<T>.forAllButLast(function: (T) -> Unit, last: 
     }
 }
 
+inline fun <reified T> Array<T>.forAllButLastWithIndex(function: (Int, T) -> Unit, last: (Int, T) -> Unit) {
+    if(isEmpty()) return
+    val lastIndex = lastIndex
+    for((i, e) in this.withIndex()) {
+        if(i < lastIndex) {
+            function(i, e)
+        } else {
+            last(i, e)
+        }
+    }
+}
+
+inline fun <reified T> Collection<T>.forAllButLastWithIndex(function: (Int, T) -> Unit, last: (Int, T) -> Unit) {
+    if(isEmpty()) return
+    val lastIndex = size - 1
+    for((i, e) in this.withIndex()) {
+        if(i < lastIndex) {
+            function(i, e)
+        } else {
+            last(i, e)
+        }
+    }
+}
+
 /**
  * Swaps the [first] index with the [second] index.
  */
 fun <T> Array<T>.swap(first: Int, second: Int) {
+    checkInBounds(first, this)
+    checkInBounds(second, this)
+
+    if(first == second) return
+
     val temp = this[first]
     this[first] = this[second]
     this[second] = temp
@@ -169,10 +200,14 @@ fun <T> Array<T>.swap(first: Int, second: Int) {
  * Swaps the [first] index with the [second] index.
  */
 fun <T> MutableList<T>.swap(first: Int, second: Int) {
-    val v1 = this[first]
-    val v2 = this[second]
-    this[first] = v2
-    this[second] = v1
+    checkInBounds(first, this)
+    checkInBounds(second, this)
+
+    if(first == second) return
+
+    val temp = this[first]
+    this[first] = this[second]
+    this[second] = temp
 }
 
 /**
@@ -319,5 +354,64 @@ inline fun <reified T> Iterable<T>.forEachUpTo(
             onMaxReached()
             break
         }
+    }
+}
+
+tailrec fun <T> Array<T>.binarySearch(element: T, fromIndex: Int = 0, toIndex: Int = size - 1): Int
+    where T: Comparable<T> {
+    rangeCheck(size, fromIndex, toIndex + 1)
+
+    if(fromIndex > toIndex) return -(fromIndex + 1)
+
+    val mid = (fromIndex + toIndex) ushr 1
+    val cmp = compareValues(this[mid], element)
+    return when {
+        cmp < 0 -> binarySearch(element, mid + 1, toIndex)
+        cmp > 0 -> binarySearch(element, fromIndex, mid - 1)
+        else -> mid
+    }
+}
+
+tailrec fun <T> Array<T>.binarySearch(fromIndex: Int = 0, toIndex: Int = size - 1, comparison: (T) -> Int): Int
+    where T: Comparable<T> {
+    rangeCheck(size, fromIndex, toIndex + 1)
+
+    if(fromIndex > toIndex) return -(fromIndex + 1)
+
+    val mid = (fromIndex + toIndex) ushr 1
+    val cmp = comparison(this[mid])
+    return when {
+        cmp < 0 -> binarySearch(mid + 1, toIndex, comparison)
+        cmp > 0 -> binarySearch(fromIndex, mid - 1, comparison)
+        else -> mid
+    }
+}
+
+tailrec fun <T> List<T>.binarySearchOrNull(element: T, fromIndex: Int = 0, toIndex: Int = size - 1): Int?
+    where T: Comparable<T> {
+    rangeCheck(size, fromIndex, toIndex + 1)
+
+    if(fromIndex > toIndex) return null
+
+    val mid = (fromIndex + toIndex) ushr 1
+    val cmp = compareValues(this[mid], element)
+    return when {
+        cmp < 0 -> binarySearchOrNull(element, mid + 1, toIndex)
+        cmp > 0 -> binarySearchOrNull(element, fromIndex, mid - 1)
+        else -> mid
+    }
+}
+
+// Copied from Collections.kt of kotlin-stdlib
+//to replicate errors from List<T>.binarySearch
+/**
+ * Checks that `from` and `to` are in
+ * the range of [0..size] and throws an appropriate exception, if they aren't.
+ */
+private fun rangeCheck(size: Int, fromIndex: Int, toIndex: Int) {
+    when {
+        fromIndex > toIndex -> throw IllegalArgumentException("fromIndex ($fromIndex) is greater than toIndex ($toIndex).")
+        fromIndex < 0 -> throw IndexOutOfBoundsException("fromIndex ($fromIndex) is less than zero.")
+        toIndex > size -> throw IndexOutOfBoundsException("toIndex ($toIndex) is greater than size ($size).")
     }
 }

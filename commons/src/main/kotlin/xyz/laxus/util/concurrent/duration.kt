@@ -13,19 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("unused")
+@file:Suppress("Unused")
 package xyz.laxus.util.concurrent
 
 import xyz.laxus.util.hashAll
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.*
 
-data class Duration(val length: Long, val unit: TimeUnit): Comparable<Duration> {
-    private constructor(original: Duration, unit: TimeUnit): this(original.lengthIn(unit), unit)
+fun duration(length: Long, unit: TimeUnit) = Duration(length, unit)
 
-    fun inSeconds() = Duration(this, SECONDS)
-    fun inMinutes() = Duration(this, MINUTES)
-    fun inHours() = Duration(this, HOURS)
+data class Duration
+internal constructor(val length: Long, val unit: TimeUnit): Comparable<Duration> {
+    init {
+        require(length >= 0) { "Duration cannot have a negative length!" }
+    }
+
+    // Conversion Functions
+
+    fun inSeconds()      = copy(length = lengthIn(SECONDS),      unit = SECONDS     )
+    fun inMinutes()      = copy(length = lengthIn(MINUTES),      unit = MINUTES     )
+    fun inHours()        = copy(length = lengthIn(HOURS),        unit = HOURS       )
+    fun inMilliseconds() = copy(length = lengthIn(MILLISECONDS), unit = MILLISECONDS)
+    fun inDays()         = copy(length = lengthIn(DAYS),         unit = DAYS        )
+    fun inMicroseconds() = copy(length = lengthIn(MICROSECONDS), unit = MICROSECONDS)
+    fun inNanoseconds()  = copy(length = lengthIn(NANOSECONDS),  unit = NANOSECONDS )
 
     private fun lengthIn(unit: TimeUnit): Long {
         if(this.unit == unit) return this.length

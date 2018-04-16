@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:JvmName("IOUtil")
 @file:Suppress("Unused")
 package xyz.laxus.util
 
@@ -54,11 +55,11 @@ inline fun <reified T: Any> KClass<out T>.resourceStreamOf(name: String): InputS
  */
 inline fun <reified T: Any> KClass<out T>.hasResourceOf(name: String): Boolean = resourceOf(name) !== null
 
-fun ClassLoader.resourceOf(name: String): URL? = getResource(name)
+inline fun <reified L: ClassLoader> L.resourceOf(name: String): URL? = getResource(name)
 
-fun ClassLoader.resourceStreamOf(name: String): InputStream? = getResourceAsStream(name)
+inline fun <reified L: ClassLoader> L.resourceStreamOf(name: String): InputStream? = getResourceAsStream(name)
 
-fun ClassLoader.hasResourceOf(name: String): Boolean = resourceOf(name) !== null
+inline fun <reified L: ClassLoader> L.hasResourceOf(name: String): Boolean = resourceOf(name) !== null
 
 /**
  * Generates a path based on the [first] path segment, plus any number of

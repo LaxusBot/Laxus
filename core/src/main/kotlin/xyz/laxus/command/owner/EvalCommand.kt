@@ -82,11 +82,10 @@ class EvalCommand: Command(OwnerGroup) {
 
     override suspend fun execute(ctx: CommandContext) {
         // Trim off code block if present.
-        val args = ctx.args.let { args ->
-            args.modifyIf(args.startsWith("```") && args.endsWith("```")) {
-                args.substring(args.indexOf('\n') + 1, it.length - 3)
-            }
-        }
+        val args = ctx.args.modifyIf(
+            condition = { it.startsWith("```") && it.endsWith("```") },
+            block = { it.substring(it.indexOf('\n') + 1, it.length - 3) }
+        )
 
         when {
             args matches SYS_EXIT_REGEX -> {

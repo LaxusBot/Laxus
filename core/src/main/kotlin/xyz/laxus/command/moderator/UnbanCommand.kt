@@ -20,7 +20,7 @@ import net.dv8tion.jda.core.Permission
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
-import xyz.laxus.entities.ModLog
+import xyz.laxus.listeners.ModLog
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.findBannedUsers
 import xyz.laxus.jda.util.unbanFrom
@@ -31,7 +31,7 @@ import xyz.laxus.util.noMatch
 /**
  * @author Kaidan Gustave
  */
-@MustHaveArguments
+@MustHaveArguments("Specify a user to unban.")
 class UnbanCommand: Command(ModeratorGroup) {
     override val name = "Unban"
     override val arguments = "[User]"

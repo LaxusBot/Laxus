@@ -13,27 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:Suppress("unused")
 package xyz.laxus.util.db
 
 import net.dv8tion.jda.core.entities.Guild
-import xyz.laxus.db.DBCustomCommands
+import xyz.laxus.db.DBPrefixes
 
-fun Guild.hasCustomCommand(name: String): Boolean {
-    return DBCustomCommands.hasCustomCommand(idLong, name)
+val Guild.prefixes: Set<String> get() {
+    return DBPrefixes.getPrefixes(idLong)
 }
 
-fun Guild.getCustomCommand(name: String): String? {
-    return DBCustomCommands.getCustomCommand(idLong, name)
+fun Guild.hasPrefix(prefix: String): Boolean {
+    return DBPrefixes.hasPrefix(idLong, prefix)
 }
 
-fun Guild.addCustomCommand(name: String, content: String) {
-    DBCustomCommands.addCustomCommand(idLong, name, content)
+fun Guild.addPrefix(prefix: String) {
+    require(prefix.length <= 50) { "Prefix cannot be longer than 50 characters" }
+    DBPrefixes.addPrefix(idLong, prefix)
 }
 
-fun Guild.editCustomCommand(name: String, content: String) {
-    DBCustomCommands.editCustomCommand(idLong, name, content)
-}
-
-fun Guild.removeCustomCommand(name: String) {
-    DBCustomCommands.removeCustomCommand(idLong, name)
+fun Guild.removePrefix(prefix: String) {
+    DBPrefixes.removePrefix(idLong, prefix)
 }

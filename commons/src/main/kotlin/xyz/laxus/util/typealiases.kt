@@ -20,4 +20,8 @@ package xyz.laxus.util
 typealias Colour = java.awt.Color
 typealias SystemColour = java.awt.SystemColor
 
+/**
+ * smash dat motha fuckin liek button if u drink
+ * water 😂 😂 😂 😂 👌 👌 👌 👌 💯 💯 💯 💯
+ */
 const val tru = true

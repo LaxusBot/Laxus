@@ -17,6 +17,8 @@ package xyz.laxus.db
 
 import xyz.laxus.db.schema.*
 import xyz.laxus.db.sql.*
+import xyz.laxus.db.sql.ResultSetConcur.*
+import xyz.laxus.db.sql.ResultSetType.*
 
 @TableName("COMMAND_LEVELS")
 @Columns(
@@ -39,7 +41,7 @@ object DBCommandLevels : Table() {
     }
 
     fun setCommandLevel(guildId: Long, commandName: String, commandLevel: String?) {
-        connection.prepare("SELECT * FROM COMMAND_LEVELS WHERE GUILD_ID = ? AND LOWER(COMMAND_NAME) = LOWER(?)") { statement ->
+        connection.prepare("SELECT * FROM COMMAND_LEVELS WHERE GUILD_ID = ? AND LOWER(COMMAND_NAME) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = commandName
             statement.executeQuery {

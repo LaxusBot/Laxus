@@ -18,7 +18,7 @@ package xyz.laxus.command.moderator
 import com.typesafe.config.Config
 import net.dv8tion.jda.core.JDABuilder
 import xyz.laxus.command.Command
-import xyz.laxus.entities.ModLog
+import xyz.laxus.listeners.ModLog
 import xyz.laxus.jda.util.listener
 
 /**

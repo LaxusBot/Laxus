@@ -25,6 +25,7 @@ import kotlin.annotation.AnnotationTarget.*
  * @param details The details of the experimental status.
  */
 @MustBeDocumented
+@SinceKotlin("1.2")
 @Retention(SOURCE)
 @Target(
     CLASS, FUNCTION, PROPERTY, PROPERTY_GETTER, PROPERTY_SETTER,

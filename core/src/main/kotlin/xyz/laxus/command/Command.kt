@@ -24,9 +24,12 @@ import xyz.laxus.command.Command.CooldownScope.*
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.isAdmin
 import xyz.laxus.util.commandArgs
+import xyz.laxus.util.db.getCommandLevel
+import xyz.laxus.util.db.isIgnored
 import xyz.laxus.util.db.isMod
 import xyz.laxus.util.ignored
-import xyz.laxus.util.niceName
+import xyz.laxus.util.modifyIf
+import xyz.laxus.util.titleName
 import java.util.*
 import kotlin.reflect.full.findAnnotation
 
@@ -46,6 +49,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
                 val aliases = command.aliases
                 val help = command.help
                 val arguments = command.arguments
+                val experiment = command.experiment
                 val children = command.children.filter {
                     it.group.check(ctx) && when {
                         ctx.isPrivate -> it.defaultLevel.test(ctx) && !it.guildOnly
@@ -74,32 +78,32 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
                     append("\n**Function:** `$help`\n")
                 }
 
+                if(experiment !== null) {
+                    append("\n**Experimental:** ")
+                    appendln(experiment.info.modifyIf(String::isEmpty) {
+                        "This command is experimental." // TODO add info regarding experimental commands
+                    })
+                }
+
                 if(children.isNotEmpty()) {
                     append("\n**Sub-Commands:**\n\n")
                     var cat: Level? = null
                     for((i, c) in children.sorted().withIndex()) {
                         if(cat != c.defaultLevel) {
-                            if(!c.defaultLevel.test(ctx)) {
-                                continue
-                            }
-
+                            if(!c.defaultLevel.test(ctx)) continue
                             cat = c.defaultLevel
-
                             if(cat != Level.STANDARD) {
-                                if(i != 0) {
-                                    append("\n")
-                                }
-
-                                append("__${cat.niceName}__\n\n")
+                                if(i != 0) appendln()
+                                append("__${cat.titleName}__\n\n")
                             }
                         }
                         append("`${ctx.bot.prefix}${c.fullname.toLowerCase()}")
                         append(if(c.arguments.isNotEmpty()) " ${c.arguments}" else "")
                         append("` - ").append(c.help)
 
-                        if(i < children.lastIndex) {
-                            append("\n")
-                        }
+                        if(c.isExperimental) append(" `[EXPERIMENTAL]`")
+
+                        if(i < children.lastIndex) appendln()
                     }
                 }
 
@@ -140,6 +144,9 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
     open val fullname: String get() = "${parent?.let { "${it.fullname} " } ?: ""}$name"
     open val defaultLevel: Command.Level get() = parent?.defaultLevel ?: group.defaultLevel
 
+    val isExperimental: Boolean get() = experiment !== null
+
+    private val experiment: Experiment? by lazy { this::class.findAnnotation() ?: parent?.experiment }
     private val autoCooldown by lazy { this::class.findAnnotation<AutoCooldown>()?.mode ?: AutoCooldownMode.OFF }
     private val noArgumentError by lazy {
         val annotation = this::class.findAnnotation<MustHaveArguments>() ?: return@lazy null
@@ -165,6 +172,10 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
         if(devOnly && !ctx.isDev)
             return
 
+        if(isExperimental) {
+            // TODO Manage Experiment Beta Permission
+        }
+
         if(guildOnly && !ctx.isGuild)
             return
 
@@ -182,6 +193,10 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
         }
 
         if(ctx.isGuild) {
+            if(ctx.textChannel.isIgnored) {
+                if(!Level.MODERATOR.test(ctx))
+                    return
+            }
             for(p in botPermissions) {
                 if(p.isChannel) {
                     if(p.name.startsWith("VOICE")) {
@@ -198,15 +213,6 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
             }
         }
 
-        val key = ctx.takeIf { cooldown > 0 }?.cooldownKey?.also { key ->
-            val remaining = ctx.bot.getRemainingCooldown(key)
-            if(remaining > 0) {
-                val scope = ctx.correctScope
-                return ctx.terminate("${Laxus.Warning} That command is on cooldown for $remaining more " +
-                                     "seconds${if(scope.errSuffix.isEmpty()) "" else " ${scope.errSuffix}"}!")
-            }
-        }
-
         noArgumentError?.let { noArgumentError ->
             if(ctx.args.isEmpty()) {
                 noArgumentError.takeIf { it.isNotEmpty() }?.let {
@@ -220,6 +226,15 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
                     "${Laxus.Error} **$MissingArguments!**\n" +
                     "Use `${ctx.bot.prefix}$fullname help` for more info on this command!"
                 )
+            }
+        }
+
+        val key = ctx.takeIf { cooldown > 0 }?.cooldownKey?.also { key ->
+            val remaining = ctx.bot.getRemainingCooldown(key)
+            if(remaining > 0) {
+                val scope = ctx.correctScope
+                return ctx.terminate("${Laxus.Warning} That command is on cooldown for $remaining more " +
+                                     "seconds${if(scope.errSuffix.isEmpty()) "" else " ${scope.errSuffix}"}!")
             }
         }
 

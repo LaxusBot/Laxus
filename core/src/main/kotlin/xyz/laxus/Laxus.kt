@@ -26,6 +26,7 @@ import xyz.laxus.entities.starboard.StarboardManager
 import xyz.laxus.jda.ContextEventManager
 import xyz.laxus.jda.listeners.EventWaiter
 import xyz.laxus.jda.util.*
+import xyz.laxus.listeners.DatabaseListener
 import xyz.laxus.util.*
 import xyz.laxus.util.collections.concurrentHashMap
 import xyz.laxus.util.reflect.packageOf
@@ -38,7 +39,7 @@ object Laxus {
     const val Prefix = "|"
     const val TestPrefix = "||"
     const val ServerInvite = "https://discord.gg/xkkw54u"
-    const val GitHub = "https://github.com/TheMonitorLizard/Laxus"
+    const val GitHub = "https://github.com/kgustave/Laxus"
 
     val Package = packageOf(Laxus::class)
     val Version = Package.version.implementation ?: "BETA"
@@ -100,8 +101,8 @@ object Laxus {
         this.bot = bot {
             this.dBotsKey = config.string("keys.dbots")
             this.dBotsListKey = config.string("keys.dbotslist")
-            if(config.boolean("test") == true) {
-                this.prefix = TestPrefix
+            config.boolean("test")?.let {
+                this.test = it
             }
             config.int("callCacheSize")?.let {
                 this.callCacheSize = it
@@ -122,6 +123,7 @@ object Laxus {
             listener { Waiter }
             listener { Bot }
             listener { StarboardManager }
+            listener { DatabaseListener }
 
             contextMap { concurrentHashMap() }
 

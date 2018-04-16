@@ -49,7 +49,7 @@ class ImageCommand: Command(StandardGroup) {
         when {
             results === null  -> ctx.replyError("An unexpected error occurred while searching!")
             results.isEmpty() -> ctx.replyError("No results were found for \"**$query**\"!")
-            else              -> ctx.reply(message {
+            else -> ctx.reply(message {
                 append { "${Laxus.Success} ${ctx.author.asMention}" }
                 embed {
                     if(ctx.isGuild) {

@@ -31,6 +31,7 @@ import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.editMessage
 import xyz.laxus.jda.util.embed
 import xyz.laxus.util.concurrent.Duration
+import xyz.laxus.util.concurrent.duration
 import java.awt.Color
 import java.util.concurrent.TimeUnit.SECONDS
 
@@ -114,7 +115,7 @@ class UpdatingMenu(builder: UpdatingMenu.Builder): Menu(builder) {
         var color: Color? = null
         var text: String? = null
         var finalAction: FinalAction? = null
-        var interval = Duration(5, SECONDS)
+        var interval = duration(5, SECONDS)
 
         fun update(update: suspend KEmbedBuilder.() -> Unit): Builder = apply {
             this.update = update

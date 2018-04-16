@@ -45,7 +45,8 @@ class PlayCommand(manager: MusicManager): MusicCommand(manager) {
 
         if(query.isEmpty()) {
             // Allow this command to act as a stand-in for a separate "unpause" command
-            if(Level.MODERATOR.test(ctx)) { // FIXME when implementing levels this might be hard to change
+            val level = ctx.bot.commands["Pause"]!!.run { ctx.level }
+            if(level.test(ctx)) {
                 if(!guild.isPlaying) return ctx.notPlaying()
                 if(!member.inPlayingChannel) return ctx.notInPlayingChannel()
 

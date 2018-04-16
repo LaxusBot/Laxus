@@ -76,7 +76,8 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
     private val dBotsKey = builder.dBotsKey
     private val dBotsListKey = builder.dBotsListKey
 
-    val prefix = builder.prefix
+    val test = builder.test
+    val prefix = if(test) Laxus.TestPrefix else Laxus.Prefix
     val httpClient: OkHttpClient = Laxus.HttpClientBuilder.build()
     val startTime: OffsetDateTime = now()
     val groups: List<Command.Group> = builder.groups.sorted()
@@ -114,6 +115,13 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
 
     fun incrementUses(command: Command) {
         uses[command.name] = (uses[command.name] ?: 0) + 1
+    }
+
+    fun searchCommand(query: String): Command? {
+        val splitQuery = query.split(commandArgs, 2)
+        if(splitQuery.isEmpty())
+            return null
+        return commands[splitQuery[0]]?.findChild(if(splitQuery.size > 1) splitQuery[1] else "")
     }
 
     override suspend fun onEvent(event: Event) {
@@ -337,7 +345,7 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
 
     class Builder internal constructor() {
         val groups = LinkedList<Command.Group>()
-        var prefix = Laxus.Prefix
+        var test = false
         var dBotsKey: String? = null
         var dBotsListKey: String? = null
         var callCacheSize = 300

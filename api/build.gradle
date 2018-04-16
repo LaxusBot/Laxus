@@ -43,7 +43,6 @@ dependencies {
     compileOnly project(':commons:jda')
     compileOnly project(':core')
     compileOnly project(':database')
-    compileOnly project(':database:bot')
 
     // Test compile OkHttp for testing REST requests
     testCompile okHttp()

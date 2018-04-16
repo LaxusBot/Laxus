@@ -25,7 +25,7 @@ import xyz.laxus.util.progression
  */
 class PauseCommand(manager: MusicManager): MusicCommand(manager) {
     override val name = "Pause"
-    override val help = "Pauses or unpauses the currently playing music!"
+    override val help = "Pauses or unpauses the currently playing music."
     override val defaultLevel get() = Level.MODERATOR
 
     override suspend fun execute(ctx: CommandContext) {

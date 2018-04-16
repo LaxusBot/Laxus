@@ -33,11 +33,11 @@ buildscript {
     }
 }
 
-def ver = new Version(major: 0, minor: 1)
+def ver = [major: 0, minor: 2]
 
 allprojects {
-    group 'xyz.laxus'
-    version "$ver"
+    group = 'xyz.laxus'
+    version = ver.values().join('.')
 
     ext.ver = ver
 }
@@ -54,7 +54,7 @@ subprojects {
         repositories {
             jitpack = {
                 maven {
-                    url 'https://jitpack.io/'
+                    url = 'https://jitpack.io/'
                 }
             }
         }
@@ -164,8 +164,8 @@ subprojects {
     }
 
     task rebuild {
-        group 'build'
-        description 'Cleans build directory before running normal build task'
+        group = 'build'
+        description = 'Cleans build directory before running normal build task'
 
         dependsOn clean
         dependsOn build
@@ -175,14 +175,5 @@ subprojects {
 }
 
 wrapper {
-    gradleVersion '4.6'
-}
-
-class Version {
-    String major, minor
-
-    @Override
-    String toString() {
-        "${major}.${minor}"
-    }
+    gradleVersion = '4.6'
 }

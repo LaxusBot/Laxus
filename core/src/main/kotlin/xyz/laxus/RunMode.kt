@@ -32,16 +32,16 @@ enum class RunMode(val level: Level): Bot.Listener {
     },
     DEBUG(Level.DEBUG) {
         override fun onCommandCall(ctx: CommandContext, command: Command) {
-            Bot.Log.debug("Call to Command \"${command.name}\"")
+            Bot.Log.debug("Call to Command \"${command.fullname}\"")
         }
 
         override fun onCommandTerminated(ctx: CommandContext, command: Command, msg: String) {
             super.onCommandTerminated(ctx, command, msg)
-            Bot.Log.debug("Terminated Command \"${command.name}\" with message: \"$msg\"")
+            Bot.Log.debug("Terminated Command \"${command.fullname}\" with message: \"$msg\"")
         }
 
         override fun onCommandCompleted(ctx: CommandContext, command: Command) {
-            Bot.Log.debug("Completed Command \"${command.name}\"")
+            Bot.Log.debug("Completed Command \"${command.fullname}\"")
         }
     };
 }

@@ -20,7 +20,7 @@ import net.dv8tion.jda.core.Permission.*
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
-import xyz.laxus.entities.ModLog
+import xyz.laxus.listeners.ModLog
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.removeRole
 import xyz.laxus.util.db.mutedRole
@@ -28,7 +28,7 @@ import xyz.laxus.util.formattedName
 import xyz.laxus.util.parseModeratorArgument
 import kotlin.coroutines.experimental.coroutineContext
 
-@MustHaveArguments("Mention a user to unmute.")
+@MustHaveArguments("Specify a user to unmute via mention.")
 class UnmuteCommand: Command(ModeratorGroup) {
     override val name = "Unmute"
     override val arguments = "[@User] <Reason>"

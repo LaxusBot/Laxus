@@ -21,7 +21,7 @@ import xyz.laxus.Laxus
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
-import xyz.laxus.entities.ModLog
+import xyz.laxus.listeners.ModLog
 import xyz.laxus.jda.menus.paginator
 import xyz.laxus.jda.menus.paginatorBuilder
 import xyz.laxus.jda.util.*
@@ -33,7 +33,7 @@ import xyz.laxus.util.noMatch
 import xyz.laxus.util.parseModeratorArgument
 import java.awt.Color
 
-@MustHaveArguments("Mention a user to mute.")
+@MustHaveArguments("Specify a user to mute via mention.")
 class MuteCommand: Command(ModeratorGroup) {
     override val name = "Mute"
     override val arguments = "[@User] <Reason>"
@@ -53,11 +53,9 @@ class MuteCommand: Command(ModeratorGroup) {
             "This server has no muted role!"
         }
 
-        if(!ctx.selfMember.canInteract(mutedRole)) {
-            return ctx.replyError {
-                "The mute command cannot be used because I cannot " +
-                "interact with this server's muted role!"
-            }
+        if(!ctx.selfMember.canInteract(mutedRole)) return ctx.replyError {
+            "The mute command cannot be used because I cannot " +
+            "interact with this server's muted role!"
         }
 
         val modArgs = parseModeratorArgument(ctx.args) ?: return ctx.invalidArgs()
@@ -186,7 +184,7 @@ class MuteCommand: Command(ModeratorGroup) {
         }
     }
 
-    private inner class MuteSetupCommand : Command(this@MuteCommand) {
+    private inner class MuteSetupCommand: Command(this@MuteCommand) {
         override val name = "Setup"
         override val arguments = "<Name of New Role>"
         override val help = "Creates a new mute role for the server."

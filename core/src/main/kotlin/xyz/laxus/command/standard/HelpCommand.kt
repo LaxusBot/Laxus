@@ -39,11 +39,7 @@ class HelpCommand : Command(StandardGroup) {
                 if(!g.check(ctx))
                     return@g
 
-                val available = g.commands.filter { c ->
-                    val level = /* TODO if(ctx.isGuild) ctx.guild.getCommandLevel(c) ?: c.defaultLevel else */
-                        c.defaultLevel
-                    level.test(ctx)
-                }
+                val available = g.commands.filter { with(it) { ctx.level.test(ctx) } }
 
                 if(available.isEmpty())
                     return@g
@@ -54,12 +50,13 @@ class HelpCommand : Command(StandardGroup) {
 
                 available.forEach c@ { c ->
                     append("`").append(prefix).append(c.name)
-
                     val arguments = c.arguments
                     if(arguments.isNotBlank()) {
                         append(" $arguments")
                     }
-                    appendln("` - ${c.help}")
+                    append("` - ${c.help}")
+                    if(c.isExperimental) append(" `[EXPERIMENTAL]`")
+                    appendln()
                 }
             }
 

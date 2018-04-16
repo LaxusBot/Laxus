@@ -15,6 +15,7 @@
  */
 package xyz.laxus.db.sql
 
+import xyz.laxus.db.schema.SQLTime
 import java.sql.ResultSet
 
 inline fun <reified R: ResultSet> R.whileNext(block: (R) -> Unit) {
@@ -95,6 +96,14 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: Array<*>
         updateNull(column)
     } else {
         updateObject(column, value)
+    }
+}
+
+inline operator fun <reified R: ResultSet> R.set(column: String, value: SQLTime?) {
+    if(value === null) {
+        updateNull(column)
+    } else {
+        updateTime(column, value)
     }
 }
 

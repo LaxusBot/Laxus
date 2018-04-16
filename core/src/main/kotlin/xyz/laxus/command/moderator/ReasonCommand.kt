@@ -21,7 +21,7 @@ import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
 import xyz.laxus.db.entities.Case
-import xyz.laxus.entities.ModLog
+import xyz.laxus.listeners.ModLog
 import xyz.laxus.jda.util.await
 import xyz.laxus.util.commandArgs
 import xyz.laxus.util.db.casesWithoutReason

@@ -53,6 +53,12 @@ private constructor(dispatcher: CoroutineDispatcher): EventListener, CoroutineCo
         noinline condition: suspend (E) -> Boolean
     ): Deferred<E?> = receiveEvent(E::class, condition, delay, unit)
 
+    suspend inline fun <reified E: Event> delayUntil(
+        delay: Long = -1,
+        unit: TimeUnit = TimeUnit.SECONDS,
+        noinline condition: suspend (E) -> Boolean
+    ): Boolean = delayUntilEvent(E::class, condition, delay, unit)
+
     fun <E: Event> waitForEvent(
         klazz: KClass<E>,
         condition: suspend (E) -> Boolean,
@@ -104,6 +110,13 @@ private constructor(dispatcher: CoroutineDispatcher): EventListener, CoroutineCo
 
         return deferred
     }
+
+    suspend fun <E: Event> delayUntilEvent(
+        klazz: KClass<E>,
+        condition: suspend (E) -> Boolean,
+        delay: Long = -1,
+        unit: TimeUnit = TimeUnit.SECONDS
+    ): Boolean = receiveEvent(klazz, condition, delay, unit).await() !== null
 
     override fun onEvent(event: Event) {
         launch(this) {

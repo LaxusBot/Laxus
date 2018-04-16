@@ -53,7 +53,7 @@ inline fun <reified C: CharSequence> strike(csq: C): String = "~~$csq~~"
 inline fun <reified C: CharSequence> underline(csq: C): String = "__${csq}__"
 inline fun <reified C: CharSequence> code(csq: C): String = "`$csq`"
 
-val OffsetDateTime.readableFormat get() = "${dayOfWeek.niceName}, ${month.niceName} $dayOfMonth, $year"
+val OffsetDateTime.readableFormat get() = "${dayOfWeek.titleName}, ${month.titleName} $dayOfMonth, $year"
 
 val AudioTrack.trackTime get() = formatTrackTime(duration)
 val AudioTrack.progression get() = "${formatTrackTime(position)}/$trackTime"

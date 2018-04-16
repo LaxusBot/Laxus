@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:Suppress("Unused")
 package xyz.laxus.util
 
 import com.typesafe.config.*
 import xyz.laxus.util.reflect.loadClass
+import xyz.laxus.util.reflect.valueOf
 import kotlin.reflect.KClass
 
-fun loadConfig(name: String): Config {
-    return ConfigFactory.load(name)
-}
+fun loadConfig(name: String): Config = ConfigFactory.load(name)
 
 fun Config.config(path: String): Config? {
     if(!hasPath(path) || getIsNull(path))
@@ -65,15 +65,15 @@ fun Config.long(path: String): Long? {
     return getLong(path)
 }
 
-fun Config.klass(path: String): KClass<*>? = string(path)?.let { loadClass(it) }
-
-fun <E: Enum<E>> Config.enum(path: String, type: KClass<E>): E? {
-    return string(path)?.let { enum ->
-        type.java.enumConstants.firstOrNull { it.name.equals(enum, ignoreCase = true) }
-    }
+fun Config.double(path: String): Double? {
+    if(!hasPath(path) || getIsNull(path))
+        return null
+    return getDouble(path)
 }
 
-inline fun <reified E: Enum<E>> Config.enum(path: String): E? = enum(path, E::class)
+fun Config.klass(path: String): KClass<*>? = string(path)?.let { loadClass(it) }
+
+inline fun <reified E: Enum<E>> Config.enum(path: String): E? = string(path)?.let { E::class.valueOf(it) }
 
 fun ConfigObject.string(key: String): String? = this[key]?.string
 fun ConfigObject.short(key: String): Short? = this[key]?.short
@@ -82,18 +82,40 @@ fun ConfigObject.long(key: String): Long? = this[key]?.long
 fun ConfigObject.float(key: String): Float? = this[key]?.float
 fun ConfigObject.double(key: String): Double? = this[key]?.double
 fun ConfigObject.klass(key: String): KClass<*>? = this[key]?.klass
-fun <E: Enum<E>> ConfigObject.enum(key: String, type: KClass<E>): E? = string(key)?.let { enum ->
-    type.java.enumConstants.firstOrNull { it.name.equals(enum, ignoreCase = true) }
-}
-inline fun <reified E: Enum<E>> ConfigObject.enum(key: String): E? = enum(key, E::class)
 fun ConfigObject.obj(key: String): ConfigObject? = toConfig().obj(key)
 fun ConfigObject.config(key: String): Config? = toConfig().config(key)
 fun ConfigObject.list(key: String): ConfigList? = toConfig().list(key)
+fun ConfigObject.value(key: String): ConfigValue? = get(key)
+inline fun <reified E: Enum<E>> ConfigObject.enum(key: String): E? = string(key)?.let { E::class.valueOf(it) }
 
-val ConfigValue.string: String? get() = unwrapped()?.toString()
+val ConfigValue.string: String? get() = unwrapped()?.let { it as? String ?: it.toString() }
 val ConfigValue.short: Short? get() = unwrapped()?.let { it as? Number }?.toShort()
 val ConfigValue.int: Int? get() = unwrapped()?.let { it as? Number }?.toInt()
 val ConfigValue.long: Long? get() = unwrapped()?.let { it as? Number }?.toLong()
 val ConfigValue.float: Float? get() = unwrapped()?.let { it as? Number }?.toFloat()
 val ConfigValue.double: Double? get() = unwrapped()?.let { it as? Number }?.toDouble()
-val ConfigValue.klass: KClass<*>? get() = string?.let { loadClass(it) }
+val ConfigValue.klass: KClass<*>? get() =  string?.let { loadClass(it) }
+
+@Deprecated(
+    message = "Is not an public method worth keeping.",
+    replaceWith = ReplaceWith(
+        expression = "Config.enum<E>(path)",
+        imports = ["xyz.laxus.util.enum"]
+    ),
+    level = DeprecationLevel.WARNING
+)
+fun <E: Enum<E>> Config.enum(path: String, type: KClass<E>): E? = string(path)?.let { enum ->
+    type.java.enumConstants.firstOrNull { it.name.equals(enum, ignoreCase = true) }
+}
+
+@Deprecated(
+    message = "Is not an public method worth keeping.",
+    replaceWith = ReplaceWith(
+        expression = "ConfigObject.enum<E>(key)",
+        imports = ["xyz.laxus.util.enum"]
+    ),
+    level = DeprecationLevel.WARNING
+)
+fun <E: Enum<E>> ConfigObject.enum(key: String, type: KClass<E>): E? = string(key)?.let { enum ->
+    type.java.enumConstants.firstOrNull { it.name.equals(enum, ignoreCase = true) }
+}

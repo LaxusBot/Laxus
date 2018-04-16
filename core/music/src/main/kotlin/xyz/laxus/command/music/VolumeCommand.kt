@@ -18,8 +18,8 @@ package xyz.laxus.command.music
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
 import xyz.laxus.music.MusicManager
-import xyz.laxus.util.niceName
 import xyz.laxus.util.ignored
+import xyz.laxus.util.titleName
 
 /**
  * @author Kaidan Gustave
@@ -55,7 +55,7 @@ class VolumeCommand(manager: MusicManager): MusicCommand(manager) {
         MEDIUM(75),
         HIGH(125);
 
-        override fun toString(): String = "$niceName ($volume)"
+        override fun toString(): String = "$titleName ($volume)"
 
         companion object {
             fun fromArgs(args: String): VolumeLevel? = values().firstOrNull { it.name.equals(args, true) }

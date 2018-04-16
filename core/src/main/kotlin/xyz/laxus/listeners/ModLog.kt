@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 @file:Suppress("unused", "MemberVisibilityCanBePrivate")
-package xyz.laxus.entities
+package xyz.laxus.listeners
 
 import kotlinx.coroutines.experimental.*
 import net.dv8tion.jda.core.audit.ActionType
@@ -45,7 +45,7 @@ import kotlin.coroutines.experimental.coroutineContext
  */
 object ModLog : SuspendedListener {
     private const val ReasonLineFormat = "`[ REASON ]` %s"
-    private const val FullFormat = "`[  CASE  ]` `[%d]` %s %s %s **%s** (ID: %d)\n$ReasonLineFormat"
+    private const val FullFormat = "`[  CASE  ]` `[%d]` %s %s %s **%s** (ID: %d)\n${ReasonLineFormat}"
     private const val DefaultReason = "none"
     private const val RetrieveAmount = 20
 
@@ -336,7 +336,7 @@ object ModLog : SuspendedListener {
 
     private suspend fun pollLogOrGetFromCache(guild: Guild): List<AuditLogEntry> {
         return auditCache[guild.idLong] ?: run {
-            Log.debug("Polling AuditLog for Guild ID: ${guild.idLong} (max $RetrieveAmount entries)")
+            Log.debug("Polling AuditLog for Guild ID: ${guild.idLong} (max ${RetrieveAmount} entries)")
             guild.auditLogs.limit(RetrieveAmount).await().also {
                 auditCache[guild.idLong] = it
             }

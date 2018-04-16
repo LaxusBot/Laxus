@@ -13,25 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("unused")
-package xyz.laxus.util.db
+@file:Suppress("UNCHECKED_CAST")
+package xyz.laxus.util.functional
 
-import net.dv8tion.jda.core.entities.Guild
-import xyz.laxus.db.DBPrefixes
+operator fun String.Companion.get(vararg strings: String) = arrayOf(*strings)
+operator fun Int.Companion.get(vararg ints: Int) = intArrayOf(*ints)
 
-val Guild.prefixes: Set<String> get() {
-    return DBPrefixes.getPrefixes(idLong)
-}
-
-fun Guild.hasPrefix(prefix: String) {
-    DBPrefixes.hasPrefix(idLong, prefix)
-}
-
-fun Guild.addPrefix(prefix: String) {
-    require(prefix.length <= 50) { "Prefix cannot be longer than 50 characters" }
-    DBPrefixes.addPrefix(idLong, prefix)
-}
-
-fun Guild.removePrefix(prefix: String) {
-    DBPrefixes.removePrefix(idLong, prefix)
+interface ArrayOperator<T: Any> {
+    operator fun get(vararg elements: T): Array<T> {
+        val array = arrayOfNulls<Any>(elements.size)
+        for(i in 0 until array.size) {
+            array[i] = elements[i]
+        }
+        return array as Array<T>
+    }
 }

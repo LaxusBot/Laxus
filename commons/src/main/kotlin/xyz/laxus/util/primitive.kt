@@ -23,17 +23,20 @@ val Int.name: String? get() = Character.getName(this)
 val Long.length: Int get() = "$this".length
 
 fun Int.toChars(): CharArray = Character.toChars(this)
+fun Int.toBinaryString(): String = Integer.toBinaryString(this)
 fun Int.toHexString(): String = Integer.toHexString(this)
+fun Int.toOctalString(): String = Integer.toOctalString(this)
+fun Int.toUnsignedString(): String = Integer.toUnsignedString(this)
 
-fun emptyByteArray(): ByteArray = ByteArray(0)
-fun emptyShortArray(): ShortArray = ShortArray(0)
-fun emptyIntArray(): IntArray = IntArray(0)
-fun emptyLongArray(): LongArray = LongArray(0)
+fun emptyByteArray() = ByteArray(0)
+fun emptyShortArray() = ShortArray(0)
+fun emptyIntArray() = IntArray(0)
+fun emptyLongArray() = LongArray(0)
 
-fun arrayOf(vararg bytes: Byte): ByteArray = bytes
-fun arrayOf(vararg shorts: Short): ShortArray = shorts
-fun arrayOf(vararg ints: Int): IntArray = ints
-fun arrayOf(vararg longs: Long): LongArray = longs
+fun arrayOf(vararg bytes: Byte) = bytes
+fun arrayOf(vararg shorts: Short) = shorts
+fun arrayOf(vararg ints: Int) = ints
+fun arrayOf(vararg longs: Long) = longs
 
 /**
  * Generates a pseudo-random [Double] in the range [[min], [max]).

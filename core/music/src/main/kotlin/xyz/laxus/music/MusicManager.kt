@@ -32,7 +32,7 @@ import xyz.laxus.music.lava.ServiceAudioSourceManager
 import xyz.laxus.music.lava.member
 import xyz.laxus.util.createLogger
 import xyz.laxus.util.formatTrackTime
-import xyz.laxus.util.niceName
+import xyz.laxus.util.titleName
 
 /**
  * @author Kaidan Gustave
@@ -100,7 +100,7 @@ class MusicManager : IMusicManager, AutoCloseable, AudioPlayerManager by Service
                 if(endReason === null) {
                     Log.debug("Track Ended With Null Reason | ${logTrackInfo(event.track)}")
                 } else {
-                    Log.debug("Track ${endReason.niceName} | ${logTrackInfo(event.track)}")
+                    Log.debug("Track ${endReason.titleName} | ${logTrackInfo(event.track)}")
                 }
                 onTrackFinished(event)
             }

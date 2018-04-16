@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.command
+package xyz.laxus.util.db
 
 import net.dv8tion.jda.core.entities.Guild
+import xyz.laxus.command.Command
 import xyz.laxus.db.DBCommandLevels
-
-// TODO Reallocate this file when merging :database:bot module with :core module
 
 fun Guild.getCommandLevel(command: Command): Command.Level? {
     return DBCommandLevels.getCommandLevel(idLong, command.fullname)?.let { level ->

@@ -16,22 +16,22 @@
 package xyz.laxus.util.db
 
 import net.dv8tion.jda.core.entities.Guild
-import net.dv8tion.jda.core.entities.TextChannel
-import xyz.laxus.db.DBChannels
-import xyz.laxus.db.DBChannels.Type.*
+import xyz.laxus.db.DBCustomCommands
 
-var Guild.modLog: TextChannel?
-    get() = getRoleTypeOf(MOD_LOG)
-    set(value) = setChannelTypeOf(value, MOD_LOG)
+val Guild.customCommands get() = DBCustomCommands.getCustomCommands(idLong)
 
-val Guild.hasModLog: Boolean get() {
-    return modLog !== null
+fun Guild.hasCustomCommand(name: String): Boolean {
+    return DBCustomCommands.hasCustomCommand(idLong, name)
 }
 
-private fun Guild.getRoleTypeOf(type: DBChannels.Type): TextChannel? {
-    return DBChannels.getChannel(idLong, type)?.let { getTextChannelById(it) }
+fun Guild.setCustomCommand(name: String, content: String?) {
+    if(content === null) {
+        DBCustomCommands.removeCustomCommand(idLong, name)
+    } else {
+        DBCustomCommands.setCustomCommand(idLong, name, content)
+    }
 }
 
-private fun Guild.setChannelTypeOf(value: TextChannel?, type: DBChannels.Type) {
-    if(value !== null) DBChannels.setChannel(idLong, value.idLong, type) else DBChannels.removeChannel(idLong, type)
+fun Guild.getCustomCommand(name: String): String? {
+    return DBCustomCommands.getCustomCommand(idLong, name)
 }

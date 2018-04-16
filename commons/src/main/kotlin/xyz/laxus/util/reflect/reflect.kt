@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:JvmName("ReflectUtil")
+@file:Suppress("Unused")
 package xyz.laxus.util.reflect
 
 import xyz.laxus.util.internal.impl.KPackageImpl
 import kotlin.reflect.KClass
-
-// PackageInfo
+import kotlin.reflect.full.findAnnotation
+import java.lang.ClassNotFoundException as CNFException
 
 fun packageOf(klazz: KClass<*>): KPackage = KPackageImpl(klazz)
 fun packageOf(clazz: Class<*>): KPackage = KPackageImpl(clazz.kotlin)
@@ -34,6 +36,62 @@ val KPackage.java: Package get() {
     return impl.javaPackage
 }
 
-fun loadClass(fqn: String): KClass<*>? {
-    return try { Class.forName(fqn)?.kotlin } catch(ex: ClassNotFoundException) { null }
+fun <E: Enum<E>> KClass<E>.values(): Array<E> {
+    // Class#getEnumConstants returns null when the
+    //Class does not represent an enum type.
+    return requireNotNull(java.enumConstants) {
+        "Class $this does not represent an enum type!"
+    }
+}
+
+fun <E: Enum<E>> KClass<E>.valueOf(name: String): E {
+    val values = values()
+    return requireNotNull(values.firstOrNull { it.name == name }) {
+        "Could not find enum value '$name'!"
+    }
+}
+
+/**
+ * Loads and returns a [KClass] with the specified fully-qualified
+ * name, optionally with a specific [ClassLoader].
+ *
+ * @param fqn The fully-qualified name of the [KClass] to load.
+ * @param loader The optional [ClassLoader] to use.
+ *
+ * @return The loaded [KClass] or `null` if one with the [fqn] could not be found.
+ */
+fun loadClass(fqn: String, loader: ClassLoader? = null): KClass<*>? {
+    return try {
+        if(loader === null) {
+            Class.forName(fqn)?.kotlin
+        } else {
+            Class.forName(fqn, true, loader)?.kotlin
+        }
+    } catch(ex: CNFException) { null }
+}
+
+/**
+ * Uses the receiver [ClassLoader] to load a [KClass]
+ * with the provided fully-qualified name.
+ *
+ * @receiver The [ClassLoader] to use.
+ * @param fqn The fully-qualified name of the [KClass] to load.
+ *
+ * @return The loaded [KClass] or `null` if one with the [fqn] could not be found.
+ */
+fun ClassLoader.loadKlass(fqn: String): KClass<*>? {
+    return try { this.loadClass(fqn)?.kotlin } catch(ex: CNFException) { null }
+}
+
+/**
+ * Finds an [Annotation] on the receiver [class][KClass]
+ * and applies the [function] using it if it exists, or
+ * else does nothing.
+ *
+ * @receiver The [class][KClass] to find and use the annotation from.
+ * @param A The type of [Annotation]
+ * @param function The function to run with the annotation.
+ */
+inline fun <reified A: Annotation> KClass<*>.withAnnotation(function: (A) -> Unit) {
+    findAnnotation<A>()?.let(function)
 }

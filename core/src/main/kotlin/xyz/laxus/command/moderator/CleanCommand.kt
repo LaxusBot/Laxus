@@ -22,7 +22,7 @@ import xyz.laxus.command.Command
 import xyz.laxus.command.MustHaveArguments
 import xyz.laxus.command.CommandContext
 import xyz.laxus.jda.util.await
-import xyz.laxus.entities.ModLog
+import xyz.laxus.listeners.ModLog
 import xyz.laxus.jda.util.producePast
 import xyz.laxus.util.discordID
 import xyz.laxus.util.reasonPattern

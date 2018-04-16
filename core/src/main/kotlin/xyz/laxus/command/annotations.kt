@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:JvmName("CommandAnnotations")
 package xyz.laxus.command
 
 @Target(AnnotationTarget.CLASS)
@@ -22,5 +23,9 @@ annotation class AutoCooldown(val mode: AutoCooldownMode = AutoCooldownMode.AFTE
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class MustHaveArguments(val error: String = "")
+
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class Experiment(val info: String = "")
 
 enum class AutoCooldownMode { OFF, BEFORE, AFTER }

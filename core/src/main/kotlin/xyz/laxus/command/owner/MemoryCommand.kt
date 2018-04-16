@@ -22,7 +22,7 @@ import xyz.laxus.command.CommandContext
 import xyz.laxus.jda.menus.updatingMenu
 import xyz.laxus.jda.menus.updatingMenuBuilder
 import xyz.laxus.util.*
-import xyz.laxus.util.concurrent.Duration
+import xyz.laxus.util.concurrent.duration
 import java.util.concurrent.TimeUnit.*
 
 /**
@@ -42,9 +42,9 @@ class MemoryCommand: Command(OwnerGroup) {
     override val botPermissions = arrayOf(MESSAGE_EMBED_LINKS)
 
     private val builder = updatingMenuBuilder {
-        waiter { Laxus.Waiter }
-        interval { Duration(3, SECONDS) }
-        text { "${Laxus.Success} Memory:" }
+        interval = duration(3, SECONDS)
+        waiter = Laxus.Waiter
+        text = "${Laxus.Success} Memory:"
         timeout {
             delay { 2 }
             unit { MINUTES }

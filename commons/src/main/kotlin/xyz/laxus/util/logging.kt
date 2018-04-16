@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:JvmName("LoggingUtil")
 @file:Suppress("Unused")
 package xyz.laxus.util
 
@@ -38,7 +39,7 @@ fun createLogger(name: String): Logger = LoggerFactory.getLogger(name)
  *
  * @return A [Logger] with the provided [class][KClass].
  */
-fun <T: Any> createLogger(klazz: KClass<out T>): Logger = LoggerFactory.getLogger(klazz.java)
+fun createLogger(klazz: KClass<*>): Logger = LoggerFactory.getLogger(klazz.java)
 
 /**
  * Log a message at INFO level.

@@ -25,7 +25,14 @@ object AdministratorGroup : Command.Group("Administrator") {
     override val defaultLevel = Command.Level.ADMINISTRATOR
     override val devOnly = false
     override val guildOnly = true
+
     override fun init(config: Config) {
+        + CustomCmdCommand()
+        + IgnoreCommand()
+        + LevelCommand()
+        + LogCommand()
         + ModeratorCommand()
+        + PrefixCommand()
+        + WelcomeCommand()
     }
 }

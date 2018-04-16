@@ -28,11 +28,11 @@ import kotlin.reflect.KAnnotatedElement
  * @author Kaidan Gustave
  * @since  0.1.0
  */
-@Experimental(
-    "In the event that kotlin.reflect adds their own Package " +
-    "reflection entities, this may be subject to deprecation " +
-    "and/or removal."
-)
+@Experimental(details = """
+    In the event that kotlin.reflect adds their own Package
+    reflection entities, this may be subject to deprecation
+    and/or removal.
+""")
 interface KPackage : KAnnotatedElement {
     companion object {
         @Deprecated(

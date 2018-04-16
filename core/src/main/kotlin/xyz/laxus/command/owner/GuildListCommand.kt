@@ -25,7 +25,7 @@ import xyz.laxus.jda.menus.paginator
 import xyz.laxus.jda.menus.paginatorBuilder
 import xyz.laxus.util.commandArgs
 import xyz.laxus.util.db.isMusic
-import xyz.laxus.util.niceName
+import xyz.laxus.util.titleName
 
 /**
  * @author Kaidan Gustave
@@ -109,10 +109,10 @@ class GuildListCommand: Command(OwnerGroup) {
                     guild.isMusic = true
                 }
 
-                else -> return ctx.replyWarning("Type **${type.niceName}** is not yet supported!")
+                else -> return ctx.replyWarning("Type **${type.titleName}** is not yet supported!")
             }
 
-            ctx.replySuccess("Successfully added **${guild.name}** as **${type.niceName}**!")
+            ctx.replySuccess("Successfully added **${guild.name}** as **${type.titleName}**!")
         }
     }
 
@@ -163,10 +163,10 @@ class GuildListCommand: Command(OwnerGroup) {
                     guild.isMusic = false
                 }
 
-                else -> return ctx.replyWarning("Type **${type.niceName}** is not yet supported!")
+                else -> return ctx.replyWarning("Type **${type.titleName}** is not yet supported!")
             }
 
-            ctx.replySuccess("Successfully removed **${guild.name}** as **${type.niceName}**!")
+            ctx.replySuccess("Successfully removed **${guild.name}** as **${type.titleName}**!")
         }
     }
 }

@@ -161,6 +161,14 @@ object Database : AutoCloseable {
         if(!::_connection.isInitialized) return
         if(connection.isClosed) return
 
+        tables.values.forEach {
+            try {
+                it.close()
+            } catch(t: Throwable) {
+                LOG.warn("Experienced an exception while closing a table '${it.name}' connection:\n$t")
+            }
+        }
+
         try {
             connection.close()
         } catch(t: Throwable) {

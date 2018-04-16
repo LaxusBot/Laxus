@@ -35,6 +35,19 @@ object DBCustomCommands : Table() {
         }
     }
 
+    fun getCustomCommands(guildId: Long): List<Pair<String, String>> {
+        val list = ArrayList<Pair<String, String>>()
+        connection.prepare("SELECT * FROM CUSTOM_COMMANDS WHERE GUILD_ID = ?") { statement ->
+            statement[1] = guildId
+            statement.executeQuery {
+                it.whileNext {
+                    list += (it.getString("NAME") to it.getString("CONTENT"))
+                }
+            }
+        }
+        return list
+    }
+
     fun getCustomCommand(guildId: Long, name: String): String? {
         connection.prepare("SELECT * FROM CUSTOM_COMMANDS WHERE GUILD_ID = ? AND LOWER(NAME) = LOWER(?)") { statement ->
             statement[1] = guildId
@@ -46,7 +59,7 @@ object DBCustomCommands : Table() {
         return null
     }
 
-    fun addCustomCommand(guildId: Long, name: String, content: String) {
+    fun setCustomCommand(guildId: Long, name: String, content: String) {
         require(name.length <= 50) { "Custom Command name length exceeds maximum of 50 characters!" }
         require(content.length <= 1900) { "Custom Command content length exceeds maximum of 50 characters!" }
         connection.prepare("SELECT * FROM CUSTOM_COMMANDS WHERE GUILD_ID = ? AND LOWER(NAME) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
@@ -56,19 +69,7 @@ object DBCustomCommands : Table() {
                 if(!it.next()) it.insert {
                     it["NAME"] = name
                     it["CONTENT"] = content
-                }
-            }
-        }
-    }
-
-    fun editCustomCommand(guildId: Long, name: String, content: String) {
-        require(name.length <= 50) { "Custom Command name length exceeds maximum of 50 characters!" }
-        require(content.length <= 1900) { "Custom Command content length exceeds maximum of 50 characters!" }
-        connection.prepare("SELECT * FROM CUSTOM_COMMANDS WHERE GUILD_ID = ? AND LOWER(NAME) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
-            statement[1] = guildId
-            statement[2] = name
-            statement.executeQuery {
-                if(it.next()) it.update {
+                } else it.update {
                     it["CONTENT"] = content
                 }
             }

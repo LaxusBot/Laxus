@@ -51,5 +51,4 @@ dependencies {
     compileOnly project(':commons')
     compileOnly project(':commons:jda')
     compileOnly project(':database')
-    compileOnly project(':database:bot')
 }

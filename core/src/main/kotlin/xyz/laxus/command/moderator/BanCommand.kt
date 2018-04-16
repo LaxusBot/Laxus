@@ -22,7 +22,7 @@ import net.dv8tion.jda.core.requests.ErrorResponse
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
-import xyz.laxus.entities.ModLog
+import xyz.laxus.listeners.ModLog
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.banFrom
 import xyz.laxus.util.formattedName
@@ -32,7 +32,7 @@ import kotlin.coroutines.experimental.coroutineContext
 /**
  * @author Kaidan Gustave
  */
-@MustHaveArguments
+@MustHaveArguments("Specify a user to ban via mention.")
 class BanCommand: Command(ModeratorGroup) {
     override val name = "Ban"
     override val arguments = "[@User] <Reason>"

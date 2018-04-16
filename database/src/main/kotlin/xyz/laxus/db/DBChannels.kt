@@ -30,12 +30,17 @@ import xyz.laxus.db.sql.ResultSetType.*
     Column("TYPE", "$VARCHAR(50)", unique = true)
 )
 object DBChannels : Table() {
-    private const val GET_CHANNELS = "SELECT CHANNEL_ID FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?"
-    private const val SET_ADD_CHANNELS = "SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?"
-    private const val REMOVE_CHANNEL = "SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND CHANNEL_ID = ? AND TYPE = ?"
+    fun isChannel(guildId: Long, channelId: Long, type: Type): Boolean {
+        return connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND CHANNEL_ID = ? AND TYPE = ?") { statement ->
+            statement[1] = guildId
+            statement[2] = channelId
+            statement[3] = type.name
+            statement.executeQuery { it.next() }
+        }
+    }
 
-    fun isChannel(guildId: Long, type: Type): Boolean {
-        return connection.prepare(SET_ADD_CHANNELS) { statement ->
+    fun hasChannel(guildId: Long, type: Type): Boolean {
+        return connection.prepare("SELECT CHANNEL_ID FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery { it.next() }
@@ -43,7 +48,7 @@ object DBChannels : Table() {
     }
 
     fun getChannel(guildId: Long, type: Type): Long? {
-        connection.prepare(GET_CHANNELS) { statement ->
+        connection.prepare("SELECT CHANNEL_ID FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -57,7 +62,7 @@ object DBChannels : Table() {
 
     fun getChannels(guildId: Long, type: Type): List<Long> {
         val channels = ArrayList<Long>()
-        connection.prepare(GET_CHANNELS) { statement ->
+        connection.prepare("SELECT CHANNEL_ID FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -68,7 +73,7 @@ object DBChannels : Table() {
     }
 
     fun setChannel(guildId: Long, channelId: Long, type: Type) {
-        connection.prepare(SET_ADD_CHANNELS, SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -86,7 +91,7 @@ object DBChannels : Table() {
     }
 
     fun addChannel(guildId: Long, channelId: Long, type: Type) {
-        connection.prepare(REMOVE_CHANNEL, SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND CHANNEL_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = channelId
             statement[3] = type.name
@@ -105,7 +110,7 @@ object DBChannels : Table() {
     }
 
     fun removeChannel(guildId: Long, channelId: Long, type: Type) {
-        connection.prepare(REMOVE_CHANNEL, SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND CHANNEL_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = channelId
             statement[3] = type.name
@@ -116,7 +121,7 @@ object DBChannels : Table() {
     }
 
     fun removeChannels(guildId: Long, type: Type) {
-        connection.prepare(GET_CHANNELS, SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -132,6 +137,7 @@ object DBChannels : Table() {
     }
 
     enum class Type {
+        ANNOUNCEMENT,
         IGNORED,
         MOD_LOG,
         WELCOME
