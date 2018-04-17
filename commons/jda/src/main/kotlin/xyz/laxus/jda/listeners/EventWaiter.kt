@@ -18,12 +18,13 @@ package xyz.laxus.jda.listeners
 
 import kotlinx.coroutines.experimental.*
 import net.dv8tion.jda.core.events.Event
+import net.dv8tion.jda.core.events.ShutdownEvent
 import net.dv8tion.jda.core.hooks.EventListener
 import org.slf4j.Logger
+import xyz.laxus.util.collections.concurrentHashMap
 import xyz.laxus.util.collections.concurrentSet
 import xyz.laxus.util.createLogger
 import xyz.laxus.util.ignored
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.experimental.CoroutineContext
 import kotlin.reflect.KClass
@@ -32,10 +33,12 @@ import kotlin.reflect.full.allSuperclasses
 /**
  * @author Kaidan Gustave
  */
-class EventWaiter
-private constructor(dispatcher: CoroutineDispatcher): EventListener, CoroutineContext by dispatcher {
-    private companion object LOG: Logger by createLogger(EventWaiter::class)
-    private val tasks = ConcurrentHashMap<KClass<*>, MutableSet<ITask<*>>>()
+class EventWaiter private constructor(dispatcher: ThreadPoolDispatcher):
+    EventListener,
+    CoroutineContext by dispatcher,
+    AutoCloseable by dispatcher {
+    private companion object Log: Logger by createLogger(EventWaiter::class)
+    private val tasks = concurrentHashMap<KClass<*>, MutableSet<ITask<*>>>()
 
     constructor(): this(newFixedThreadPoolContext(3, "EventWaiter"))
 
@@ -70,13 +73,16 @@ private constructor(dispatcher: CoroutineDispatcher): EventListener, CoroutineCo
         val eventList = taskListType(klazz)
         val waiting = QueuedTask(condition, action)
 
+        Log.debug("Adding task type: '$klazz'")
         eventList += waiting
 
         if(delay > 0) {
             launch(this) {
                 delay(delay, unit)
-                if(eventList.remove(waiting))
+                if(eventList.remove(waiting)) {
+                    Log.debug("Removing task type: '$klazz'")
                     timeout?.invoke()
+                }
             }
         }
     }
@@ -91,19 +97,21 @@ private constructor(dispatcher: CoroutineDispatcher): EventListener, CoroutineCo
         val eventList = taskListType(klazz)
         val waiting = AwaitableTask(condition, deferred)
 
+        Log.debug("Adding task type: '$klazz'")
         eventList += waiting
 
         if(delay > 0) {
             launch(this) {
                 delay(delay, unit)
                 eventList.remove(waiting)
+                Log.debug("Removing task type: '$klazz'")
                 // The receiveEvent method is supposed to return null
-                // if no matching Events are fired within its
-                // lifecycle.
+                //if no matching Events are fired within its
+                //lifecycle.
                 // Regardless of whether or not the AwaitableTask
-                // was removed, we invoke this. In the event that
-                // it has not completed, we need to make sure the
-                // coroutine does not deadlock.
+                //was removed, we invoke this. In the event that
+                //it has not completed, we need to make sure the
+                //coroutine does not deadlock.
                 deferred.complete(null)
             }
         }
@@ -119,6 +127,10 @@ private constructor(dispatcher: CoroutineDispatcher): EventListener, CoroutineCo
     ): Boolean = receiveEvent(klazz, condition, delay, unit).await() !== null
 
     override fun onEvent(event: Event) {
+        if(event is ShutdownEvent) {
+            return close()
+        }
+
         launch(this) {
             val klazz = event::class
             dispatchEventType(event, klazz)
@@ -152,7 +164,7 @@ private constructor(dispatcher: CoroutineDispatcher): EventListener, CoroutineCo
         private val condition: suspend (T) -> Boolean,
         private val action: suspend (T) -> Unit
     ): ITask<T> {
-        override suspend operator fun invoke(event: T): Boolean {
+        override suspend fun invoke(event: T): Boolean {
             // Ignore exception, return false
             ignored {
                 if(condition(event)) {
@@ -169,7 +181,7 @@ private constructor(dispatcher: CoroutineDispatcher): EventListener, CoroutineCo
         private val condition: suspend (T) -> Boolean,
         private val completion: CompletableDeferred<T?>
     ): ITask<T> {
-        override suspend operator fun invoke(event: T): Boolean {
+        override suspend fun invoke(event: T): Boolean {
             try {
                 if(condition(event)) {
                     completion.complete(event)

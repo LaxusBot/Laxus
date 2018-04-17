@@ -13,27 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.command.administrator
+@file:JvmName("StringsUtil")
+@file:Suppress("unused")
+package xyz.laxus.util
 
-import com.typesafe.config.Config
-import xyz.laxus.command.Command
-
-/**
- * @author Kaidan Gustave
- */
-object AdministratorGroup : Command.Group("Administrator") {
-    override val defaultLevel = Command.Level.ADMINISTRATOR
-    override val devOnly = false
-    override val guildOnly = true
-
-    override fun init(config: Config) {
-        + CustomCmdCommand()
-        + IgnoreCommand()
-        + LevelCommand()
-        + LogCommand()
-        + ModeratorCommand()
-        + PrefixCommand()
-        + SettingsCommand()
-        + WelcomeCommand()
-    }
-}
+infix fun String.doesNotMatch(regex: Regex): Boolean = !(this matches regex)

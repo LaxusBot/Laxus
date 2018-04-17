@@ -20,7 +20,6 @@ mainClassName = 'xyz.laxus.Main'
 
 repositories {
     jitpack()
-    maven { url 'https://dl.bintray.com/kotlin/ktor' }
 }
 
 dependencies {
@@ -41,7 +40,7 @@ dependencies {
     // JDA & Lavaplayer
     compile jda()
     compile jdaUtilities('commons')
-    compile jdaUtilities('oauth2')
+    //compile jdaUtilities('oauth2')
     compile lavaplayer()
 
     // Database

@@ -50,7 +50,7 @@ class LevelCommand: EmptyCommand(AdministratorGroup) {
 
         override suspend fun execute(ctx: CommandContext) {
             val args = ctx.args
-            val command = ctx.bot.searchCommand(args) ?: return ctx.replyError {
+            val command = ctx.bot.searchCommand(args)?.takeUnless { it.devOnly } ?: return ctx.replyError {
                 "Could not find a command named `$args`!"
             }
 
@@ -78,7 +78,7 @@ class LevelCommand: EmptyCommand(AdministratorGroup) {
             val commandArgs = splitArgs.subList(0, splitArgs.lastIndex).joinToString(" ")
             val levelArgs = splitArgs.last()
 
-            val command = ctx.bot.searchCommand(commandArgs) ?: return ctx.replyError {
+            val command = ctx.bot.searchCommand(commandArgs)?.takeUnless { it.devOnly } ?: return ctx.replyError {
                 "Could not find a command named `$commandArgs`!"
             }
 

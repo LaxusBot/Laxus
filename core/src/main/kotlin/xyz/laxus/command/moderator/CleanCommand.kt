@@ -139,8 +139,7 @@ class CleanCommand: Command(ModeratorGroup) {
                         message.author.idLong in ids                             -> message
                         bots && message.author.isBot                             -> message
                         embeds && message.embeds.isNotEmpty()                    -> message
-                        links && linkPattern.containsMatchIn(message.contentRaw) -> message
-                        // Files comes before images because images are files
+                        links && linkPattern in message.contentRaw               -> message
                         files && message.attachments.isNotEmpty()                -> message
                         images && message.hasImage                               -> message
                         quotes.any { it in message.contentRaw.toLowerCase() }    -> message

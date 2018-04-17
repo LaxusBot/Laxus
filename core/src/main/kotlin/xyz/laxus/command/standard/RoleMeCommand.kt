@@ -28,6 +28,7 @@ import xyz.laxus.jda.util.findRoles
 import xyz.laxus.jda.util.giveRole
 import xyz.laxus.jda.util.removeRole
 import xyz.laxus.util.db.isRoleMe
+import xyz.laxus.util.db.roleMeLimit
 import xyz.laxus.util.db.roleMeRoles
 import xyz.laxus.util.multipleRoles
 import xyz.laxus.util.noMatch
@@ -46,7 +47,7 @@ class RoleMeCommand : Command(StandardGroup) {
     override val botPermissions = arrayOf(Permission.MANAGE_ROLES)
     override val children = arrayOf(
         RoleMeAddCommand(),
-        //RoleMeLimitCommand(),
+        RoleMeLimitCommand(),
         RoleMeListCommand(),
         RoleMeRemoveCommand()
     )
@@ -185,7 +186,6 @@ class RoleMeCommand : Command(StandardGroup) {
         }
     }
 
-    /*
     private inner class RoleMeLimitCommand : Command(this@RoleMeCommand) {
         override val name = "Limit"
         override val arguments = "<Number>"
@@ -196,7 +196,7 @@ class RoleMeCommand : Command(StandardGroup) {
 
         override suspend fun execute(ctx: CommandContext) {
             val args = ctx.args
-            val currentLimit = ctx.guild.getCommandLimit(this)
+            val currentLimit = ctx.guild.roleMeLimit
 
             if(args.isEmpty()) {
                 return if(currentLimit === null) {
@@ -207,12 +207,12 @@ class RoleMeCommand : Command(StandardGroup) {
             }
 
             val limit = try {
-                args.toInt()
+                args.toShort()
             } catch(e: NumberFormatException) {
                 return ctx.replyError("\"$args\" is not a valid number!")
             }
 
-            ctx.guild.setCommandLimit(this, limit.takeIf { it > 0 })
+            ctx.guild.roleMeLimit = limit.takeIf { it > 0 }
             if(limit > 0) {
                 ctx.replySuccess("Removed the RoleMe limit for this server.")
             } else {
@@ -220,7 +220,6 @@ class RoleMeCommand : Command(StandardGroup) {
             }
         }
     }
-    */
 
     @AutoCooldown
     private inner class RoleMeListCommand : Command(this@RoleMeCommand) {

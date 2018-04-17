@@ -20,11 +20,12 @@ import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.jda.util.await
 import xyz.laxus.util.formattedName
+import xyz.laxus.util.ignored
 
 /**
  * @author Kaidan Gustave
  */
-class HelpCommand : Command(StandardGroup) {
+class HelpCommand: Command(StandardGroup) {
     override val name = "Help"
     override val help = "Gets a list of all commands."
     override val guildOnly = false
@@ -33,21 +34,28 @@ class HelpCommand : Command(StandardGroup) {
     override suspend fun execute(ctx: CommandContext) {
         val prefix = ctx.bot.prefix
         val message = buildString {
+            // Header
             appendln("**Available Commands in ${if(ctx.isGuild) ctx.textChannel.asMention else "Direct Messages"}**")
+
+            // For each group
             ctx.bot.groups.forEach g@ { g ->
                 // They can't use the command group so we don't display it here
                 if(!g.check(ctx))
                     return@g
 
+                // Which commands are even available?
                 val available = g.commands.filter { with(it) { ctx.level.test(ctx) } }
 
+                // None, we skip this group
                 if(available.isEmpty())
                     return@g
 
+                // Group header
                 appendln()
                 appendln("__${g.name} Commands__")
                 appendln()
 
+                // For each available command
                 available.forEach c@ { c ->
                     append("`").append(prefix).append(c.name)
                     val arguments = c.arguments
@@ -55,15 +63,23 @@ class HelpCommand : Command(StandardGroup) {
                         append(" $arguments")
                     }
                     append("` - ${c.help}")
-                    if(c.isExperimental) append(" `[EXPERIMENTAL]`")
+                    // Experimental commands have the [EXPERIMENTAL] tag
+                    if(c.isExperimental) {
+                        append(" `[EXPERIMENTAL]`")
+                    }
                     appendln()
                 }
             }
 
-            val shen = ctx.jda.retrieveUserById(Laxus.DevId).await()
+            val owner = ignored(null) { ctx.jda.retrieveUserById(Laxus.DevId).await() }
+
+            // Additional help
             appendln()
-            append("For additional help contact ${shen.formattedName(true)} or join " +
-                   "my support server: **<${Laxus.ServerInvite}>**")
+            append("For additional help ")
+            if(owner !== null) {
+                append("contact ${owner.formattedName(true)} or ")
+            }
+            append("join my support server: **<${Laxus.ServerInvite}>**")
         }
 
         if(ctx.isGuild)

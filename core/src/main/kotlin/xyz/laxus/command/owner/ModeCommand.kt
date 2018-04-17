@@ -15,26 +15,31 @@
  */
 package xyz.laxus.command.owner
 
-import com.typesafe.config.Config
+import xyz.laxus.RunMode
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 
 /**
  * @author Kaidan Gustave
  */
-object OwnerGroup: Command.Group("Owner") {
-    override val defaultLevel = Command.Level.SHENGAERO
+class ModeCommand: Command(OwnerGroup) {
+    override val name = "Mode"
+    override val aliases = arrayOf("RunMode")
+    override val arguments = "<RunMode>"
+    override val help = "Sets the bot's run mode."
     override val guildOnly = false
-    override val devOnly = true
+    override val hasAdjustableLevel = false
 
-    override fun check(ctx: CommandContext): Boolean = ctx.isDev
-
-    override fun init(config: Config) {
-        + EvalCommand()
-        + GuildListCommand()
-        + MemoryCommand()
-        + ModeCommand()
-        + RestartCommand()
-        + ShutdownCommand()
+    override suspend fun execute(ctx: CommandContext) {
+        val args = ctx.args
+        if(args.isEmpty()) return ctx.reply {
+            "I am currently set to **${ctx.bot.mode}**!"
+        }
+        val mode = RunMode.valueOf(args.toUpperCase())
+        if(ctx.bot.mode == mode) return ctx.replyWarning {
+            "I am already set to **$mode**!"
+        }
+        ctx.bot.mode = mode
+        ctx.replySuccess("Successfully set mode to **$mode**!")
     }
 }

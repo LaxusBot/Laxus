@@ -92,11 +92,15 @@ class ReasonCommand: Command(ModeratorGroup) {
         val logMessage = try {
             modLog.getMessageById(case.messageId).await()
         } catch(e: ErrorResponseException) {
+            // The message was not found. Most likely this means
+            //it was deleted, or the entire mod-log that this was
+            //posted to was deleted.
             if(e.errorResponse == ErrorResponse.UNKNOWN_MESSAGE) return ctx.replyError {
                 "No case message was found for case number `$number`!"
             }
             return ctx.replyError {
-                "An unexpected error occurred while getting the logged message for case number `$number`!"
+                "An unexpected error occurred while getting the " +
+                "logged message for case number `$number`!"
             }
         }
 
@@ -108,7 +112,8 @@ class ReasonCommand: Command(ModeratorGroup) {
         } catch(t: Throwable) {
             ModLog.Log.error("Failed to update case number $number for Guild ID: ${ctx.guild.idLong}", t)
             return ctx.replyError {
-                "An unexpected error occurred while updating the logged message for case number `$number`"
+                "An unexpected error occurred while updating the " +
+                "logged message for case number `$number`"
             }
         }
 

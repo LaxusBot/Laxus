@@ -13,27 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.command.administrator
+package xyz.laxus.util.db
 
-import com.typesafe.config.Config
-import xyz.laxus.command.Command
+import net.dv8tion.jda.core.entities.Guild
+import xyz.laxus.db.DBGuildSettings
 
-/**
- * @author Kaidan Gustave
- */
-object AdministratorGroup : Command.Group("Administrator") {
-    override val defaultLevel = Command.Level.ADMINISTRATOR
-    override val devOnly = false
-    override val guildOnly = true
+var Guild.isRolePersist: Boolean
+    get() = DBGuildSettings.isRolePersist(idLong)
+    set(value) = DBGuildSettings.setIsRolePersist(idLong, value)
 
-    override fun init(config: Config) {
-        + CustomCmdCommand()
-        + IgnoreCommand()
-        + LevelCommand()
-        + LogCommand()
-        + ModeratorCommand()
-        + PrefixCommand()
-        + SettingsCommand()
-        + WelcomeCommand()
-    }
+var Guild.roleMeLimit: Short?
+    get() = DBGuildSettings.getRoleMeLimit(idLong)
+    set(value) = DBGuildSettings.setRoleMeLimit(idLong, value)
+
+fun Guild.removeSettings() {
+    DBGuildSettings.removeSettings(idLong)
 }

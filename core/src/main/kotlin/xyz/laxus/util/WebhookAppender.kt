@@ -30,7 +30,7 @@ import java.util.*
 /**
  * @author Kaidan Gustave
  */
-class WebhookAppender : AppenderBase<ILoggingEvent>() {
+class WebhookAppender: AppenderBase<ILoggingEvent>() {
     private companion object {
         private const val EmbedLimit = 750
         private inline fun WebhookClient.send(embed: KEmbedBuilder.() -> Unit) = send(embed(embed))

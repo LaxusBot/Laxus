@@ -13,28 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.command.owner
-
-import com.typesafe.config.Config
-import xyz.laxus.command.Command
-import xyz.laxus.command.CommandContext
+package xyz.laxus.util.collections
 
 /**
  * @author Kaidan Gustave
  */
-object OwnerGroup: Command.Group("Owner") {
-    override val defaultLevel = Command.Level.SHENGAERO
-    override val guildOnly = false
-    override val devOnly = true
+data class Triple<out F, out S, out T>(
+    val first: F,
+    val second: S,
+    val third: T
+)
 
-    override fun check(ctx: CommandContext): Boolean = ctx.isDev
-
-    override fun init(config: Config) {
-        + EvalCommand()
-        + GuildListCommand()
-        + MemoryCommand()
-        + ModeCommand()
-        + RestartCommand()
-        + ShutdownCommand()
-    }
-}
+inline fun <reified F, reified S, reified T> Pair<F, S>.to(third: T) = Triple(first, second, third)
+inline fun <reified F, reified S, reified T> F.to(pair: Pair<S, T>) = Triple(this, pair.first, pair.second)

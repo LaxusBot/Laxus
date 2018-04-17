@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 @file:Suppress("Unused")
+@file:JvmName("Activity")
 package xyz.laxus.jda.util
 
 typealias Activity = net.dv8tion.jda.core.entities.Game

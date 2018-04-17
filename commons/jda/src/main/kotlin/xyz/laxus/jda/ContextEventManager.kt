@@ -26,6 +26,7 @@ import xyz.laxus.util.createLogger
 import java.util.concurrent.Executors.newCachedThreadPool
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.experimental.suspendCoroutine
 
 class ContextEventManager : IEventManager {
     companion object {
@@ -41,8 +42,16 @@ class ContextEventManager : IEventManager {
         val job = launch(context, CoroutineStart.LAZY) {
             listeners.forEach { listener ->
                 try {
-                    (listener as? EventListener)?.onEvent(event)
-                    (listener as? SuspendedListener)?.onEvent(event)
+                    if(listener is EventListener) suspendCoroutine<Unit> { cont ->
+                        try {
+                            cont.resume(listener.onEvent(event))
+                        } catch(t: Throwable) {
+                            cont.resumeWithException(t)
+                        }
+                    }
+                    if(listener is SuspendedListener) {
+                        listener.onEvent(event)
+                    }
                 } catch(t: Throwable) {
                     LOG.warn("A listener encountered an exception:", t)
                 }
@@ -60,14 +69,14 @@ class ContextEventManager : IEventManager {
         listeners += requireNotNull(listener as? SuspendedListener ?: listener as? EventListener) {
             "Listener must implement EventListener or SuspendedListener!"
         }
-        LOG.debug("Registered listener to manager")
+        LOG.debug("Registered listener to manager: ${listener::class}")
     }
 
     override fun getRegisteredListeners(): MutableList<Any> = listeners.toMutableList()
 
     override fun unregister(listener: Any) {
         listeners -= listener as? SuspendedListener ?: listener as? EventListener ?: return
-        LOG.debug("Unregistered listener to manager")
+        LOG.debug("Unregistered listener to manager: ${listener::class}")
     }
 
     private inner class Factory : ThreadFactory {

@@ -15,10 +15,8 @@
  */
 package xyz.laxus.command.administrator
 
-import xyz.laxus.command.Command
-import xyz.laxus.command.CommandContext
-import xyz.laxus.command.EmptyCommand
-import xyz.laxus.command.MustHaveArguments
+import net.dv8tion.jda.core.entities.TextChannel
+import xyz.laxus.command.*
 import xyz.laxus.db.entities.StarSettings
 import xyz.laxus.entities.starboard.hasStarboard
 import xyz.laxus.entities.starboard.starboardChannel
@@ -37,12 +35,12 @@ class LogCommand: EmptyCommand(AdministratorGroup) {
     override val name = "Log"
     override val help = "Manage various types of server logs."
     override val children = arrayOf(
-        //LogConfigureCommand(),
+        LogConfigureCommand(),
         LogSetCommand(),
         LogRemoveCommand()
     )
 
-    @Suppress("Unused")
+    @Experiment("Log configuring is an experimental feature")
     private inner class LogConfigureCommand: Command(this@LogCommand) {
         override val name = "Configure"
         override val help = "Configures various log settings for the server."
@@ -72,33 +70,18 @@ class LogCommand: EmptyCommand(AdministratorGroup) {
                 else -> channels[0]
             }
 
-            val currentLog = when(type) {
-                Type.MOD_LOG -> ctx.guild.modLog
-                Type.STARBOARD -> ctx.guild.starboardChannel
-            }
+            val currentLog = type.get(ctx)
 
             if(currentLog == found) return ctx.replyError {
                 "**${currentLog.name}** is already the ${type.titleName} for this server!"
             }
 
-            when(type) {
-                Type.MOD_LOG -> {
-                    ctx.guild.modLog = found
-                    ctx.replySuccess("Successfully set ${found.asMention} as this server's moderation log!")
-                }
-
-                Type.STARBOARD -> {
-                    val settings = ctx.guild.starboardSettings?.also { it.channelId = found.idLong }
-                                   ?: StarSettings(found.guild.idLong, found.idLong)
-                    ctx.guild.starboardSettings = settings
-                    ctx.replySuccess("Successfully set ${found.asMention} as this server's starboard!")
-                }
-            }
+            type.set(ctx, found)
         }
     }
 
     @MustHaveArguments
-    private inner class LogRemoveCommand : Command(this@LogCommand) {
+    private inner class LogRemoveCommand: Command(this@LogCommand) {
         override val name = "Remove"
         override val arguments = "[Type]"
         override val help = "Removes the specified type of log from the server."
@@ -108,31 +91,48 @@ class LogCommand: EmptyCommand(AdministratorGroup) {
                 "For a list of all available log types, use `${ctx.bot.prefix}${parent!!.name} types`!"
             }
 
-            when(type) {
-                Type.MOD_LOG -> {
-                    if(!ctx.guild.hasModLog) return ctx.replyError {
-                        "This server has no moderation log to remove!"
-                    }
-
-                    ctx.guild.modLog = null
-                    ctx.replySuccess("Successfully removed this server's moderation log!")
-                }
-
-                Type.STARBOARD -> {
-                    if(!ctx.guild.hasStarboard) return ctx.replyError {
-                        "This server has no starboard to remove!"
-                    }
-
-                    ctx.guild.starboardSettings = null
-                    ctx.replySuccess("Successfully removed this server's starboard!")
-                }
-            }
+            type.remove(ctx)
         }
     }
 
-    private enum class Type(vararg val names: String) {
-        MOD_LOG("moderation log", "moderation", "mod log", "mod"),
-        STARBOARD("starboard", "star");
+    private enum class Type(vararg val names: String): LogTypeCommandHandler {
+        MOD_LOG("moderation log", "moderation", "mod log", "mod") {
+            override fun get(ctx: CommandContext): TextChannel? = ctx.guild.modLog
+
+            override fun set(ctx: CommandContext, channel: TextChannel) {
+                ctx.guild.modLog = channel
+                ctx.replySuccess("Successfully set ${channel.asMention} as this server's moderation log!")
+            }
+
+            override fun remove(ctx: CommandContext) {
+                if(!ctx.guild.hasModLog) return ctx.replyError {
+                    "This server has no moderation log to remove!"
+                }
+
+                ctx.guild.modLog = null
+                ctx.replySuccess("Successfully removed this server's moderation log!")
+            }
+        },
+
+        STARBOARD("starboard", "star") {
+            override fun get(ctx: CommandContext): TextChannel? = ctx.guild.starboardChannel
+
+            override fun set(ctx: CommandContext, channel: TextChannel) {
+                val settings = ctx.guild.starboardSettings?.also { it.channelId = channel.idLong }
+                               ?: StarSettings(channel.guild.idLong, channel.idLong)
+                ctx.guild.starboardSettings = settings
+                ctx.replySuccess("Successfully set ${channel.asMention} as this server's starboard!")
+            }
+
+            override fun remove(ctx: CommandContext) {
+                if(!ctx.guild.hasStarboard) return ctx.replyError {
+                    "This server has no starboard to remove!"
+                }
+
+                ctx.guild.starboardSettings = null
+                ctx.replySuccess("Successfully removed this server's starboard!")
+            }
+        };
 
         fun trimArgs(args: String): String {
             return names.firstOrNull {
@@ -151,5 +151,15 @@ class LogCommand: EmptyCommand(AdministratorGroup) {
                 }
             }
         }
+    }
+
+    private interface LogTypeCommandHandler {
+        fun get(ctx: CommandContext): TextChannel?
+
+        fun configure(ctx: CommandContext) {}
+
+        fun set(ctx: CommandContext, channel: TextChannel)
+
+        fun remove(ctx: CommandContext)
     }
 }

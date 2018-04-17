@@ -19,8 +19,10 @@ import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.EmptyCommand
 import xyz.laxus.command.Experiment
+import xyz.laxus.jda.util.findRoles
 import xyz.laxus.jda.util.findTextChannels
 import xyz.laxus.util.db.isIgnored
+import xyz.laxus.util.multipleRoles
 import xyz.laxus.util.multipleTextChannels
 import xyz.laxus.util.noMatch
 
@@ -31,8 +33,9 @@ import xyz.laxus.util.noMatch
 class IgnoreCommand: EmptyCommand(AdministratorGroup) {
     override val name = "Ignore"
     override val help = "Ignores a channel, user, or role from using the bot."
-    override val children = arrayOf<Command>(
-        IgnoreChannelCommand()
+    override val children = arrayOf(
+        IgnoreChannelCommand(),
+        IgnoreRoleCommand()
     )
 
     private inner class IgnoreChannelCommand: Command(this@IgnoreCommand) {
@@ -55,6 +58,30 @@ class IgnoreCommand: EmptyCommand(AdministratorGroup) {
             } else {
                 found.isIgnored = true
                 ctx.replySuccess("Successfully ignored ${found.asMention}!")
+            }
+        }
+    }
+
+    private inner class IgnoreRoleCommand: Command(this@IgnoreCommand) {
+        override val name = "Role"
+        override val arguments = "[Role]"
+        override val help = "Ignores a role from using the bot."
+
+        override suspend fun execute(ctx: CommandContext) {
+            val query = ctx.args
+            val roles = ctx.guild.findRoles(query)
+            val found = when {
+                roles.isEmpty() -> return ctx.replyError(noMatch("roles", query))
+                roles.size > 1 -> return ctx.replyError(roles.multipleRoles(query))
+                else -> roles[0]
+            }
+
+            if(found.isIgnored) {
+                found.isIgnored = false
+                ctx.replySuccess("Successfully un-ignored **${found.name}**!")
+            } else {
+                found.isIgnored = true
+                ctx.replySuccess("Successfully ignored **${found.name}**!")
             }
         }
     }

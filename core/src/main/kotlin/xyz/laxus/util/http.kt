@@ -15,9 +15,10 @@
  */
 package xyz.laxus.util
 
+import kotlinx.coroutines.experimental.CancellationException
+import kotlinx.coroutines.experimental.suspendCancellableCoroutine
 import okhttp3.*
 import java.io.IOException
-import kotlin.coroutines.experimental.suspendCoroutine
 
 inline fun OkHttpClient.newRequest(lazy: Request.Builder.() -> Unit): Call {
     val builder = Request.Builder()
@@ -27,14 +28,28 @@ inline fun OkHttpClient.newRequest(lazy: Request.Builder.() -> Unit): Call {
 
 operator fun Request.Builder.set(header: String, value: String): Request.Builder = header(header, value)
 
-suspend fun Call.await(): Response = suspendCoroutine { cont ->
+@Throws(IOException::class)
+suspend inline fun <reified C: Call> C.await(): Response = suspendCancellableCoroutine(holdCancellability = true) { cont ->
     enqueue(object : Callback {
         override fun onFailure(call: Call, e: IOException) {
-            cont.resumeWithException(e)
+            if(call.isCanceled) {
+                cont.initCancellability()
+                val req = call.request().let { "${it.method()} - ${it.url()}" }
+                cont.cancel(CancellationException("Request $req was cancelled!"))
+            } else {
+                cont.resumeWithException(e)
+            }
         }
 
+        @Throws(IOException::class)
         override fun onResponse(call: Call, response: Response) {
-            cont.resume(response)
+            if(call.isCanceled) {
+                cont.initCancellability()
+                val req = call.request().let { "${it.method()} - ${it.url()}" }
+                cont.cancel(CancellationException("Request $req was cancelled!"))
+            } else {
+                cont.resume(response)
+            }
         }
     })
 }

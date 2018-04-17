@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("unused")
+@file:Suppress("unused", "HasPlatformType")
 package xyz.laxus.jda.util
 
 import kotlinx.coroutines.experimental.DefaultDispatcher
@@ -27,7 +27,12 @@ import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.MessageHistory
 import kotlin.coroutines.experimental.CoroutineContext
 
-interface HistoryScope : ProducerScope<List<Message>> {
+private typealias HistoryCheck = suspend (List<Message>) -> Boolean
+
+inline fun <reified C: MessageChannel> C.historyAt(messageId: Long) = getHistoryAround(messageId, 1)
+inline fun <reified C: MessageChannel> C.historyAt(message: Message) = getHistoryAround(message, 1)
+
+interface HistoryScope: ProducerScope<List<Message>> {
     val history: MessageHistory
     val jda: JDA
     val chan: MessageChannel // couldn't name channel because conflicts with ProducerScope
@@ -45,14 +50,14 @@ interface HistoryScope : ProducerScope<List<Message>> {
     }
 
     suspend fun sendFuture(amount: Int) {
-        val retrieved = history.retrieveFuture(amount).await()
+        val retrieved = retrieveFuture(amount)
         send(retrieved)
     }
 }
 
 private class HistoryScopeImpl(
     override val history: MessageHistory,
-    scope: ProducerScope<List<Message>>
+    private val scope: ProducerScope<List<Message>>
 ): HistoryScope, ProducerScope<List<Message>> by scope {
     override val jda: JDA get() = history.jda
     override val chan: MessageChannel get() = history.channel
@@ -74,16 +79,37 @@ fun MessageChannel.produceHistory(
     capacity: Int = 0,
     parent: Job? = null,
     block: suspend HistoryScope.() -> Unit
-): ReceiveChannel<List<Message>> = produce(context, capacity, parent) {
-    val scope = HistoryScopeImpl(history, this)
-    scope.block()
-}
+): ReceiveChannel<List<Message>> = history.produceHistory(context, capacity, parent, block)
 
-inline fun MessageChannel.producePast(
+fun MessageChannel.producePast(
     context: CoroutineContext = DefaultDispatcher,
     number: Int,
     retrieveLimit: Int = 100,
-    crossinline breakIf: (List<Message>) -> Boolean = { false }
+    breakIf: HistoryCheck = { false }
+): ReceiveChannel<List<Message>> = history.producePast(context, number, retrieveLimit, breakIf)
+
+fun MessageChannel.produceFuture(
+    context: CoroutineContext = DefaultDispatcher,
+    number: Int,
+    retrieveLimit: Int = 100,
+    breakIf: HistoryCheck = { false }
+): ReceiveChannel<List<Message>> = history.produceFuture(context, number, retrieveLimit, breakIf)
+
+fun MessageHistory.produceHistory(
+    context: CoroutineContext = DefaultDispatcher,
+    capacity: Int,
+    parent: Job? = null,
+    block: suspend HistoryScope.() -> Unit
+): ReceiveChannel<List<Message>> = produce(context, capacity, parent) {
+    val scope = HistoryScopeImpl(this@produceHistory, this)
+    scope.block()
+}
+
+fun MessageHistory.producePast(
+    context: CoroutineContext = DefaultDispatcher,
+    number: Int,
+    retrieveLimit: Int = 100,
+    breakIf: HistoryCheck = { false }
 ): ReceiveChannel<List<Message>> {
     require(number > 0) { "Minimum of one message must be retrieved" }
     require(retrieveLimit in 1..100) { "Retrieve limit must be inbetween 1 and 100" }
@@ -104,13 +130,14 @@ inline fun MessageChannel.producePast(
         }
         close()
     }
+
 }
 
-inline fun MessageChannel.produceFuture(
+fun MessageHistory.produceFuture(
     context: CoroutineContext = DefaultDispatcher,
     number: Int,
     retrieveLimit: Int = 100,
-    crossinline breakIf: (List<Message>) -> Boolean = { false }
+    breakIf: HistoryCheck = { false }
 ): ReceiveChannel<List<Message>> {
     require(number > 0) { "Minimum of one message must be retrieved" }
     require(retrieveLimit in 1..100) { "Retrieve limit must be inbetween 1 and 100" }

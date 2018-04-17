@@ -15,26 +15,26 @@
  */
 package xyz.laxus.command.owner
 
-import com.typesafe.config.Config
+import net.dv8tion.jda.core.OnlineStatus.DO_NOT_DISTURB
+import xyz.laxus.Laxus
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
+import xyz.laxus.jda.util.watching
 
 /**
  * @author Kaidan Gustave
  */
-object OwnerGroup: Command.Group("Owner") {
-    override val defaultLevel = Command.Level.SHENGAERO
-    override val guildOnly = false
-    override val devOnly = true
+class RestartCommand : Command(OwnerGroup) {
+    override val name = "Restart"
+    override val help = "Restarts Laxus."
+    override val hasAdjustableLevel = false
 
-    override fun check(ctx: CommandContext): Boolean = ctx.isDev
+    override suspend fun execute(ctx: CommandContext) {
+        Laxus.Log.info("Restarting...")
+        ctx.jda.presence.setPresence(DO_NOT_DISTURB, watching("Everything restart..."))
 
-    override fun init(config: Config) {
-        + EvalCommand()
-        + GuildListCommand()
-        + MemoryCommand()
-        + ModeCommand()
-        + RestartCommand()
-        + ShutdownCommand()
+        // Await to prevent shutting down while replying
+        ctx.sendWarning("Restarting...")
+        ctx.jda.shutdownNow()
     }
 }

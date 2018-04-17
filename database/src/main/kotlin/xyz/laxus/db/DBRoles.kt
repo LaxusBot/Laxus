@@ -136,6 +136,7 @@ object DBRoles : Table() {
         ROLE_ME,
         COLOR_ME,
         MUTED,
+        IGNORED,
         MODERATOR
     }
 }

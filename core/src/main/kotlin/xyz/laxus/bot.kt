@@ -18,9 +18,7 @@ package xyz.laxus
 
 import com.jagrosh.jagtag.JagTag
 import com.jagrosh.jagtag.Parser
-import kotlinx.coroutines.experimental.delay
-import kotlinx.coroutines.experimental.launch
-import kotlinx.coroutines.experimental.newSingleThreadContext
+import kotlinx.coroutines.experimental.*
 import me.kgustave.json.JSObject
 import me.kgustave.json.jsonObject
 import me.kgustave.json.readJSObject
@@ -37,8 +35,7 @@ import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageDeleteEvent
 import net.dv8tion.jda.core.requests.Requester.MEDIA_TYPE_JSON
-import okhttp3.OkHttpClient
-import okhttp3.RequestBody
+import okhttp3.*
 import org.slf4j.Logger
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
@@ -65,13 +62,14 @@ import java.util.*
 import java.util.concurrent.TimeUnit.HOURS
 import kotlin.coroutines.experimental.coroutineContext
 
-class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedListener {
+class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
     companion object Log: Logger by createLogger(Bot::class)
 
     private val cooldowns = concurrentHashMap<String, OffsetDateTime>()
     private val uses = CaseInsensitiveHashMap<Int>()
     private val callCache = FixedSizeCache<Long, MutableSet<Message>>(builder.callCacheSize)
     private val cycleContext = newSingleThreadContext("CycleContext")
+    private val botsListContext = newSingleThreadContext("BotsListContext")
 
     private val dBotsKey = builder.dBotsKey
     private val dBotsListKey = builder.dBotsListKey
@@ -111,6 +109,10 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
     fun cleanCooldowns() {
         val now = now()
         cooldowns.entries.filter { it.value.isBefore(now) }.forEach { cooldowns -= it.key }
+    }
+
+    fun getUses(command: Command): Int {
+        return uses.computeIfAbsent(command.name) { 0 }
     }
 
     fun incrementUses(command: Command) {
@@ -209,7 +211,12 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
             launch(cycleContext) {
                 while(isActive) {
                     cleanCooldowns()
-                    delay(1, HOURS)
+                    try {
+                        delay(1, HOURS)
+                    } catch(e: CancellationException) {
+                        Bot.Log.debug("Cycle context encountered a cancellation: ${e.message}")
+                        break
+                    }
                 }
             }
         }
@@ -240,7 +247,12 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
     private fun onShutdown(event: ShutdownEvent) {
         val identifier = event.jda.shardInfo?.let { "Shard [${it.shardId} / ${it.shardTotal - 1}]" } ?: "JDA"
         Log.info("$identifier has shutdown.")
+        groups.forEach { it.dispose() }
+        val cancellation = CancellationException("JDA fired shutdown!")
+        cycleContext.cancel(cancellation)
         cycleContext.close()
+        botsListContext.cancel(cancellation)
+        botsListContext.close()
     }
 
     private suspend fun updateStats(jda: JDA) {
@@ -256,7 +268,7 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
 
         dBotsKey?.let {
             // Run this as a child job
-            launch(coroutineContext) {
+            launch(botsListContext) {
                 try {
                     val url = "https://bots.discord.pw/api/bots/${jda.selfUser.id}/stats"
                     // Send POST request to bots.discord.pw
@@ -265,17 +277,18 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
                         this["Authorization"] = dBotsKey
                         this["Content-Type"] = "application/json"
                     }.await().close()
-                    Log.debug("Sent to Discord Bots: POST - '$url'\n" +
-                              bodyString)
+                    Log.debug("Sent to Discord Bots: POST - '$url'")
                 } catch(e: IOException) {
                     Log.error("Failed to send information to bots.discord.pw", e)
+                } catch(e: CancellationException) {
+                    Log.debug("Request to discordbots.org was cancelled: ${e.message}")
                 }
             }
         }
 
         dBotsListKey?.let {
             // Run this as a child job
-            launch(coroutineContext) {
+            launch(botsListContext) {
                 try {
                     val url = "https://discordbots.org/api/bots/${jda.selfUser.id}/stats"
                     // Send POST request to discordbots.org
@@ -284,10 +297,11 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
                         this["Authorization"] = dBotsListKey
                         this["Content-Type"] = "application/json"
                     }.await().close()
-                    Log.debug("Sent to Discord Bots List: POST - '$url'\n" +
-                              bodyString)
+                    Log.debug("Sent to Discord Bots List: POST - '$url'")
                 } catch(e: IOException) {
                     Log.error("Failed to send information to discordbots.org", e)
+                } catch(e: CancellationException) {
+                    Log.debug("Request to discordbots.org was cancelled: ${e.message}")
                 }
             }
         }
@@ -305,15 +319,17 @@ class Bot @PublishedApi internal constructor(builder: Bot.Builder): SuspendedLis
                 get().url(url)
                 this["Authorization"] = dBotsKey
                 this["Content-Type"] = "application/json"
-            }.await().body()?.charStream()?.use {
-                val json = it.readJSObject()
-                Log.debug("Received JSON from bots.discord.pw:\n${json.toJsonString(2)}")
-                this.totalGuilds = json.array("stats").mapNotNull {
-                    val obj = it as? JSObject
-                    obj?.takeIf { "server_count" in obj && !obj.isNull("server_count") }
-                }.sumByLong { it.int("server_count").toLong() }
-                Log.debug("Got from Discord Bots: GET - '$url'\n" +
-                          json.toJsonString(0))
+            }.await().use { response ->
+                response.body()?.charStream()?.use { charStream ->
+                    val json = charStream.readJSObject()
+                    Log.debug("Received JSON from bots.discord.pw:\n${json.toJsonString(2)}")
+                    this.totalGuilds = json.array("stats").mapNotNull objects@ {
+                        val obj = it as? JSObject
+                        return@objects obj?.takeIf { "server_count" in obj && !obj.isNull("server_count") }
+                    }.sumByLong { it.int("server_count").toLong() }
+                    Log.debug("Got from Discord Bots: GET - '$url'\n" +
+                              json.toJsonString(2))
+                }
             }
         } catch (t: Throwable) {
             Log.error("Failed to retrieve bot shard information from bots.discord.pw", t)

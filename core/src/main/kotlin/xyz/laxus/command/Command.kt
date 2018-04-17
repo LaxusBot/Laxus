@@ -97,7 +97,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
                                 append("__${cat.titleName}__\n\n")
                             }
                         }
-                        append("`${ctx.bot.prefix}${c.fullname.toLowerCase()}")
+                        append("`${ctx.bot.prefix}${c.fullname}")
                         append(if(c.arguments.isNotEmpty()) " ${c.arguments}" else "")
                         append("` - ").append(c.help)
 
@@ -249,6 +249,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
 
         key?.takeIf { autoCooldown == AutoCooldownMode.AFTER }?.let { ctx.bot.applyCooldown(key, cooldown) }
 
+        ctx.bot.incrementUses(this)
         ctx.bot.mode.onCommandCompleted(ctx, this)
     }
 
@@ -298,7 +299,6 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
 
     private fun CommandContext.terminate(text: String) {
         bot.mode.onCommandTerminated(this, this@Command, text)
-        bot.incrementUses(this@Command)
     }
 
     private val CommandContext.cooldownKey: String get() {
@@ -343,6 +343,8 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
 
         // Can be used to configure JDA
         open fun JDABuilder.configure() {}
+
+        open fun dispose() {}
 
         operator fun Command.unaryPlus() {
             Laxus.Log.debug("Adding Command '${this.name}' to Group '${this@Group.name}'")

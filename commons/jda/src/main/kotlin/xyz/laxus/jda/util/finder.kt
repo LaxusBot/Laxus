@@ -34,11 +34,11 @@ inline fun <reified G: Guild> G.findEmotes(query: String): List<Emote> = FinderU
 inline fun <reified G: Guild> G.findRoles(query: String): List<Role> = FinderUtil.findRoles(query, this)
 
 // Because findBannedUsers blocks, I run this
-// in a suspension. Technically this doesn't
-// get rid of the existing thread blocking
-// overhead, but it does prevent the coroutine
-// from being stopped improperly.
-suspend fun Guild.findBannedUsers(query: String): List<User>? = suspendCoroutine { cont ->
+//in a suspension. Technically this doesn't
+//get rid of the existing thread blocking
+//overhead, but it does prevent the coroutine
+//from being stopped improperly.
+suspend inline fun <reified G: Guild> G.findBannedUsers(query: String): List<User>? = suspendCoroutine { cont ->
     try {
         cont.resume(FinderUtil.findBannedUsers(query, this))
     } catch(t: Throwable) {

@@ -38,7 +38,7 @@ class InviteCommand : Command(StandardGroup) {
                 val info = ctx.jda.asBot().applicationInfo.await()
                 oAuth2Link = info.getInviteUrl(*Laxus.Permissions)
             } catch(t: Throwable) {
-                Laxus.Log.warn("Failed to generate OAuth2 URL!")
+                Laxus.Log.warn("Failed to generate OAuth2 URL: ${t.message}")
                 return ctx.replyError("An unexpected error occurred!")
             }
         }

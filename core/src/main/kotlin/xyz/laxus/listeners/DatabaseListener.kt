@@ -15,20 +15,27 @@
  */
 package xyz.laxus.listeners
 
+import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.channel.category.CategoryCreateEvent
 import net.dv8tion.jda.core.events.channel.text.TextChannelCreateEvent
 import net.dv8tion.jda.core.events.channel.text.TextChannelDeleteEvent
 import net.dv8tion.jda.core.events.channel.voice.VoiceChannelCreateEvent
+import net.dv8tion.jda.core.events.guild.GuildJoinEvent
+import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
+import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
+import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent
 import net.dv8tion.jda.core.events.role.RoleDeleteEvent
 import net.dv8tion.jda.core.hooks.EventListener
+import xyz.laxus.db.DBGuildStore
 import xyz.laxus.entities.starboard.hasStarboard
 import xyz.laxus.entities.starboard.removeStarboard
 import xyz.laxus.entities.starboard.starboardSettings
 import xyz.laxus.jda.util.muteRole
 import xyz.laxus.jda.util.refreshMutedRole
 import xyz.laxus.util.db.*
+import java.time.OffsetDateTime
 
 /**
  * @author Kaidan Gustave
@@ -42,9 +49,10 @@ object DatabaseListener: EventListener {
             is TextChannelDeleteEvent -> onTextChannelDelete(event)
             is VoiceChannelCreateEvent -> onVoiceChannelCreate(event)
             is CategoryCreateEvent -> onCategoryCreate(event)
-            //is GuildLeaveEvent -> onGuildLeave(event)
-            //is GuildMemberJoinEvent -> onGuildMemberJoin(event)
-            //is GuildMemberLeaveEvent -> onGuildMemberLeave(event)
+            is GuildJoinEvent -> onGuildJoin(event)
+            is GuildLeaveEvent -> onGuildLeave(event)
+            is GuildMemberJoinEvent -> onGuildMemberJoin(event)
+            is GuildMemberLeaveEvent -> onGuildMemberLeave(event)
         }
     }
 
@@ -52,7 +60,7 @@ object DatabaseListener: EventListener {
         event.jda.guilds.forEach { guild ->
             guild.mutedRole?.let { guild.refreshMutedRole(it) }
         }
-        // TODO Clean database on ready
+        cleanDatabase(event.jda)
     }
 
     private fun onRoleDelete(event: RoleDeleteEvent) {
@@ -72,6 +80,11 @@ object DatabaseListener: EventListener {
         // Announcement role
         if(role.isAnnouncements) {
             role.isAnnouncements = false
+        }
+
+        // Ignored role
+        if(role.isIgnored) {
+            role.isIgnored = false
         }
 
         // Mod Role Deleted
@@ -171,25 +184,51 @@ object DatabaseListener: EventListener {
         }
     }
 
-    //private fun onGuildLeave(event: GuildLeaveEvent) {
-        //event.guild.removeAllCommandSettings()
-    //}
-
-    /*private fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
-        val member = event.member
-        val settings = event.guild.settings
-        if(settings !== null && settings.isRolePersist && member.hasRolePersist) {
-            val roles = member.rolePersist
-            event.guild.controller.addRolesToMember(member, roles).queue()
-            member.removeRolePersist()
+    private fun onGuildJoin(event: GuildJoinEvent) {
+        if(event.guild.selfMember.joinDate.plusMinutes(10).isAfter(OffsetDateTime.now())) {
+            event.guild.memberCache.forEach {
+                it.unregisterRolePersist()
+            }
+            DBGuildStore.addGuild(event.jda.shardInfo?.shardId?.toShort(), event.guild.idLong)
         }
+    }
+
+    private fun onGuildLeave(event: GuildLeaveEvent) {
+        DBGuildStore.removeGuild(event.guild.idLong)
     }
 
     private fun onGuildMemberLeave(event: GuildMemberLeaveEvent) {
         val member = event.member
-        val settings = event.guild.settings
-        if(settings !== null && settings.isRolePersist) {
-            member.saveRolePersist()
+        val isRolePersist = event.guild.isRolePersist
+        if(isRolePersist) {
+            member.registerRolePersist()
         }
-    }*/
+    }
+
+    private fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
+        val member = event.member
+        val rolePersist = if(!event.guild.isRolePersist) emptyList() else member.rolePersist
+        if(rolePersist.isNotEmpty()) {
+            val roles = member.rolePersist
+            event.guild.controller.addRolesToMember(member, roles).queue()
+            member.unregisterRolePersist()
+        }
+    }
+
+    private fun cleanDatabase(jda: JDA) {
+        val shardId: Short? = jda.shardInfo?.shardId?.toShort()
+        if(shardId !== null) {
+            jda.guildCache.forEach {
+                if(!DBGuildStore.isStored(shardId, it.idLong)) {
+                    DBGuildStore.addGuild(shardId, it.idLong)
+                }
+            }
+        } else {
+            jda.guildCache.forEach {
+                if(!DBGuildStore.isStored(it.idLong)) {
+                    DBGuildStore.addGuild(shardId, it.idLong)
+                }
+            }
+        }
+    }
 }

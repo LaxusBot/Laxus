@@ -16,8 +16,7 @@
 package xyz.laxus.command.owner
 
 import kotlinx.coroutines.experimental.delay
-import kotlinx.coroutines.experimental.launch
-import xyz.laxus.Laxus
+//import org.jetbrains.kotlin.cli.common.environment.setIdeaIoUseFallback
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
@@ -25,18 +24,19 @@ import xyz.laxus.jda.util.connectedChannel
 import xyz.laxus.util.collections.splitWith
 import xyz.laxus.util.collections.toArrayOrEmpty
 import xyz.laxus.util.modifyIf
+import xyz.laxus.util.reflect.loadClass
+import java.lang.reflect.Modifier
 import java.util.concurrent.TimeUnit
-import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
 import javax.script.ScriptException
-import kotlin.coroutines.experimental.suspendCoroutine
 
 /**
  * @author Kaidan Gustave
  */
-@MustHaveArguments
+@MustHaveArguments("Specify script to evaluate.")
 class EvalCommand: Command(OwnerGroup) {
     private companion object {
+        private const val MagicFqn = "org.jetbrains.kotlin.cli.common.environment.UtilKt"
         private const val SCRIPT_ENGINE_EXT = "kts"
         private val ENGINE_MANAGER = ScriptEngineManager()
         private val SYS_EXIT_REGEX = Regex("(?:System\\.)?exit(?:Process)?\\(\\d+\\);?")
@@ -59,25 +59,64 @@ class EvalCommand: Command(OwnerGroup) {
     override val arguments = "[Script]"
     override val hasAdjustableLevel = false
 
-    private val engine: ScriptEngine = ENGINE_MANAGER.getEngineByExtension(SCRIPT_ENGINE_EXT)
+    private val engine = ENGINE_MANAGER.getEngineByExtension(SCRIPT_ENGINE_EXT)
     private val engineContext = Context()
 
     init {
-        launch {
-            // The engine takes some time to start up, so we load it asynchronously here
-            suspendCoroutine<Unit> {
-                try {
-                    engine.put("Log", Laxus.Log)
-                    engine.eval("""
-                        val logger = bindings["Log"] as org.slf4j.Logger
-                        logger.info("Started ScriptEngine")
-                    """.trimIndent())
-                    it.resume(Unit)
-                } catch(e: Throwable) {
-                    it.resumeWithException(e)
-                }
+        // See: org.jetbrains.kotlin.cli.common.environment
+        //
+        // WARNING! THIS WAS AN ADVENTURE!
+        //
+        // Okay, so a bit of history:
+        // In kotlin 1.1.3 I tried my hand at using the kotlin-jsr223 API.
+        // Back then, the API gave me so many errors, and I eliminated all but one:
+        //
+        // WARN: Failed to initialize native filesystem for Windows
+        // java.lang.RuntimeException: Could not find installation home path. Please make sure
+        //bin/idea.properties is present in the installation directory.
+        // <STACKTRACE>
+        //
+        // As you might expect, this was disheartening, as the only thing between me
+        //and a working jsr223 kotlin script-engine was an error I couldn't fix.
+        //
+        // Flash forward to more recently (at the time it's April 17, 2018) I am tracking down
+        //the most frustrating deadlock I have ever encountered (to give you an idea, it's been
+        //two days restarting the damn test-bot and seeing what doesn't shut and what does shut).
+        // I figure out that the KotlinJsr223JvmDaemonLocalEvalScriptEngineFactory is not closing,
+        //and worse it's not closing and the kotlin maintainers left the equivalent of a fucking
+        //IOU saying that "We know it doesn't work, come back when we fix it".
+        // This was (again) a huge bummer.
+        // I tried the local compiler (the one that printed the single error way back when), and
+        //found out that surprise-surprise SAME FUCKING ERROR.
+        // And as you might expect, I was about to give up, but I happened to check the test unit
+        //for the local jsr223 tests on the kotlin repository and found the function:
+        //
+        // setIdeaIoUseFallback()
+        //
+        // This was called in the init block of the test unit, so without anything to lose, I'm
+        //like "fuck it, what's the worst that can happen?".
+        // Well as it turns out, the genius's over at jetbrains made this """convenient""" little
+        //function in order to prevent the stack trace I encountered in the past, left it totally
+        //undocumented (might I add all of their jsr223 shit is undocumented), and I guess I found
+        //it at the best time.
+        //
+        // Moral of the story: There is no moral.
+        //
+        // PS: THIS IS A WINDOWS EXCLUSIVE ISSUE!!!
+        val setIdeaToUseFallback = loadClass(MagicFqn).let {
+            if(it === null) {
+                throw ClassNotFoundException("Could not locate class: '$MagicFqn'")
+            }
+            it.java.methods.find {
+                it.name == "setIdeaIoUseFallback" && Modifier.isStatic(it.modifiers)
             }
         }
+
+        if(setIdeaToUseFallback === null) {
+            throw NoClassDefFoundError("Could not find static method 'setIdeaIoUseFallback' for class '$MagicFqn'")
+        }
+
+        setIdeaToUseFallback(null)
     }
 
     override suspend fun execute(ctx: CommandContext) {

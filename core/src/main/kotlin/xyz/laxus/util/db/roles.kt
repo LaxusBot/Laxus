@@ -19,6 +19,7 @@ package xyz.laxus.util.db
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Member
 import net.dv8tion.jda.core.entities.Role
+import xyz.laxus.db.DBRolePersist
 import xyz.laxus.db.DBRoles
 import xyz.laxus.db.DBRoles.Type.*
 
@@ -59,6 +60,13 @@ var Role.isAnnouncements: Boolean
     get() = DBRoles.isRole(guild.idLong, ANNOUNCEMENTS)
     set(value) = addOrRemoveRoleTypeOf(value, ANNOUNCEMENTS)
 
+// Ignored
+
+val Guild.ignoredRoles get() = getRolesTypeOf(IGNORED)
+var Role.isIgnored: Boolean
+    get() = DBRoles.isRole(guild.idLong, IGNORED)
+    set(value) = addOrRemoveRoleTypeOf(value, IGNORED)
+
 // Generic
 
 private fun Role.addOrRemoveRoleTypeOf(value: Boolean, type: DBRoles.Type) {
@@ -79,4 +87,18 @@ private fun Guild.getRolesTypeOf(type: DBRoles.Type): List<Role> {
 
 private fun Guild.setRoleTypeOf(value: Role?, type: DBRoles.Type) {
     if(value !== null) DBRoles.setRole(idLong, value.idLong, type) else DBRoles.removeRole(idLong, type)
+}
+
+// Role Persist
+
+val Member.rolePersist: List<Role> get() {
+    return DBRolePersist.getRolePersist(guild.idLong, user.idLong).mapNotNull { guild.getRoleById(it) }
+}
+
+fun Member.registerRolePersist() {
+    DBRolePersist.setRolePersist(guild.idLong, user.idLong, roles.map { it.idLong })
+}
+
+fun Member.unregisterRolePersist() {
+    DBRolePersist.removeRolePersist(guild.idLong, user.idLong)
 }

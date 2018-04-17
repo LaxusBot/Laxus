@@ -39,10 +39,6 @@ object Database : AutoCloseable {
     private val _tables = HashMap<String, Table>()
     val tables: Map<String, Table> get() = _tables
 
-    init {
-        onJvmShutdown("Database Shutdown", this::close)
-    }
-
     fun start() {
         initializeDB(true)
     }
@@ -62,6 +58,12 @@ object Database : AutoCloseable {
         val config = findConfig()
 
         val databaseNode = checkNotNull(config.config("database")) { nodeNotFound("database") }
+
+        val shutdownHook = databaseNode.boolean("shutdown.hook") ?: false
+
+        if(shutdownHook) {
+            createShutdownHook()
+        }
 
         if(shouldLogin) {
             LOG.debug("Logging in using configuration...")
@@ -148,6 +150,8 @@ object Database : AutoCloseable {
             _tables[tableName] = objInst
         }
     }
+
+    private fun createShutdownHook() = onJvmShutdown("Database Shutdown", this::close)
 
     private fun findConfig(): Config {
         return checkNotNull(loadConfig("database.conf").takeIf { it.isResolved }){

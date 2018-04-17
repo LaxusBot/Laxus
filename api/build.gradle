@@ -20,7 +20,7 @@ repositories {
 dependencies {
     // JDA
     compileOnly jda()
-    compileOnly jdaUtilities('oauth2')
+    //compileOnly jdaUtilities('oauth2')
 
     // Kotlin
     compileOnly kotlinModule('reflect')
