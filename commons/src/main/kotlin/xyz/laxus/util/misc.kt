@@ -110,16 +110,16 @@ inline val <reified E: Enum<E>> E.niceName inline get() = titleName
 val <E: Enum<E>> E.titleName: String get() {
     val chars = name.toCharArray()
     // Save a flag for when the next char should be capitalized
-    var capitalize = false
+    var capitalize = true // First character is always gonna be capitalized
     for((i, c) in chars.withIndex()) {
-        chars[i] = char@ when {
-            c == '_' -> {                 // c is an underscore
+        chars[i] = when {
+            c == '_' -> {                  // c is an underscore
                 capitalize = true           // set next character to be capitalized
-                return@char ' '             // a space
+                ' '                         // a space
             }
-            capitalize -> {               // c will be capitalized
-                capitalize = false          // set next character to be lowercase
-                return@char c.toUpperCase() // this character in upper case
+            capitalize && c.isLetter() -> { // c will be capitalized
+                capitalize = false           // set next character to be lowercase
+                c.toUpperCase()              // this character in upper case
             }
             else -> c.toLowerCase()         // this character in lower case
         }

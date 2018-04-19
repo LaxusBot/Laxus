@@ -38,7 +38,7 @@ class HelpCommand: Command(StandardGroup) {
             appendln("**Available Commands in ${if(ctx.isGuild) ctx.textChannel.asMention else "Direct Messages"}**")
 
             // For each group
-            ctx.bot.groups.forEach g@ { g ->
+            ctx.bot.groups.filter { it.check(ctx) }.sorted().forEach g@ { g ->
                 // They can't use the command group so we don't display it here
                 if(!g.check(ctx))
                     return@g

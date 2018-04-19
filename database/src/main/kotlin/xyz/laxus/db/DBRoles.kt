@@ -24,18 +24,25 @@ import xyz.laxus.db.sql.ResultSetType.*
 /**
  * @author Kaidan Gustave
  */
-@TableName("GUILD_ROLES") @Columns(
+@TableName("GUILD_ROLES")
+@Columns(
     Column("GUILD_ID", BIGINT, unique = true),
     Column("ROLE_ID", BIGINT, unique = true),
     Column("TYPE", "$VARCHAR(50)", unique = true)
 )
-object DBRoles : Table() {
-    private const val GET_ROLES = "SELECT ROLE_ID FROM GUILD_ROLES WHERE GUILD_ID = ? AND TYPE = ?"
-    private const val SET_ADD_ROLES = "SELECT * FROM GUILD_ROLES WHERE GUILD_ID = ? AND TYPE = ?"
-    private const val REMOVE_ROLE = "SELECT * FROM GUILD_ROLES WHERE GUILD_ID = ? AND ROLE_ID = ? AND TYPE = ?"
+object DBRoles: Table() {
+    fun isRole(guildId: Long, roleId: Long, type: Type): Boolean {
+        return connection.prepare("SELECT * FROM GUILD_ROLES WHERE GUILD_ID = ? AND ROLE_ID = ? AND TYPE = ?") { statement ->
+            statement[1] = guildId
+            statement[2] = roleId
+            statement[3] = type.name
+            statement.executeQuery { it.next() }
+        }
+    }
 
-    fun isRole(guildId: Long, type: Type): Boolean {
-        return connection.prepare(SET_ADD_ROLES) { statement ->
+    fun hasRole(guildId: Long, type: Type): Boolean {
+        require(type.single, type::notSingle)
+        return connection.prepare("SELECT * FROM GUILD_ROLES WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery { it.next() }
@@ -43,7 +50,8 @@ object DBRoles : Table() {
     }
 
     fun getRole(guildId: Long, type: Type): Long? {
-        connection.prepare(GET_ROLES) { statement ->
+        require(type.single, type::notSingle)
+        connection.prepare("SELECT ROLE_ID FROM GUILD_ROLES WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -56,8 +64,9 @@ object DBRoles : Table() {
     }
 
     fun getRoles(guildId: Long, type: Type): List<Long> {
+        require(type.multi, type::notMulti)
         val roles = ArrayList<Long>()
-        connection.prepare(GET_ROLES) { statement ->
+        connection.prepare("SELECT ROLE_ID FROM GUILD_ROLES WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -68,7 +77,8 @@ object DBRoles : Table() {
     }
 
     fun setRole(guildId: Long, roleId: Long, type: Type) {
-        connection.prepare(SET_ADD_ROLES, SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        require(type.single, type::notSingle)
+        connection.prepare("SELECT * FROM GUILD_ROLES WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -86,7 +96,8 @@ object DBRoles : Table() {
     }
 
     fun addRole(guildId: Long, roleId: Long, type: Type) {
-        connection.prepare(REMOVE_ROLE, SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        require(type.multi, type::notMulti)
+        connection.prepare("SELECT * FROM GUILD_ROLES WHERE GUILD_ID = ? AND ROLE_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = roleId
             statement[3] = type.name
@@ -100,8 +111,20 @@ object DBRoles : Table() {
         }
     }
 
+    fun removeRole(guildId: Long, type: Type) {
+        require(type.single, type::notSingle)
+        connection.prepare("SELECT ROLE_ID FROM GUILD_ROLES WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+            statement[1] = guildId
+            statement[2] = type.name
+            statement.executeQuery {
+                if(it.next()) it.deleteRow()
+            }
+        }
+    }
+
     fun removeRole(guildId: Long, roleId: Long, type: Type) {
-        connection.prepare(REMOVE_ROLE, SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        require(type.multi, type::notMulti)
+        connection.prepare("SELECT * FROM GUILD_ROLES WHERE GUILD_ID = ? AND ROLE_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = roleId
             statement[3] = type.name
@@ -111,12 +134,9 @@ object DBRoles : Table() {
         }
     }
 
-    fun removeRole(guildId: Long, type: Type) {
-        removeRoles(guildId, type)
-    }
-
     fun removeRoles(guildId: Long, type: Type) {
-        connection.prepare(GET_ROLES, SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        require(type.multi, type::notMulti)
+        connection.prepare("SELECT ROLE_ID FROM GUILD_ROLES WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -127,16 +147,25 @@ object DBRoles : Table() {
 
     fun removeAllRoles(guildId: Long) {
         for(type in Type.values()) {
-            removeRoles(guildId, type)
+            if(type.single) {
+                removeRole(guildId, type)
+            } else {
+                removeRoles(guildId, type)
+            }
         }
     }
 
-    enum class Type {
-        ANNOUNCEMENTS,
-        ROLE_ME,
-        COLOR_ME,
-        MUTED,
-        IGNORED,
-        MODERATOR
+    enum class Type(val single: Boolean) {
+        ANNOUNCEMENTS(false),
+        ROLE_ME(false),
+        COLOR_ME(false),
+        MUTED(true),
+        IGNORED(false),
+        MODERATOR(true);
+
+        inline val multi get() = !single
+
+        internal fun notMulti() = "Role type '$this' is not a multi-type!"
+        internal fun notSingle() = "Role type '$this' is not a single-type!"
     }
 }

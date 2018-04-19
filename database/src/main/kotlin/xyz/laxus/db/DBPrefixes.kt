@@ -22,7 +22,8 @@ import xyz.laxus.db.sql.*
 import xyz.laxus.db.sql.ResultSetConcur.*
 import xyz.laxus.db.sql.ResultSetType.*
 
-@TableName("PREFIXES") @Columns(
+@TableName("PREFIXES")
+@Columns(
     Column("GUILD_ID", BIGINT, unique = true),
     Column("PREFIX", "$VARCHAR(50)", unique = true)
 )

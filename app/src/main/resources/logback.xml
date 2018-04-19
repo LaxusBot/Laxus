@@ -30,6 +30,7 @@
     ~ Writes INFO, WARN, and ERROR to console.
     -->
   <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+    <filter class="xyz.laxus.logging.NormalFilter"/>
     <encoder>
       <pattern>
         %nopex[%d{HH:mm:ss}] [%level] [%logger{0}]: %simpleHL(%msg%n%ex)

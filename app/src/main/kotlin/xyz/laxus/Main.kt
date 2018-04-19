@@ -24,6 +24,7 @@ import xyz.laxus.util.onJvmShutdown
 object Main {
     @JvmStatic
     fun main(args: Array<String>) {
+        sendBanner()
         Database.start()
         Laxus.start()
 

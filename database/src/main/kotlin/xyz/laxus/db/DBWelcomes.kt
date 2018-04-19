@@ -54,10 +54,8 @@ object DBWelcomes: Table() {
             statement.executeQuery {
                 if(!it.next()) it.insert {
                     it["GUILD_ID"] = guildId
-                    it["CHANNEL_ID"] = channelId
                     it["MESSAGE"] = message
                 } else it.update {
-                    it["CHANNEL_ID"] = channelId
                     it["MESSAGE"] = message
                 }
             }

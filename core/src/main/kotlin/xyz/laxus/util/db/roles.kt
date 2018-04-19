@@ -28,46 +28,50 @@ import xyz.laxus.db.DBRoles.Type.*
 var Guild.modRole: Role?
     get() = getRoleTypeOf(MODERATOR)
     set(value) = setRoleTypeOf(value, MODERATOR)
+val Guild.hasModRole get() = hasRoleTypeOf(MODERATOR)
 val Member.isMod get() = guild.modRole?.let { it in roles } == true
-val Guild.hasModRole get() = modRole !== null
 
 // Muted role
 
 var Guild.mutedRole: Role?
     get() = getRoleTypeOf(MUTED)
     set(value) = setRoleTypeOf(value, MUTED)
+val Guild.hasMutedRole get() = hasRoleTypeOf(MUTED)
 val Member.isMuted get() = guild.mutedRole?.let { it in roles } == true
-val Guild.hasMutedRole get() = mutedRole !== null
 
 // ColorMe
 
 val Guild.colorMeRoles get() = getRolesTypeOf(COLOR_ME)
 var Role.isColorMe: Boolean
-    get() = DBRoles.isRole(guild.idLong, COLOR_ME)
+    get() = isRoleTypeOf(COLOR_ME)
     set(value) = addOrRemoveRoleTypeOf(value, COLOR_ME)
 
 // RoleMe
 
 val Guild.roleMeRoles get() = getRolesTypeOf(ROLE_ME)
 var Role.isRoleMe: Boolean
-    get() = DBRoles.isRole(guild.idLong, ROLE_ME)
+    get() = isRoleTypeOf(ROLE_ME)
     set(value) = addOrRemoveRoleTypeOf(value, ROLE_ME)
 
 // Announcements
 
 val Guild.announcementRoles get() = getRolesTypeOf(ANNOUNCEMENTS)
 var Role.isAnnouncements: Boolean
-    get() = DBRoles.isRole(guild.idLong, ANNOUNCEMENTS)
+    get() = isRoleTypeOf(ANNOUNCEMENTS)
     set(value) = addOrRemoveRoleTypeOf(value, ANNOUNCEMENTS)
 
 // Ignored
 
 val Guild.ignoredRoles get() = getRolesTypeOf(IGNORED)
 var Role.isIgnored: Boolean
-    get() = DBRoles.isRole(guild.idLong, IGNORED)
+    get() = isRoleTypeOf(IGNORED)
     set(value) = addOrRemoveRoleTypeOf(value, IGNORED)
 
 // Generic
+
+private fun Role.isRoleTypeOf(type: DBRoles.Type): Boolean {
+    return DBRoles.isRole(guild.idLong, idLong, type)
+}
 
 private fun Role.addOrRemoveRoleTypeOf(value: Boolean, type: DBRoles.Type) {
     if(value) {
@@ -77,12 +81,28 @@ private fun Role.addOrRemoveRoleTypeOf(value: Boolean, type: DBRoles.Type) {
     }
 }
 
+private fun Guild.hasRoleTypeOf(type: DBRoles.Type): Boolean {
+    return DBRoles.hasRole(idLong, type)
+}
+
 private fun Guild.getRoleTypeOf(type: DBRoles.Type): Role? {
-    return DBRoles.getRole(idLong, type)?.let { getRoleById(it) }
+    return DBRoles.getRole(idLong, type)?.let {
+        val role = getRoleById(it)
+        if(role === null) {
+            DBRoles.removeRole(idLong, type)
+        }
+        return@let role
+    }
 }
 
 private fun Guild.getRolesTypeOf(type: DBRoles.Type): List<Role> {
-    return DBRoles.getRoles(idLong, type).mapNotNull { getRoleById(it) }
+    return DBRoles.getRoles(idLong, type).mapNotNull {
+        val role = getRoleById(it)
+        if(role === null) {
+            DBRoles.removeRole(idLong, it, type)
+        }
+        return@mapNotNull role
+    }
 }
 
 private fun Guild.setRoleTypeOf(value: Role?, type: DBRoles.Type) {

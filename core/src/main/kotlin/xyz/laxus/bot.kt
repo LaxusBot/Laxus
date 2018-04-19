@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("MemberVisibilityCanBePrivate", "unused")
+@file:Suppress("MemberVisibilityCanBePrivate", "Unused")
 package xyz.laxus
 
 import com.jagrosh.jagtag.JagTag
@@ -60,6 +60,7 @@ import java.time.OffsetDateTime.now
 import java.time.temporal.ChronoUnit.SECONDS
 import java.util.*
 import java.util.concurrent.TimeUnit.HOURS
+import kotlin.collections.ArrayList
 import kotlin.coroutines.experimental.coroutineContext
 
 class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
@@ -360,7 +361,7 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
     }
 
     class Builder internal constructor() {
-        val groups = LinkedList<Command.Group>()
+        val groups = ArrayList<Command.Group>()
         var test = false
         var dBotsKey: String? = null
         var dBotsListKey: String? = null

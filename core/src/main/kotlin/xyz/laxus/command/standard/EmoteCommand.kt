@@ -43,8 +43,8 @@ class EmoteCommand : Command(StandardGroup) {
 
         if(args matches emoteRegex) {
             val emotes = ctx.message.emotes
-            if(emotes.size < 1) {
-                return ctx.replyError("The specified emote was fake, or could not be retrieved!")
+            if(emotes.size < 1) return ctx.replyError {
+                "The specified emote was fake, or could not be retrieved!"
             }
 
             val emote = emotes[0]

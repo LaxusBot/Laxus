@@ -25,7 +25,6 @@
 /**/test-requests/
 
 ### Data Files ###
-*.txt
 *.json
 *.mv.db
 *.h2.db
@@ -40,3 +39,7 @@
 
 ### Tests ###
 /api/request-tests/
+
+### Other ###
+/**/xyz/laxus/**/unlisted/
+/database/migration/

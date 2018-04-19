@@ -16,6 +16,8 @@
 package xyz.laxus.listeners
 
 import net.dv8tion.jda.core.JDA
+import net.dv8tion.jda.core.entities.Guild
+import net.dv8tion.jda.core.entities.Role
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.channel.category.CategoryCreateEvent
@@ -68,48 +70,22 @@ object DatabaseListener: EventListener {
         val guild = event.guild
 
         // RoleMe Deleted
-        if(role.isRoleMe) {
-            role.isRoleMe = false
-        }
+        role.tryRemoveRoleMe()
 
         // ColorMe Deleted
-        if(role.isColorMe) {
-            role.isColorMe = false
-        }
+        role.tryRemoveColorMe()
 
         // Announcement role
-        if(role.isAnnouncements) {
-            role.isAnnouncements = false
-        }
+        role.tryRemoveAnnouncements()
 
         // Ignored role
-        if(role.isIgnored) {
-            role.isIgnored = false
-        }
+        role.tryRemoveIgnored()
 
         // Mod Role Deleted
-        val modRole = guild.modRole
-        if(modRole !== null) {
-            if(modRole == role) {
-                guild.modRole = null
-            }
-        } else {
-            if(guild.hasModRole) {
-                guild.modRole = null
-            }
-        }
+        guild.tryRemoveModRole(role)
 
         // Muted Role Deleted
-        val mutedRole = guild.mutedRole
-        if(mutedRole !== null) {
-            if(mutedRole == role) {
-                guild.mutedRole = null
-            }
-        } else {
-            if(guild.hasMutedRole) {
-                guild.mutedRole = null
-            }
-        }
+        guild.tryRemoveMutedRole(role)
     }
 
     private fun onTextChannelCreate(event: TextChannelCreateEvent) {
@@ -161,14 +137,14 @@ object DatabaseListener: EventListener {
         }
 
         // Announcements Channel Deleted
-        val announceChan = guild.announcementChannel
+        val announceChan = guild.announcementsChannel
         if(announceChan !== null) {
             if(announceChan == channel) {
-                guild.announcementChannel = null
+                guild.announcementsChannel = null
             }
         } else {
-            if(guild.hasAnnouncementChannel) {
-                guild.announcementChannel = null
+            if(guild.hasAnnouncementsChannel) {
+                guild.announcementsChannel = null
             }
         }
 
@@ -228,6 +204,56 @@ object DatabaseListener: EventListener {
                 if(!DBGuildStore.isStored(it.idLong)) {
                     DBGuildStore.addGuild(shardId, it.idLong)
                 }
+            }
+        }
+    }
+
+    private fun Role.tryRemoveRoleMe() {
+        if(isRoleMe) {
+            isRoleMe = false
+        }
+    }
+
+    private fun Role.tryRemoveColorMe() {
+        if(isColorMe) {
+            isColorMe = false
+        }
+    }
+
+    private fun Role.tryRemoveAnnouncements() {
+        if(isAnnouncements) {
+            isAnnouncements = false
+        }
+    }
+
+    private fun Role.tryRemoveIgnored() {
+        if(isIgnored) {
+            isIgnored = false
+        }
+    }
+
+    private fun Guild.tryRemoveModRole(deleted: Role? = null) {
+        val modRole = this.modRole
+        if(modRole !== null) {
+            if(modRole == deleted) {
+                this.modRole = null
+            }
+        } else {
+            if(hasModRole) {
+                this.modRole = null
+            }
+        }
+    }
+
+    private fun Guild.tryRemoveMutedRole(deleted: Role? = null) {
+        val mutedRole = this.mutedRole
+        if(mutedRole !== null) {
+            if(mutedRole == deleted) {
+                this.mutedRole = null
+            }
+        } else {
+            if(hasMutedRole) {
+                this.mutedRole = null
             }
         }
     }

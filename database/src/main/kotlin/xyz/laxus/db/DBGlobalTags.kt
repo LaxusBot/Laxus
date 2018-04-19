@@ -70,7 +70,7 @@ object DBGlobalTags : Table() {
         return null
     }
 
-    fun createTag(name: String, content: String, ownerId: Long) {
+    fun createTag(name: String, content: String, ownerId: Long?) {
         require(name.length <= 50) { "Tag name length exceeds maximum of 50 characters!" }
         require(content.length <= 1900) { "Tag content length exceeds maximum of 50 characters!" }
 

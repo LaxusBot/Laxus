@@ -74,7 +74,7 @@ object DBLocalTags : Table() {
         return null
     }
 
-    fun createTag(name: String, content: String, ownerId: Long, guildId: Long) {
+    fun createTag(name: String, content: String, ownerId: Long?, guildId: Long) {
         require(name.length <= 50) { "Tag name length exceeds maximum of 50 characters!" }
         require(content.length <= 1900) { "Tag content length exceeds maximum of 50 characters!" }
 

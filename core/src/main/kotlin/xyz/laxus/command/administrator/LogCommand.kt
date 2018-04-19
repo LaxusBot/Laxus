@@ -35,20 +35,9 @@ class LogCommand: EmptyCommand(AdministratorGroup) {
     override val name = "Log"
     override val help = "Manage various types of server logs."
     override val children = arrayOf(
-        LogConfigureCommand(),
         LogSetCommand(),
         LogRemoveCommand()
     )
-
-    @Experiment("Log configuring is an experimental feature")
-    private inner class LogConfigureCommand: Command(this@LogCommand) {
-        override val name = "Configure"
-        override val help = "Configures various log settings for the server."
-
-        override suspend fun execute(ctx: CommandContext) {
-            ctx.replyWarning("This feature has not been implemented yet!")
-        }
-    }
 
     @MustHaveArguments("Specify a type of log and a channel to use as it.")
     private inner class LogSetCommand : Command(this@LogCommand) {

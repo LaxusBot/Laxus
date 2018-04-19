@@ -24,7 +24,8 @@ import xyz.laxus.db.sql.ResultSetType.*
 /**
  * @author Kaidan Gustave
  */
-@TableName("GUILD_CHANNELS") @Columns(
+@TableName("GUILD_CHANNELS")
+@Columns(
     Column("GUILD_ID", BIGINT, unique = true),
     Column("CHANNEL_ID", BIGINT, unique = true),
     Column("TYPE", "$VARCHAR(50)", unique = true)
@@ -40,6 +41,7 @@ object DBChannels : Table() {
     }
 
     fun hasChannel(guildId: Long, type: Type): Boolean {
+        require(type.single, type::notSingle)
         return connection.prepare("SELECT CHANNEL_ID FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
@@ -48,6 +50,7 @@ object DBChannels : Table() {
     }
 
     fun getChannel(guildId: Long, type: Type): Long? {
+        require(type.single, type::notSingle)
         connection.prepare("SELECT CHANNEL_ID FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
@@ -61,6 +64,7 @@ object DBChannels : Table() {
     }
 
     fun getChannels(guildId: Long, type: Type): List<Long> {
+        require(type.multi, type::notMulti)
         val channels = ArrayList<Long>()
         connection.prepare("SELECT CHANNEL_ID FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
             statement[1] = guildId
@@ -73,6 +77,7 @@ object DBChannels : Table() {
     }
 
     fun setChannel(guildId: Long, channelId: Long, type: Type) {
+        require(type.single, type::notSingle)
         connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
@@ -91,6 +96,7 @@ object DBChannels : Table() {
     }
 
     fun addChannel(guildId: Long, channelId: Long, type: Type) {
+        require(type.multi, type::notMulti)
         connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND CHANNEL_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = channelId
@@ -106,10 +112,18 @@ object DBChannels : Table() {
     }
 
     fun removeChannel(guildId: Long, type: Type) {
-        removeChannels(guildId, type)
+        require(type.single, type::notSingle)
+        connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+            statement[1] = guildId
+            statement[2] = type.name
+            statement.executeQuery {
+                if(it.next()) it.deleteRow()
+            }
+        }
     }
 
     fun removeChannel(guildId: Long, channelId: Long, type: Type) {
+        require(type.multi, type::notMulti)
         connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND CHANNEL_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = channelId
@@ -121,6 +135,7 @@ object DBChannels : Table() {
     }
 
     fun removeChannels(guildId: Long, type: Type) {
+        require(type.multi, type::notMulti)
         connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
@@ -132,14 +147,23 @@ object DBChannels : Table() {
 
     fun removeAllChannels(guildId: Long) {
         for(type in Type.values()) {
-            removeChannels(guildId, type)
+            if(type.single) {
+                removeChannel(guildId, type)
+            } else {
+                removeChannels(guildId, type)
+            }
         }
     }
 
-    enum class Type {
-        ANNOUNCEMENT,
-        IGNORED,
-        MOD_LOG,
-        WELCOME
+    enum class Type(val single: Boolean) {
+        ANNOUNCEMENTS(true),
+        IGNORED(false),
+        MOD_LOG(true),
+        WELCOME(true);
+
+        val multi get() = !single
+
+        internal fun notMulti() = "Channel type '$this' is not a multi-type!"
+        internal fun notSingle() = "Channel type '$this' is not a single-type!"
     }
 }

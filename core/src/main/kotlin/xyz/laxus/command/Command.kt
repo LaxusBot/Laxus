@@ -87,14 +87,14 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
 
                 if(children.isNotEmpty()) {
                     append("\n**Sub-Commands:**\n\n")
-                    var cat: Level? = null
+                    var level: Level? = null
                     for((i, c) in children.sorted().withIndex()) {
-                        if(cat != c.defaultLevel) {
+                        if(level != c.defaultLevel) {
                             if(!c.defaultLevel.test(ctx)) continue
-                            cat = c.defaultLevel
-                            if(cat != Level.STANDARD) {
+                            level = c.defaultLevel
+                            if(level != Level.STANDARD) {
                                 if(i != 0) appendln()
-                                append("__${cat.titleName}__\n\n")
+                                append("__${level.titleName}__\n\n")
                             }
                         }
                         append("`${ctx.bot.prefix}${c.fullname}")
@@ -143,8 +143,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
     open val children: Array<out Command> = emptyArray()
     open val fullname: String get() = "${parent?.let { "${it.fullname} " } ?: ""}$name"
     open val defaultLevel: Command.Level get() = parent?.defaultLevel ?: group.defaultLevel
-
-    val isExperimental: Boolean get() = experiment !== null
+    open val isExperimental: Boolean get() = experiment !== null
 
     private val experiment: Experiment? by lazy { this::class.findAnnotation() ?: parent?.experiment }
     private val autoCooldown by lazy { this::class.findAnnotation<AutoCooldown>()?.mode ?: AutoCooldownMode.OFF }
@@ -354,10 +353,17 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
         abstract fun init(config: Config)
 
         override fun compareTo(other: Group): Int {
-            if(name == "Standard") {
-                return 1 // Standard will always be at the top of the list
+            if(name == other.name) {
+                return 0
             }
-            return defaultLevel.compareTo(other.defaultLevel)
+            if(name == "Standard") {
+                return -1
+            }
+            if(other.name == "Standard") {
+                return 1
+            }
+            return defaultLevel.compareTo(other.defaultLevel).takeIf { it != 0 }
+                   ?: name.compareTo(other.name)
         }
     }
 

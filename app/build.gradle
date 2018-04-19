@@ -18,6 +18,8 @@ apply plugin: 'com.github.johnrengelman.shadow'
 
 mainClassName = 'xyz.laxus.Main'
 
+buildDir = rootProject.buildDir
+
 repositories {
     jitpack()
 }

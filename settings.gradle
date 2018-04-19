@@ -15,7 +15,6 @@
  */
 rootProject.name = 'Laxus'
 
-include ':api'
 include ':app'
 include ':commons', ':commons:jda'
 include ':core', ':core:music'
