@@ -50,7 +50,7 @@ class InfoCommand: Command(StandardGroup) {
 
         // Kept here for usage in the 'server' command
         fun infoEmbed(ctx: CommandContext, user: User, member: Member?): MessageEmbed = embed {
-            title { "${if(user.isBot) "\uD83E\uDD16" else "\u2139"} __Information on ${user.formattedName(false)}:__" }
+            title { "${if(user.isBot) "\uD83E\uDD16" else "\u2139"} __Information on ${user.formattedName(false)}__" }
             thumbnail { user.effectiveAvatarUrl }
 
             appendln("$BULLET **ID:** ${user.id}")

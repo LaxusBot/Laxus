@@ -24,6 +24,7 @@ import xyz.laxus.jda.util.connectedChannel
 import xyz.laxus.util.collections.splitWith
 import xyz.laxus.util.collections.toArrayOrEmpty
 import xyz.laxus.util.modifyIf
+import xyz.laxus.util.propertyOf
 import xyz.laxus.util.reflect.loadClass
 import java.lang.reflect.Modifier
 import java.util.concurrent.TimeUnit
@@ -37,6 +38,7 @@ import javax.script.ScriptException
 class EvalCommand: Command(OwnerGroup) {
     private companion object {
         private const val MagicFqn = "org.jetbrains.kotlin.cli.common.environment.UtilKt"
+        private const val setIdeaIoUseFallback = "setIdeaIoUseFallback"
         private const val SCRIPT_ENGINE_EXT = "kts"
         private val ENGINE_MANAGER = ScriptEngineManager()
         private val SYS_EXIT_REGEX = Regex("(?:System\\.)?exit(?:Process)?\\(\\d+\\);?")
@@ -103,20 +105,23 @@ class EvalCommand: Command(OwnerGroup) {
         // Moral of the story: There is no moral.
         //
         // PS: THIS IS A WINDOWS EXCLUSIVE ISSUE!!!
-        val setIdeaToUseFallback = loadClass(MagicFqn).let {
-            if(it === null) {
-                throw ClassNotFoundException("Could not locate class: '$MagicFqn'")
+        val os = propertyOf("os.name")?.toLowerCase() ?: ""
+        if(os.startsWith("win")) {
+            val function = loadClass(MagicFqn).let {
+                if(it === null) {
+                    throw ClassNotFoundException("Could not locate class: '$MagicFqn'")
+                }
+                it.java.methods.find {
+                    it.name == setIdeaIoUseFallback && Modifier.isStatic(it.modifiers)
+                }
             }
-            it.java.methods.find {
-                it.name == "setIdeaIoUseFallback" && Modifier.isStatic(it.modifiers)
+            if(function === null) {
+                throw NoClassDefFoundError(
+                    "Could not find static method '$setIdeaIoUseFallback' for class '$MagicFqn'"
+                )
             }
+            function(null)
         }
-
-        if(setIdeaToUseFallback === null) {
-            throw NoClassDefFoundError("Could not find static method 'setIdeaIoUseFallback' for class '$MagicFqn'")
-        }
-
-        setIdeaToUseFallback(null)
     }
 
     override suspend fun execute(ctx: CommandContext) {
@@ -137,11 +142,12 @@ class EvalCommand: Command(OwnerGroup) {
                 engineContext.clear()
                 try {
                     engineContext.load(ctx)
-                    val lines = args.split('\n').splitWith { it.startsWith("import ") }
-                    lines.first.forEach { engineContext.import(it.substring(7)) }
-                    val script = lines.second.joinToString("\n")
-                    val evaluation = "${engineContext.scriptPrefix}\n$script"
-                    val output = engine.eval(evaluation)
+                    val (imports, lines) = args.split('\n').splitWith { it.startsWith("import ") }
+                    imports.forEach { engineContext.import(it.substring(7)) }
+                    val output = engine.eval(
+                        "${engineContext.scriptPrefix}\n" +
+                        lines.joinToString("\n")
+                    )
                     ctx.reply("```kotlin\n$args```Evaluated:\n```\n$output```")
                 } catch (e: ScriptException) {
                     val error = buildString {

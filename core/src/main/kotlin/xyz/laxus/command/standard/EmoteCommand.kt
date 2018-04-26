@@ -26,7 +26,7 @@ import xyz.laxus.util.*
  * @author Kaidan Gustave
  */
 @MustHaveArguments("Specify an custom emoji to get info on.")
-class EmoteCommand : Command(StandardGroup) {
+class EmoteCommand: Command(StandardGroup) {
     private companion object {
         private const val bullet = "\uD83D\uDD39"
     }

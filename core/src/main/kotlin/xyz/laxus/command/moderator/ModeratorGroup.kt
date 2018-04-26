@@ -24,7 +24,7 @@ import xyz.laxus.jda.util.listener
 /**
  * @author Kaidan Gustave
  */
-object ModeratorGroup : Command.Group("Moderator") {
+object ModeratorGroup: Command.Group("Moderator") {
     override val defaultLevel get() = Command.Level.MODERATOR
     override val guildOnly = true
     override val devOnly = false

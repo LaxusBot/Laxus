@@ -110,7 +110,7 @@ class ColorMeCommand: Command(StandardGroup) {
     }
 
     @MustHaveArguments
-    private inner class ColorMeAddCommand : Command(this@ColorMeCommand) {
+    private inner class ColorMeAddCommand: Command(this@ColorMeCommand) {
         override val name = "Add"
         override val arguments = "[Role Name]"
         override val help = "Adds a ColorMe role to the server."
@@ -138,7 +138,7 @@ class ColorMeCommand: Command(StandardGroup) {
     }
 
     @MustHaveArguments
-    private inner class ColorMeRemoveCommand : Command(this@ColorMeCommand) {
+    private inner class ColorMeRemoveCommand: Command(this@ColorMeCommand) {
         override val name = "Remove"
         override val arguments = "[Role Name]"
         override val help = "Removes a ColorMe role from the server."

@@ -20,11 +20,12 @@ import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.jda.util.await
 import xyz.laxus.util.formattedName
+import xyz.laxus.util.ignored
 
 /**
  * @author Kaidan Gustave
  */
-class InviteCommand : Command(StandardGroup) {
+class InviteCommand: Command(StandardGroup) {
     override val name = "Invite"
     override val help = "Gets an invite link for Laxus."
     override val guildOnly = false
@@ -51,8 +52,8 @@ class InviteCommand : Command(StandardGroup) {
             appendln()
             appendln("To see a full list of my commands, type `${ctx.bot.prefix}help`.")
             append("If you require additional help ")
-            val owner = ctx.jda.retrieveUserById(Laxus.DevId).await()
-            if(owner != null) {
+            val owner = ignored(null) { ctx.jda.retrieveUserById(Laxus.DevId).await() }
+            if(owner !== null) {
                 append("contact ${owner.formattedName(true)} or ")
             }
             append("join my support server **<${Laxus.ServerInvite}>**")

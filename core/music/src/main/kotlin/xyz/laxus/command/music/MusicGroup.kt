@@ -41,6 +41,7 @@ object MusicGroup : Command.Group("Music") {
     }
 
     override fun init(config: Config) {
+        + NowPlayingCommand()
         + PauseCommand(Manager)
         + PlayCommand(Manager)
         + QueueCommand(Manager)

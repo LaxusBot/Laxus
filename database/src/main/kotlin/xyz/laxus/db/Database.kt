@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("ObjectPropertyName", "MemberVisibilityCanBePrivate", "unused")
+@file:Suppress("ObjectPropertyName", "MemberVisibilityCanBePrivate")
 package xyz.laxus.db
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigValue
 import xyz.laxus.db.schema.Columns
 import xyz.laxus.db.schema.TableName
 import xyz.laxus.util.*
@@ -29,71 +28,40 @@ import kotlin.reflect.full.findAnnotation
 /**
  * @author Kaidan Gustave
  */
-object Database : AutoCloseable {
-    @PublishedApi
-    internal val LOG = createLogger(Database::class)
+object Database: AutoCloseable {
+    val Log = createLogger(Database::class)
 
     private lateinit var _connection: Connection
-    val connection get() = _connection
-
     private val _tables = HashMap<String, Table>()
+
     val tables: Map<String, Table> get() = _tables
-
-    fun start() {
-        initializeDB(true)
+    val connection: Connection get() {
+        if(!isConnected()) initializeDB()
+        return _connection
     }
 
-    fun connect(url: String, user: String, pass: String, initialize: Boolean = true) {
-        LOG.info("Connecting to database: $url")
+    fun start() = initializeDB()
+    fun isConnected(): Boolean = ::_connection.isInitialized && !_connection.isClosed
+
+    private fun connect(url: String, user: String, pass: String) {
+        Log.info("Connecting to database: $url")
         _connection = DriverManager.getConnection(url, user, pass)
-
-        if(initialize) {
-            initializeDB(false)
-        }
     }
 
-    fun isConnected(): Boolean = ::_connection.isInitialized && !connection.isClosed
-
-    private fun initializeDB(shouldLogin: Boolean) {
+    private fun initializeDB() {
         val config = findConfig()
-
         val databaseNode = checkNotNull(config.config("database")) { nodeNotFound("database") }
-
         val shutdownHook = databaseNode.boolean("shutdown.hook") ?: false
 
         if(shutdownHook) {
             createShutdownHook()
         }
 
-        if(shouldLogin) {
-            LOG.debug("Logging in using configuration...")
+        Log.debug("Logging in using configuration...")
+        val (url, user, pass) = databaseNode.dbValues()
+        connect(url, user, pass)
 
-            val loginNode = checkNotNull(databaseNode.config("login")) { nodeNotFound("login") }
-            val user = checkNotNull(loginNode.string("user")) { nodeNotFound("user") }
-            val pass = checkNotNull(loginNode.string("pass")) { nodeNotFound("pass") }
-
-            val urlNode = checkNotNull(databaseNode.config("url")) { nodeNotFound("url") }
-
-            val prefix = checkNotNull(urlNode.string("prefix")) { nodeNotFound("prefix") }
-            val path = checkNotNull(urlNode.string("path")) { nodeNotFound("path") }
-
-            val options = databaseNode.obj("options") ?: emptyMap<String, ConfigValue>()
-
-            val url = buildString {
-                append("$prefix$path")
-                options.keys.forEach { key ->
-                    append(";")
-                    append(key)
-                    append("=")
-                    append("${options[key]?.unwrapped()}")
-                }
-            }
-
-            connect(url, user, pass, initialize = false)
-        }
-
-        val tablesList = checkNotNull(databaseNode.getList("tables")) { nodeNotFound("tables") }
-
+        val tablesList = checkNotNull(databaseNode.list("tables")) { nodeNotFound("tables") }
         tablesList.forEach {
             val path = "${it.unwrapped()}"
             val klazz = checkNotNull(loadClass(path)) {
@@ -154,29 +122,45 @@ object Database : AutoCloseable {
     private fun createShutdownHook() = onJvmShutdown("Database Shutdown", this::close)
 
     private fun findConfig(): Config {
-        return checkNotNull(loadConfig("database.conf").takeIf { it.isResolved }){
+        return checkNotNull(loadConfig("database.conf").takeIf { it.isResolved }) {
             "Could not find 'database.conf' in resources!"
         }
+    }
+
+    private fun Config.dbValues(): Triple<String, String, String> {
+        val user = checkNotNull(string("login.user")) { nodeNotFound("login.user") }
+        val pass = checkNotNull(string("login.pass")) { nodeNotFound("login.pass") }
+        val prefix = checkNotNull(string("url.prefix")) { nodeNotFound("url.prefix") }
+        val path = checkNotNull(string("url.path")) { nodeNotFound("url.path") }
+        val url = buildString {
+            append("$prefix$path")
+            obj("options")?.entries?.forEach {
+                append(";")
+                append(it.key)
+                append("=")
+                append("${it.value.unwrapped()}")
+            }
+        }
+        return Triple(url, user, pass)
     }
 
     private fun nodeNotFound(node: String): String = "Could not find '$node' node!"
 
     override fun close() {
-        if(!::_connection.isInitialized) return
-        if(connection.isClosed) return
+        if(!isConnected()) return
 
         tables.values.forEach {
             try {
                 it.close()
             } catch(t: Throwable) {
-                LOG.warn("Experienced an exception while closing a table '${it.name}' connection:\n$t")
+                Log.warn("Experienced an exception while closing a table '${it.name}' connection:\n$t")
             }
         }
 
         try {
             connection.close()
         } catch(t: Throwable) {
-            LOG.warn("Experienced an exception while closing JDBC connection:\n$t")
+            Log.warn("Experienced an exception while closing JDBC connection:\n$t")
         }
     }
 }

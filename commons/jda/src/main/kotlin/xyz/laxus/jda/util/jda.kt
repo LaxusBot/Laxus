@@ -13,27 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.command.administrator
+package xyz.laxus.jda.util
 
-import com.typesafe.config.Config
-import xyz.laxus.command.Command
+import net.dv8tion.jda.core.utils.cache.CacheView
 
-/**
- * @author Kaidan Gustave
- */
-object AdministratorGroup: Command.Group("Administrator") {
-    override val defaultLevel = Command.Level.ADMINISTRATOR
-    override val devOnly = false
-    override val guildOnly = true
-
-    override fun init(config: Config) {
-        + CustomCmdCommand()
-        + IgnoreCommand()
-        + LevelCommand()
-        + LogCommand()
-        + ModeratorCommand()
-        + PrefixCommand()
-        + SettingsCommand()
-        + WelcomeCommand()
-    }
-}
+val <T> CacheView<T>.size: Long get() = size()

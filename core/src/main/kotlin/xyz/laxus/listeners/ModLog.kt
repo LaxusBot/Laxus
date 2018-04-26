@@ -23,12 +23,14 @@ import net.dv8tion.jda.core.audit.AuditLogKey
 import net.dv8tion.jda.core.entities.*
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.events.ShutdownEvent
+import net.dv8tion.jda.core.events.guild.GenericGuildEvent
 import net.dv8tion.jda.core.events.guild.GuildBanEvent
 import net.dv8tion.jda.core.events.guild.GuildUnbanEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleAddEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberRoleRemoveEvent
 import xyz.laxus.db.entities.Case
+import xyz.laxus.db.entities.Case.Action.*
 import xyz.laxus.jda.listeners.SuspendedListener
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.isSelf
@@ -43,21 +45,33 @@ import kotlin.coroutines.experimental.coroutineContext
 /**
  * @author Kaidan Gustave
  */
-object ModLog : SuspendedListener {
+object ModLog: SuspendedListener {
     private const val ReasonLineFormat = "`[ REASON ]` %s"
-    private const val FullFormat = "`[  CASE  ]` `[%d]` %s %s %s **%s** (ID: %d)\n${ReasonLineFormat}"
+    private const val FullFormat = "`[  CASE  ]` `[%d]` %s %s %s **%s** (ID: %d)\n$ReasonLineFormat"
     private const val DefaultReason = "none"
     private const val RetrieveAmount = 20
 
     @Volatile private var running = false
 
     private val context by lazy { newSingleThreadContext("ModLog-Context") }
-    private val eventCache = ConcurrentLinkedQueue<Event>()
+    private val eventCache = ConcurrentLinkedQueue<GenericGuildEvent>()
     private val auditCache = ConcurrentHashMap<Long, List<AuditLogEntry>>()
 
     val Log = createLogger(ModLog::class)
 
     override suspend fun onEvent(event: Event) {
+        if(event is ShutdownEvent) {
+            // Time to shut down
+            running = false
+            eventCache.clear()
+            auditCache.clear()
+            context.cancel(CancellationException("Shutdown Event was fired"))
+            context.close()
+            return
+        }
+
+        if(event !is GenericGuildEvent) return
+
         val guild = when(event) {
             is GuildBanEvent -> event.guild
             is GuildUnbanEvent -> event.guild
@@ -67,16 +81,6 @@ object ModLog : SuspendedListener {
             }
             is GuildMemberRoleRemoveEvent -> {
                 event.guild.takeIf { it.mutedRole?.let { it in event.roles } == true }
-            }
-
-            is ShutdownEvent -> {
-                // Time to shut down
-                eventCache.clear()
-                auditCache.clear()
-                running = false
-                context.cancel(CancellationException("Shutdown Event was fired"))
-                context.close()
-                return
             }
 
             else -> null
@@ -101,37 +105,37 @@ object ModLog : SuspendedListener {
     suspend fun newBan(moderator: Member, target: User, reason: String? = null) {
         val guild = moderator.guild
         val modLog = guild.modLog ?: return
-        log(modLog, target, moderator.user, Case.Action.BAN, reason)
+        log(modLog, target, moderator.user, BAN, reason)
     }
 
     suspend fun newUnban(moderator: Member, target: User, reason: String? = null) {
         val guild = moderator.guild
         val modLog = guild.modLog ?: return
-        log(modLog, target, moderator.user, Case.Action.UNBAN, reason)
+        log(modLog, target, moderator.user, UNBAN, reason)
     }
 
     suspend fun newKick(moderator: Member, target: User, reason: String? = null) {
         val guild = moderator.guild
         val modLog = guild.modLog ?: return
-        log(modLog, target, moderator.user, Case.Action.KICK, reason)
+        log(modLog, target, moderator.user, KICK, reason)
     }
 
     suspend fun newMute(moderator: Member, target: User, reason: String? = null) {
         val guild = moderator.guild
         val modLog = guild.modLog ?: return
-        log(modLog, target, moderator.user, Case.Action.MUTE, reason)
+        log(modLog, target, moderator.user, MUTE, reason)
     }
 
     suspend fun newUnmute(moderator: Member, target: User, reason: String? = null) {
         val guild = moderator.guild
         val modLog = guild.modLog ?: return
-        log(modLog, target, moderator.user, Case.Action.UNMUTE, reason)
+        log(modLog, target, moderator.user, UNMUTE, reason)
     }
 
     suspend fun newClean(moderator: Member, target: TextChannel, msgs: Int, reason: String? = null) {
         val guild = moderator.guild
         val modLog = guild.modLog ?: return
-        log(modLog, target, moderator.user, Case.Action.CLEAN, reason, msgs)
+        log(modLog, target, moderator.user, CLEAN, reason, msgs)
     }
 
     suspend fun editReason(logMessage: Message, reason: String) {
@@ -159,13 +163,15 @@ object ModLog : SuspendedListener {
                     }
 
                     while(eventCache.isNotEmpty()) try {
-                        val event = eventCache.poll()
+                        val event = eventCache.poll() ?: continue
+                        val entries = pollLogOrGetFromCache(event.guild)
                         when(event) {
-                            is GuildBanEvent -> onBan(event, pollLogOrGetFromCache(event.guild))
-                            is GuildUnbanEvent -> onUnban(event, pollLogOrGetFromCache(event.guild))
-                            is GuildMemberLeaveEvent -> onLeave(event, pollLogOrGetFromCache(event.guild))
-                            is GuildMemberRoleAddEvent -> onRoleAdd(event, pollLogOrGetFromCache(event.guild))
-                            is GuildMemberRoleRemoveEvent -> onRoleRemove(event, pollLogOrGetFromCache(event.guild))
+                            is GuildBanEvent -> onBan(event, entries)
+                            is GuildUnbanEvent -> onUnban(event, entries)
+                            is GuildMemberLeaveEvent -> onLeave(event, entries)
+                            is GuildMemberRoleAddEvent -> onRoleAdd(event, entries)
+                            is GuildMemberRoleRemoveEvent -> onRoleRemove(event, entries)
+                            else -> Log.warn("Event cache polled was an invalid type: ${event::class}")
                         }
                     } catch(t: Throwable) {
                         if(t is CancellationException) throw t
@@ -201,7 +207,7 @@ object ModLog : SuspendedListener {
         val moderator = entry.user.takeIf { !it.isSelf } ?: return
         val reason = entry.reason ?: DefaultReason
 
-        log(modLog, target, moderator, Case.Action.BAN, reason)
+        log(modLog, target, moderator, BAN, reason)
     }
 
     private suspend fun onUnban(event: GuildUnbanEvent, entries: List<AuditLogEntry>) {
@@ -218,7 +224,7 @@ object ModLog : SuspendedListener {
         val moderator = entry.user.takeIf { !it.isSelf } ?: return
         val reason = entry.reason ?: DefaultReason
 
-        log(modLog, target, moderator, Case.Action.UNBAN, reason)
+        log(modLog, target, moderator, UNBAN, reason)
     }
 
     private suspend fun onLeave(event: GuildMemberLeaveEvent, entries: List<AuditLogEntry>) {
@@ -241,7 +247,7 @@ object ModLog : SuspendedListener {
         val moderator = entry.user.takeIf { !it.isSelf } ?: return
         val reason = entry.reason ?: DefaultReason
 
-        log(modLog, target, moderator, Case.Action.KICK, reason)
+        log(modLog, target, moderator, KICK, reason)
     }
 
     private suspend fun onRoleAdd(event: GuildMemberRoleAddEvent, entries: List<AuditLogEntry>) {
@@ -268,7 +274,7 @@ object ModLog : SuspendedListener {
 
         val moderator = entry.user.takeIf { !it.isSelf } ?: return
 
-        log(modLog, target, moderator, Case.Action.MUTE, null)
+        log(modLog, target, moderator, MUTE, null)
     }
 
     private suspend fun onRoleRemove(event: GuildMemberRoleRemoveEvent, entries: List<AuditLogEntry>) {
@@ -295,7 +301,7 @@ object ModLog : SuspendedListener {
 
         val moderator = entry.user.takeIf { !it.isSelf } ?: return
 
-        log(modLog, target, moderator, Case.Action.UNMUTE, null)
+        log(modLog, target, moderator, UNMUTE, null)
     }
 
     private suspend fun log(modLog: TextChannel, target: ISnowflake, moderator: User,
@@ -336,7 +342,7 @@ object ModLog : SuspendedListener {
 
     private suspend fun pollLogOrGetFromCache(guild: Guild): List<AuditLogEntry> {
         return auditCache[guild.idLong] ?: run {
-            Log.debug("Polling AuditLog for Guild ID: ${guild.idLong} (max ${RetrieveAmount} entries)")
+            Log.debug("Polling AuditLog for Guild ID: ${guild.idLong} (max $RetrieveAmount entries)")
             guild.auditLogs.limit(RetrieveAmount).await().also {
                 auditCache[guild.idLong] = it
             }
@@ -345,22 +351,22 @@ object ModLog : SuspendedListener {
 
     private fun Case.Action.keyword(argument: Any? = null): String {
         return when(this) {
-            Case.Action.BAN -> "banned"
-            Case.Action.KICK -> "kicked"
-            Case.Action.UNBAN -> "unbanned"
-            Case.Action.MUTE -> "muted"
-            Case.Action.UNMUTE -> "unmuted"
-            Case.Action.CLEAN -> "cleaned %d messages in".format(argument)
-            Case.Action.OTHER -> ""
+            BAN -> "banned"
+            KICK -> "kicked"
+            UNBAN -> "unbanned"
+            MUTE -> "muted"
+            UNMUTE -> "unmuted"
+            CLEAN -> "cleaned %d messages in".format(argument)
+            OTHER -> ""
         }
     }
 
     private fun Case.Action.emote(): String {
         return when(this) {
-            Case.Action.BAN -> "\uD83D\uDD28"
-            Case.Action.KICK -> "\uD83D\uDC62"
-            Case.Action.MUTE -> "\uD83D\uDD07"
-            Case.Action.UNMUTE -> "\uD83D\uDD08"
+            BAN -> "\uD83D\uDD28"
+            KICK -> "\uD83D\uDC62"
+            MUTE -> "\uD83D\uDD07"
+            UNMUTE -> "\uD83D\uDD08"
             else -> ""
         }
     }

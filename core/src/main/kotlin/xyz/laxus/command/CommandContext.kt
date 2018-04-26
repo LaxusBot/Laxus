@@ -60,17 +60,17 @@ class CommandContext internal constructor(
 
     fun reply(text: String) {
         checkForTalking(channel)
-        sendMessage(text, channel).queue(this::linkMessage, {})
+        sendMessage(text, channel).queue(this::linkMessage)
     }
 
     fun reply(embed: MessageEmbed) {
         checkForTalking(channel)
-        channel.sendMessage(embed).queue(this::linkMessage, {})
+        channel.sendMessage(embed).queue(this::linkMessage)
     }
 
     fun reply(message: Message) {
         checkForTalking(channel)
-        channel.sendMessage(message).queue(this::linkMessage, {})
+        channel.sendMessage(message).queue(this::linkMessage)
     }
 
     suspend fun send(text: String): Message {
@@ -103,10 +103,10 @@ class CommandContext internal constructor(
 
     fun replyInDM(embed: MessageEmbed) {
         if(channel is PrivateChannel) {
-            return channel.sendMessage(embed).queue({}, {})
+            return channel.sendMessage(embed).queue()
         }
         author.openPrivateChannel().queue({ pc ->
-            pc.sendMessage(embed).queue({}, {})
+            pc.sendMessage(embed).queue()
         }, {
             if(isGuild && textChannel.canTalk()) {
                 replyError(BlockingError)
@@ -116,10 +116,10 @@ class CommandContext internal constructor(
 
     fun replyInDM(message: Message) {
         if(channel is PrivateChannel) {
-            return channel.sendMessage(message).queue({}, {})
+            return channel.sendMessage(message).queue()
         }
         author.openPrivateChannel().queue({ pc ->
-            pc.sendMessage(message).queue({}, {})
+            pc.sendMessage(message).queue()
         }, {
             if(isGuild && textChannel.canTalk()) {
                 replyError(BlockingError)

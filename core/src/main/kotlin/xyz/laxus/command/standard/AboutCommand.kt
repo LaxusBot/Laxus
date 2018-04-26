@@ -23,12 +23,14 @@ import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.embed
+import xyz.laxus.jda.util.size
+import xyz.laxus.util.collections.sumByLong
 import xyz.laxus.util.formattedName
 
 /**
  * @author Kaidan Gustave
  */
-class AboutCommand : Command(StandardGroup) {
+class AboutCommand: Command(StandardGroup) {
     override val name = "About"
     override val help = "Gets info about the bot."
     override val guildOnly = false
@@ -75,19 +77,19 @@ class AboutCommand : Command(StandardGroup) {
                 this.name = if(shard !== null) "This Shard" else "Users"
                 this.inline = true
 
-                + "${ctx.jda.users.size} Unique${if(shard !== null) " Users" else ""}\n"
+                + "${ctx.jda.userCache.size} Unique${if(shard !== null) " Users" else ""}\n"
                 if(shard !== null) {
-                    + "${ctx.jda.guilds.size} Servers"
+                    + "${ctx.jda.guildCache.size} Servers"
                 } else {
-                    + "${ctx.jda.guilds.stream().mapToInt { it.members.size }.sum()} Total"
+                    + "${ctx.jda.guildCache.sumByLong { it.memberCache.size }} Total"
                 }
             }
             field {
                 this.name = if(shard !== null) "" else "Channels"
                 this.inline = true
 
-                + "${ctx.jda.textChannels.size} Text${if(shard !== null) " Channels" else ""}\n"
-                + "${ctx.jda.voiceChannels.size} Voice${if(shard !== null) " Channels" else ""}"
+                + "${ctx.jda.textChannelCache.size} Text${if(shard !== null) " Channels" else ""}\n"
+                + "${ctx.jda.voiceChannelCache.size} Voice${if(shard !== null) " Channels" else ""}"
             }
             field("Stats", true) {
                 if(shard !== null) {
@@ -95,7 +97,7 @@ class AboutCommand : Command(StandardGroup) {
                     + "${ctx.bot.messageCacheSize} Cached Messages\n"
                     + "Shard ${shard.shardId + 1}"
                 } else {
-                    + "${ctx.jda.guilds.size} Servers\n"
+                    + "${ctx.jda.guildCache.size} Servers\n"
                     + "${ctx.bot.messageCacheSize} Cached Messages"
                 }
             }

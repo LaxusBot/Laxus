@@ -20,6 +20,7 @@ import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.EmptyCommand
 import xyz.laxus.command.MustHaveArguments
+import xyz.laxus.db.entities.Tag
 import xyz.laxus.jda.menus.paginator
 import xyz.laxus.jda.menus.paginatorBuilder
 import xyz.laxus.util.commandArgs
@@ -57,10 +58,10 @@ class CustomCmdCommand: EmptyCommand(AdministratorGroup) {
             val parts = ctx.args.split(commandArgs, 2)
 
             when {
-                parts[0].length > NAME_MAX_LENGTH -> return ctx.replyError {
-                    "Custom Command names cannot exceed 50 characters in length!"
+                parts[0].length > Tag.MaxNameLength -> return ctx.replyError {
+                    "Custom Command names cannot exceed ${Tag.MaxNameLength} characters in length!"
                 }
-                ctx.bot.commands[parts[0]] !== null -> return ctx.replyError {
+                ctx.bot.searchCommand(parts[0]) !== null -> return ctx.replyError {
                     "Custom Commands may not have names that match standard command names!"
                 }
                 parts.size == 1 -> return ctx.replyError {
@@ -156,6 +157,7 @@ class CustomCmdCommand: EmptyCommand(AdministratorGroup) {
         override val help = "Gets a list of all the available custom commands."
         override val cooldown = 20
         override val cooldownScope = CooldownScope.USER_GUILD
+        override val defaultLevel = Level.STANDARD
 
         private val builder = paginatorBuilder {
             waiter           { Laxus.Waiter }

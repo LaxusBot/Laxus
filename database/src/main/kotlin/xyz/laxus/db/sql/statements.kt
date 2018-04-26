@@ -28,7 +28,7 @@ inline fun <reified R> Connection.prepare(
     concur: ResultSetConcur = ResultSetConcur.READ_ONLY,
     block: (PreparedStatement) -> R
 ): R {
-    Database.LOG.trace("Preparing statement: '$sql' (Type: $type, Concur: $concur)")
+    Database.Log.trace("Preparing statement: '$sql' (Type: $type, Concur: $concur)")
     return prepareStatement(sql, type.resultSetInt, concur.resultSetInt).use(block)
 }
 

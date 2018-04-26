@@ -211,7 +211,7 @@ class ModeratorCommand: EmptyCommand(AdministratorGroup) {
                     return@succeeded false
                 }
 
-                ignored { prompt.delete().queue() }
+                ignored { prompt.delete().await() }
                 if(!succeeded) return@launch ctx.replyWarning {
                     "Confirmation timed out! Try using `${ctx.bot.prefix}$fullname` again!"
                 }

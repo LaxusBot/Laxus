@@ -57,10 +57,10 @@ class CleanCommand: Command(ModeratorGroup) {
 
         // Reason
         val reasonMatcher = reasonPattern.matchEntire(args)
-        val reason: String? = if(reasonMatcher !== null) reason@ {
+        val reason: String? = if(reasonMatcher !== null) {
             val groups = reasonMatcher.groupValues
             args = groups[1]
-            return@reason groups[2]
+            groups[2]
         } else null
 
         val quotes = HashSet<String>()
@@ -105,11 +105,11 @@ class CleanCommand: Command(ModeratorGroup) {
 
         // Number of messages to delete
         val numMatcher = numberPattern.findAll(args.trim())
-        val num = if(numMatcher.any()) num@ {
+        val num = if(numMatcher.any()) {
             val n = numMatcher.first().value.trim().toInt()
             if(n < 2 || n > 1000) return ctx.invalidArgs {
                 "The number of messages to delete must be between 2 and 1000!"
-            } else return@num n + 1
+            } else n + 1
         } else if(!cleanAll) 100 else return ctx.invalidArgs {
             "`${ctx.args}` is not a valid number of messages!"
         }
@@ -117,9 +117,9 @@ class CleanCommand: Command(ModeratorGroup) {
         val twoWeeksPrior = ctx.message.creationTime.minusWeeks(2).plusMinutes(1)
         val messages = LinkedList<Message>()
         val channel = ctx.textChannel
-        val receiver = channel.producePast(coroutineContext, num, MaxRetrievable) breakIf@ {
-            if(it.isEmpty()) return@breakIf true
-            return@breakIf it.last().creationTime.isBefore(twoWeeksPrior)
+        val receiver = channel.producePast(coroutineContext, num, MaxRetrievable) {
+            if(it.isEmpty()) return@producePast true
+            return@producePast it.last().creationTime.isBefore(twoWeeksPrior)
         }
 
         while(!receiver.isClosedForReceive) {
@@ -130,10 +130,10 @@ class CleanCommand: Command(ModeratorGroup) {
         var pastTwoWeeks = false
 
         // Get right away if we're cleaning all
-        val toDelete = if(cleanAll) messages else toDelete@ {
+        val toDelete = if(cleanAll) messages else {
             val toDelete = LinkedList<Message>()
             // Filter based on flags
-            for(message in messages) loop@ {
+            for(message in messages) {
                 if(!message.creationTime.isBefore(twoWeeksPrior)) {
                     toDelete += when {
                         message.author.idLong in ids                             -> message
@@ -143,14 +143,14 @@ class CleanCommand: Command(ModeratorGroup) {
                         files && message.attachments.isNotEmpty()                -> message
                         images && message.hasImage                               -> message
                         quotes.any { it in message.contentRaw.toLowerCase() }    -> message
-                        else -> return@loop
-                    }
+                        else -> null
+                    } ?: continue
                 } else {
                     pastTwoWeeks = true
                     break
                 }
             }
-            return@toDelete toDelete
+            toDelete
         }
 
         // If it's empty, either nothing fit the criteria or all of it was past 2 weeks
@@ -173,7 +173,7 @@ class CleanCommand: Command(ModeratorGroup) {
             }
 
             ModLog.newClean(ctx.member, channel, numDeleted, reason)
-            ctx.sendSuccess("Successfully cleaned $numDeleted messages!")
+            ctx.replySuccess("Successfully cleaned $numDeleted messages!")
         } catch(t: Throwable) {
             Laxus.Log.error("An error occurred", t)
             // If something happens, we want to make sure that we inform them because

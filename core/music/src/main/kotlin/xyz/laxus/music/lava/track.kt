@@ -18,6 +18,8 @@ package xyz.laxus.music.lava
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Member
+import xyz.laxus.Laxus
+import xyz.laxus.jda.KEmbedBuilder
 import xyz.laxus.jda.util.embed
 import xyz.laxus.util.progression
 import kotlin.math.min
@@ -29,18 +31,28 @@ val AudioTrack.member: Member get() = checkNotNull(userData()) {
     "User-data of type Member was null!"
 }
 
-fun Guild.trackEmbed(track: AudioTrack) = embed {
-    color { selfMember.color }
-    title { "$name `[${track.progression}]`" }
+fun KEmbedBuilder.trackEmbed(guild: Guild, track: AudioTrack, next: AudioTrack?, paused: Boolean) {
+    color { guild.selfMember.color }
+    title { track.info.title }
+    url { track.info.uri }
+
+    if(paused) {
+        append('\u23F8')
+    } else {
+        append('\u25B6')
+    }
+    append(" __[`")
     val pos = track.position
     val dur = track.duration
-
     val per = (((pos.toDouble() * 100) / dur.toDouble()) / 10).roundToInt()
-    repeat(per) {
-        append('\u2588')
-    }
-    append("\uD83D\uDD18")
-    repeat(10 - (min(per + 1, 10))) {
-        append("\\_")
+    repeat(per) { append('\u2588') }
+    append('\u2B1C')
+    repeat(10 - min(per, 10)) { append('_') }
+    append("`](${Laxus.ServerInvite})__ `[${track.progression}]`")
+    if(next !== null && per >= 8 && !paused) {
+        footer {
+            value { "Next up: ${next.info.title}" }
+            url { next.info.uri }
+        }
     }
 }

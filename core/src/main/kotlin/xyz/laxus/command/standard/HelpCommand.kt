@@ -82,8 +82,9 @@ class HelpCommand: Command(StandardGroup) {
             append("join my support server: **<${Laxus.ServerInvite}>**")
         }
 
-        if(ctx.isGuild)
+        if(ctx.isGuild) {
             ctx.reactSuccess()
+        }
         ctx.replyInDM(message)
     }
 }

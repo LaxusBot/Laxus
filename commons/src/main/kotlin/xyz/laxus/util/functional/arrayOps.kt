@@ -18,6 +18,8 @@ package xyz.laxus.util.functional
 
 operator fun String.Companion.get(vararg strings: String) = arrayOf(*strings)
 operator fun Int.Companion.get(vararg ints: Int) = intArrayOf(*ints)
+operator fun Long.Companion.get(vararg longs: Long) = longArrayOf(*longs)
+operator fun Byte.Companion.get(vararg bytes: Byte) = byteArrayOf(*bytes)
 
 interface ArrayOperator<T: Any> {
     operator fun get(vararg elements: T): Array<T> {

@@ -7,9 +7,10 @@
 ### IDE Configurations ###
 !.editorconfig
 
-### Gradle Files ###
+### Gradle Files And Application Resources ###
 /.gradle/
 /build/
+laxus.sh
 
 !build.gradle
 !settings.gradle

@@ -21,11 +21,11 @@ import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import kotlinx.coroutines.experimental.async
 import net.dv8tion.jda.core.Permission.*
+import net.dv8tion.jda.core.entities.Message
 import xyz.laxus.Laxus
 import xyz.laxus.command.CommandContext
 import xyz.laxus.jda.menus.orderedMenu
 import xyz.laxus.jda.menus.orderedMenuBuilder
-import xyz.laxus.jda.util.editMessage
 import xyz.laxus.music.MusicManager
 import xyz.laxus.util.formattedInfo
 import xyz.laxus.util.noMatch
@@ -34,7 +34,7 @@ import kotlin.coroutines.experimental.coroutineContext
 /**
  * @author Kaidan Gustave
  */
-class SearchCommand(manager: MusicManager) : MusicCommand(manager) {
+class SearchCommand(manager: MusicManager): MusicCommand(manager) {
     override val name = "Search"
     override val arguments = "[Query]"
     override val help = "Searches for songs matching a query and plays in a voice channel."
@@ -82,11 +82,11 @@ class SearchCommand(manager: MusicManager) : MusicCommand(manager) {
 
         when(item) {
             null -> ctx.replyWarning(noMatch("results", query))
-            is AudioTrack -> ctx.singleTrackLoaded(loading, item)
+            is AudioTrack -> ctx.singleTrackLoaded(loading.await(), item)
             is AudioPlaylist -> {
                 val tracks = item.tracks.onEach { it.userData = member }
                 if(!item.isSearchResult) {
-                    ctx.playlistLoaded(loading, item)
+                    ctx.playlistLoaded(loading.await(), item)
                 } else {
                     builder.clearChoices()
                     val menu = orderedMenu(builder) {
@@ -96,33 +96,11 @@ class SearchCommand(manager: MusicManager) : MusicCommand(manager) {
                         for(track in tracks.subList(0, 5)) {
                             val info = track.info.formattedInfo
                             this[info] = { message ->
-                                val position = manager.addTrack(voiceChannel, track)
-                                if(message.guild.selfMember.hasPermission(message.textChannel, MESSAGE_MANAGE)) {
-                                    message.clearReactions().queue()
-                                } else {
-                                    // Clear our reactions
-                                    message.reactions.forEach { it.removeReaction().queue() }
-                                }
-
-                                message.editMessage {
-                                    override(true).content(null).embed(null)
-                                    append(Laxus.Success)
-                                    if(position < 1) {
-                                        append(" Now playing $info.")
-                                    } else {
-                                        append(" Added $info at position $position in the queue.")
-                                    }
-                                }.queue()
+                                clearReactionsCorrectly(message)
+                                ctx.singleTrackLoaded(message, track)
                             }
                         }
-                        finalAction { message ->
-                            if(message.guild.selfMember.hasPermission(message.textChannel, MESSAGE_MANAGE)) {
-                                message.clearReactions().queue()
-                            } else {
-                                // Clear our reactions
-                                message.reactions.forEach { it.removeReaction().queue() }
-                            }
-                        }
+                        finalAction { message -> clearReactionsCorrectly(message) }
                     }
 
                     menu.displayAs(loading.await())
@@ -130,7 +108,16 @@ class SearchCommand(manager: MusicManager) : MusicCommand(manager) {
             }
 
             // This shouldn't happen, but...
-            else -> unsupportedItemType(loading)
+            else -> unsupportedItemType(loading.await())
+        }
+    }
+
+    private fun clearReactionsCorrectly(message: Message) {
+        if(message.guild.selfMember.hasPermission(message.textChannel, MESSAGE_MANAGE)) {
+            message.clearReactions().queue()
+        } else {
+            // Clear our reactions
+            message.reactions.forEach { it.removeReaction().queue() }
         }
     }
 }

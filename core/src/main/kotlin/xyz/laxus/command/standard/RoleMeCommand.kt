@@ -37,7 +37,7 @@ import xyz.laxus.util.noMatch
  * @author Kaidan Gustave
  */
 @MustHaveArguments("Specify the name of a role to assign yourself.")
-class RoleMeCommand : Command(StandardGroup) {
+class RoleMeCommand: Command(StandardGroup) {
     override val name = "RoleMe"
     override val arguments = "[Role Name]"
     override val help = "Assigns you a RoleMe role by name."
@@ -86,8 +86,7 @@ class RoleMeCommand : Command(StandardGroup) {
         // If the caller doesn't have the role we have to add it
         if(roleMeRole !in member.roles) {
             // Check for a limit
-            /* TODO Limit
-            val roleMeLimit = ctx.guild.getCommandLimit(this) ?: 0
+            val roleMeLimit = ctx.guild.roleMeLimit?.toInt() ?: 0
 
             if(roleMeLimit > 0) {
                 // The user is at the RoleMe limit
@@ -95,7 +94,6 @@ class RoleMeCommand : Command(StandardGroup) {
                     return ctx.replyError("You are at the RoleMe role limit for this server.")
                 }
             }
-            */
 
             // Give the caller their requested role, suspend until that is done
             member.giveRole(roleMeRole).await()
@@ -113,7 +111,7 @@ class RoleMeCommand : Command(StandardGroup) {
     }
 
     @MustHaveArguments
-    private inner class RoleMeAddCommand : Command(this@RoleMeCommand) {
+    private inner class RoleMeAddCommand: Command(this@RoleMeCommand) {
         override val name = "Add"
         override val arguments = "[Role Name]"
         override val help = "Adds a RoleMe role to the server."
@@ -141,7 +139,7 @@ class RoleMeCommand : Command(StandardGroup) {
     }
 
     @MustHaveArguments
-    private inner class RoleMeRemoveCommand : Command(this@RoleMeCommand) {
+    private inner class RoleMeRemoveCommand: Command(this@RoleMeCommand) {
         override val name = "Remove"
         override val arguments = "[Role Name]"
         override val help = "Removes a RoleMe role from the server."
@@ -186,7 +184,7 @@ class RoleMeCommand : Command(StandardGroup) {
         }
     }
 
-    private inner class RoleMeLimitCommand : Command(this@RoleMeCommand) {
+    private inner class RoleMeLimitCommand: Command(this@RoleMeCommand) {
         override val name = "Limit"
         override val arguments = "<Number>"
         override val help = "Sets the limit for RoleMe roles on the server."
@@ -222,7 +220,7 @@ class RoleMeCommand : Command(StandardGroup) {
     }
 
     @AutoCooldown
-    private inner class RoleMeListCommand : Command(this@RoleMeCommand) {
+    private inner class RoleMeListCommand: Command(this@RoleMeCommand) {
         override val name = "List"
         override val help = "Lists all the RoleMe roles on the server."
         override val guildOnly = true

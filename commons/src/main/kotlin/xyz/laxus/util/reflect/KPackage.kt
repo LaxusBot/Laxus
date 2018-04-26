@@ -33,7 +33,7 @@ import kotlin.reflect.KAnnotatedElement
     reflection entities, this may be subject to deprecation
     and/or removal.
 """)
-interface KPackage : KAnnotatedElement {
+interface KPackage: KAnnotatedElement {
     companion object {
         @Deprecated(
             message = "Naming convention has been changed.",
@@ -58,9 +58,9 @@ interface KPackage : KAnnotatedElement {
 
     fun isSealed(url: URL? = null): Boolean
 
-    interface VersionInfo : InfoCategory
-    interface TitleInfo : InfoCategory
-    interface VendorInfo : InfoCategory
+    interface VersionInfo: InfoCategory
+    interface TitleInfo: InfoCategory
+    interface VendorInfo: InfoCategory
 
     interface InfoCategory {
         val implementation: String?

@@ -36,18 +36,18 @@ import xyz.laxus.db.sql.ResultSetType.*
     Column("ACTION", "$VARCHAR(50)"),
     Column("REASON", "$VARCHAR(300)", nullable = true, def = "NULL")
 )
-object DBCases : Table() {
-    private const val GET_CASES           = "SELECT * FROM CASES WHERE GUILD_ID = ? ORDER BY CASE_NUMBER DESC"
+object DBCases: Table() {
+    private const val GET_CASES           = "SELECT * FROM CASES WHERE GUILD_ID = ? ORDER BY CASE_NUMBER ASC"
     private const val GET_CASE_BY_NUMBER  = "SELECT * FROM CASES WHERE CASE_NUMBER = ? AND GUILD_ID = ?"
-    private const val GET_CASES_BY_MOD_ID = "SELECT * FROM CASES WHERE GUILD_ID = ? AND MOD_ID = ? ORDER BY CASE_NUMBER DESC"
+    private const val GET_CASES_BY_MOD_ID = "SELECT * FROM CASES WHERE GUILD_ID = ? AND MOD_ID = ? ORDER BY CASE_NUMBER ASC"
     private const val SET_REASON          = "SELECT REASON FROM CASES WHERE CASE_NUMBER = ? AND GUILD_ID = ?"
 
     fun getCurrentCaseNumber(guildId: Long): Int {
-        connection.prepare(GET_CASES) { statement ->
+        connection.prepare("SELECT COUNT(*) FROM CASES WHERE GUILD_ID = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(it.next()) {
-                    return it.getInt("CASE_NUMBER")
+                    return it.getInt("COUNT(*)")
                 }
             }
         }
@@ -116,6 +116,7 @@ object DBCases : Table() {
                     it["CASE_NUMBER"] = case.number
                     it["GUILD_ID"] = case.guildId
                     it["MOD_ID"] = case.modId
+                    it["MESSAGE_ID"] = case.messageId
                     it["TARGET_ID"] = case.targetId
                     it["IS_ON_USER"] = case.isOnUser
                     it["ACTION"] = case.action.name

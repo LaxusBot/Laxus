@@ -39,14 +39,19 @@ val KPackage.java: Package get() {
 fun <E: Enum<E>> KClass<E>.values(): Array<E> {
     // Class#getEnumConstants returns null when the
     //Class does not represent an enum type.
-    return requireNotNull(java.enumConstants) {
-        "Class $this does not represent an enum type!"
+    val constants = java.enumConstants
+    if(constants === null) {
+        // This should never happen, because we're strictly
+        //specifying that E is an Enum<E>, so it should at
+        //very least be empty, but never null.
+        require(true)
+        throw AssertionError("Class $this does not represent an enum type!")
     }
+    return constants
 }
 
 fun <E: Enum<E>> KClass<E>.valueOf(name: String): E {
-    val values = values()
-    return requireNotNull(values.firstOrNull { it.name == name }) {
+    return requireNotNull(values().firstOrNull { it.name == name }) {
         "Could not find enum value '$name'!"
     }
 }

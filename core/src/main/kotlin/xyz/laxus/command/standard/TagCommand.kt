@@ -21,6 +21,7 @@ import xyz.laxus.command.AutoCooldown
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
+import xyz.laxus.db.entities.Tag
 import xyz.laxus.entities.TagErrorException
 import xyz.laxus.jda.menus.paginator
 import xyz.laxus.jda.menus.paginatorBuilder
@@ -36,13 +37,8 @@ import xyz.laxus.util.db.tags
 /**
  * @author Kaidan Gustave
  */
-@MustHaveArguments
+@MustHaveArguments("Specify a tag name, and optionally tag arguments.")
 class TagCommand: Command(StandardGroup) {
-    private companion object {
-        private const val NAME_MAX_LENGTH = 30
-        private const val CONTENT_MAX_LENGTH = 1900
-    }
-
     override val name = "Tag"
     override val aliases = arrayOf("T")
     override val arguments = "[Tag Name] <Tag Arguments>"
@@ -60,9 +56,10 @@ class TagCommand: Command(StandardGroup) {
     override suspend fun execute(ctx: CommandContext) {
         val parts = ctx.args.split(commandArgs, 2)
 
-        val name = if(parts[0] in ctx.bot.commands) {
+        val name = parts[0]
+        if(ctx.bot.searchCommand(name) !== null) {
             return ctx.reply("You remember Shengaero's words: *\"Not everything is a tag!\"*")
-        } else parts[0]
+        }
 
         val args = if(parts.size > 1) parts[1].trim() else ""
         val parser = ctx.bot.parser
@@ -80,7 +77,7 @@ class TagCommand: Command(StandardGroup) {
             parser.put("channel", ctx.channel)
 
             // Get guild scope tag
-            ctx.guild.getTagByName(name)
+            ctx.guild.getTagByName(name) ?: ctx.jda.getTagByName(name)
         } else ctx.jda.getTagByName(name) // Get global scope tag
 
         if(tag === null) {
@@ -112,12 +109,17 @@ class TagCommand: Command(StandardGroup) {
                 "You must specify a new tag name and it's content in the format `$arguments`."
             }
 
-            if(name.length > NAME_MAX_LENGTH) return ctx.replyError {
-                "Tag names must be no greater than $NAME_MAX_LENGTH characters long."
+            if(name.length > Tag.MaxNameLength) return ctx.replyError {
+                "Tag names must be no greater than ${Tag.MaxNameLength} characters long."
             }
 
-            if(content.length > CONTENT_MAX_LENGTH) return ctx.replyError {
-                "Tag content must be no greater than $CONTENT_MAX_LENGTH characters long."
+            if(content.length > Tag.MaxContentLength) return ctx.replyError {
+                "Tag content must be no greater than ${Tag.MaxContentLength} characters long."
+            }
+
+            if(ctx.jda.isTag(name)) {
+                // The tag already exists
+                return ctx.replyError("A global tag named $name already exists!")
             }
 
             val guild = ctx.guild
@@ -151,18 +153,22 @@ class TagCommand: Command(StandardGroup) {
                 "You must specify a new tag name and it's content in the format `$arguments`."
             }
 
-
-            if(name.length > NAME_MAX_LENGTH) return ctx.replyError {
-                "Tag names must be no greater than $NAME_MAX_LENGTH characters long."
+            if(name.length > Tag.MaxNameLength) return ctx.replyError {
+                "Tag names must be no greater than ${Tag.MaxNameLength} characters long."
             }
 
-            if(content.length > CONTENT_MAX_LENGTH) return ctx.replyError {
-                "Tag content must be no greater than $CONTENT_MAX_LENGTH characters long."
+            if(content.length > Tag.MaxContentLength) return ctx.replyError {
+                "Tag content must be no greater than ${Tag.MaxContentLength} characters long."
             }
 
             if(ctx.jda.isTag(name)) {
                 // The tag already exists
                 return ctx.replyError("A global tag named $name already exists!")
+            }
+
+            if(ctx.isGuild && ctx.guild.isTag(name)) {
+                // The tag already exists
+                return ctx.replyError("A local tag named $name already exists on this guild!")
             }
 
             ctx.jda.createTag(name, content, ctx.author)
@@ -183,7 +189,9 @@ class TagCommand: Command(StandardGroup) {
         override suspend fun execute(ctx: CommandContext) {
             val name = ctx.args
 
-            val tag = if(ctx.isGuild) ctx.guild.getTagByName(name) else ctx.jda.getTagByName(name)
+            val tag = if(ctx.isGuild) {
+                ctx.guild.getTagByName(name) ?: ctx.jda.getTagByName(name)
+            } else ctx.jda.getTagByName(name)
 
             if(tag === null) {
                 return ctx.replyError("Unable to find tag named \"$name\".")
@@ -219,14 +227,16 @@ class TagCommand: Command(StandardGroup) {
                 "You must specify an existing tag name and it's new content in the format `$arguments`."
             }
 
-            val tag = if(ctx.isGuild) ctx.guild.getTagByName(name) else ctx.jda.getTagByName(name)
+            val tag = if(ctx.isGuild) {
+                ctx.guild.getTagByName(name) ?: ctx.jda.getTagByName(name)
+            } else ctx.jda.getTagByName(name)
 
             if(tag === null) {
                 return ctx.replyError("Unable to find tag named \"$name\".")
             }
 
-            if(content.length > CONTENT_MAX_LENGTH) return ctx.replyError {
-                "Tag content must be no greater than $CONTENT_MAX_LENGTH characters long."
+            if(content.length > Tag.MaxContentLength) return ctx.replyError {
+                "Tag content must be no greater than ${Tag.MaxContentLength} characters long."
             }
 
             val tagName = tag.name
@@ -242,7 +252,7 @@ class TagCommand: Command(StandardGroup) {
     }
 
     @AutoCooldown
-    private inner class TagListCommand: Command(this@TagCommand) {
+    private inner class TagListCommand : Command(this@TagCommand) {
         override val name = "List"
         override val arguments = "<User>"
         override val help = "Gets a list of tags owned by a user."
@@ -328,7 +338,9 @@ class TagCommand: Command(StandardGroup) {
 
         override suspend fun execute(ctx: CommandContext) {
             val query = ctx.args
-            val tag = if(ctx.isGuild) ctx.guild.getTagByName(query) else ctx.jda.getTagByName(query)
+            val tag = if(ctx.isGuild) {
+                ctx.guild.getTagByName(query) ?: ctx.jda.getTagByName(query)
+            } else ctx.jda.getTagByName(query)
 
             if(tag === null) {
                 return ctx.replyError("Unable to find tag matching \"$query\".")

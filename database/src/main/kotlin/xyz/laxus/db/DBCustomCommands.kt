@@ -67,6 +67,7 @@ object DBCustomCommands : Table() {
             statement[2] = name
             statement.executeQuery {
                 if(!it.next()) it.insert {
+                    it["GUILD_ID"] = guildId
                     it["NAME"] = name
                     it["CONTENT"] = content
                 } else it.update {

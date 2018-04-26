@@ -24,7 +24,7 @@ import xyz.laxus.jda.util.watching
 /**
  * @author Kaidan Gustave
  */
-class RestartCommand : Command(OwnerGroup) {
+class RestartCommand: Command(OwnerGroup) {
     override val name = "Restart"
     override val help = "Restarts Laxus."
     override val hasAdjustableLevel = false

@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit.SECONDS
  */
 class UpdatingMenu(builder: UpdatingMenu.Builder): Menu(builder) {
     private companion object {
-        private const val cancel = "\u274C"
+        private const val Cancel = "\u274C"
     }
 
     private val color = builder.color
@@ -49,6 +49,7 @@ class UpdatingMenu(builder: UpdatingMenu.Builder): Menu(builder) {
     private val finalAction = builder.finalAction
     private val interval = builder.interval
 
+    @Volatile private var cancel = false
     private lateinit var job: Job
 
     override fun displayAs(message: Message) {
@@ -69,8 +70,8 @@ class UpdatingMenu(builder: UpdatingMenu.Builder): Menu(builder) {
 
     private fun initialized(action: MessageAction) {
         launch(waiter) {
-            val m = action.editToMenu().await()
-            m.addReaction(cancel).await()
+            val m = action.generateAsMenu().await()
+            m.addReaction(Cancel).await()
             job = launch(coroutineContext) {
                 runUpdating(m)
             }
@@ -84,19 +85,25 @@ class UpdatingMenu(builder: UpdatingMenu.Builder): Menu(builder) {
                 return@receive false
             else if(!isValidUser(it.user, it.guild))
                 return@receive false
-            else return@receive it.reactionEmote.name == cancel
+            else return@receive it.reactionEmote.name == Cancel
         }.await()
-        finalAction?.invoke(message)
+        if(!cancel) {
+            finalAction?.invoke(message)
+        }
         job.cancel()
     }
 
     private tailrec suspend fun runUpdating(message: Message) {
-        message.editMessage { editToMenu() }.await()
         delay(interval.length, interval.unit)
+        message.editMessage { generateAsMenu() }.await()
+        if(cancel) {
+            finalAction?.invoke(message)
+            return
+        }
         runUpdating(message)
     }
 
-    private suspend fun MessageAction.editToMenu(): MessageAction {
+    private suspend fun MessageAction.generateAsMenu(): MessageAction {
         override(true)
         reset()
         text?.let { append(text) }
@@ -106,18 +113,22 @@ class UpdatingMenu(builder: UpdatingMenu.Builder): Menu(builder) {
 
     private suspend fun generateEmbed() = embed {
         color { this@UpdatingMenu.color }
-        update()
+        update(object: CancelStage {
+            override fun cancel() {
+                cancel = true
+            }
+        })
     }
 
     @Menu.Dsl
     class Builder : Menu.Builder<UpdatingMenu.Builder, UpdatingMenu>() {
-        lateinit var update: suspend KEmbedBuilder.() -> Unit
+        lateinit var update: suspend KEmbedBuilder.(CancelStage) -> Unit
         var color: Color? = null
         var text: String? = null
         var finalAction: FinalAction? = null
         var interval = duration(5, SECONDS)
 
-        fun update(update: suspend KEmbedBuilder.() -> Unit): Builder = apply {
+        fun update(update: suspend KEmbedBuilder.(CancelStage) -> Unit): Builder = apply {
             this.update = update
         }
 
@@ -136,5 +147,9 @@ class UpdatingMenu(builder: UpdatingMenu.Builder): Menu(builder) {
         fun finalAction(block: FinalAction): Builder = apply {
             this.finalAction = block
         }
+    }
+
+    interface CancelStage {
+        fun cancel()
     }
 }

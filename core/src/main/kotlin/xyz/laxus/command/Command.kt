@@ -149,8 +149,8 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
     private val autoCooldown by lazy { this::class.findAnnotation<AutoCooldown>()?.mode ?: AutoCooldownMode.OFF }
     private val noArgumentError by lazy {
         val annotation = this::class.findAnnotation<MustHaveArguments>() ?: return@lazy null
-        val error = annotation.error.takeIf { it.isNotBlank() } ?: return@lazy null
-        return@lazy "${Laxus.Error} ${error.replace("%name", fullname).replace("%arguments", arguments)}"
+        val error = annotation.error
+        return@lazy error.replace("%name", fullname).replace("%arguments", arguments)
     }
 
     constructor(parent: Command): this(parent.group, parent)
@@ -214,10 +214,10 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
 
         noArgumentError?.let { noArgumentError ->
             if(ctx.args.isEmpty()) {
-                noArgumentError.takeIf { it.isNotEmpty() }?.let {
+                if(noArgumentError.isNotEmpty()) {
                     return ctx.terminate(
                         "${Laxus.Error} **$MissingArguments!**\n" +
-                        it.replace("%prefix", ctx.bot.prefix)
+                        noArgumentError.replace("%prefix", ctx.bot.prefix)
                     )
                 }
 

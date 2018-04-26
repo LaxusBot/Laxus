@@ -80,7 +80,7 @@ class QueueCommand(manager: MusicManager): MusicCommand(manager) {
                 }
             }
             items { + tracks.map { t -> t.info.formattedInfo } }
-            finalAction { message -> message.delete().queue() }
+            finalAction { message -> message.delete().queue({}, {}) }
             user { ctx.author }
         }
 

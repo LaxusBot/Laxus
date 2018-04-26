@@ -31,7 +31,7 @@ internal class KPackageImpl(
     override val title: KPackage.TitleInfo,
     override val vendor: KPackage.VendorInfo
 ): KPackage {
-    override val annotations: List<Annotation> get() = javaPackage.annotations.toList()
+    override val annotations by lazy { javaPackage.annotations.mapNotNull { it } }
 
     constructor(klazz: KClass<*>): this(klazz.java.`package`)
     constructor(javaPackage: Package): this(
@@ -51,10 +51,7 @@ internal class KPackageImpl(
         return url?.let { javaPackage.isSealed(it) } ?: javaPackage.isSealed
     }
 
-    override fun toString(): String {
-        return javaPackage.toString()
-    }
-
+    override fun toString(): String = javaPackage.toString()
     override fun hashCode(): Int = hashAll(javaPackage, name, version, title, vendor)
     override fun equals(other: Any?): Boolean {
         if(other !is KPackageImpl) {

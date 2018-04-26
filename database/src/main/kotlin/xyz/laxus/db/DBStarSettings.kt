@@ -20,6 +20,7 @@ import xyz.laxus.db.schema.*
 import xyz.laxus.db.sql.*
 import xyz.laxus.db.sql.ResultSetConcur.*
 import xyz.laxus.db.sql.ResultSetType.*
+import xyz.laxus.util.checkInRange
 
 /**
  * @author Kaidan Gustave
@@ -53,6 +54,8 @@ object DBStarSettings: Table() {
     }
 
     fun setSettings(settings: StarSettings) {
+        checkInRange(settings.threshold.toInt(), 3..12)
+        checkInRange(settings.maxAge, 6..(24 * 14))
         connection.prepare("SELECT * FROM STAR_SETTINGS WHERE GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = settings.guildId
             statement.executeQuery {

@@ -28,6 +28,7 @@ import xyz.laxus.jda.menus.paginatorBuilder
 import xyz.laxus.jda.util.*
 import xyz.laxus.util.db.*
 import xyz.laxus.util.formattedName
+import xyz.laxus.util.ignored
 import xyz.laxus.util.readableFormat
 import java.util.Comparator
 import kotlin.collections.ArrayList
@@ -55,7 +56,7 @@ class ServerCommand: Command(StandardGroup) {
         description { "Choose a field to get info on:" }
         timeout { delay { 20 } }
         allowTextInput { false }
-        finalAction { it.delete().await() }
+        finalAction { it.delete().queue({}, {}) }
         waiter { Laxus.Waiter }
     }
 
@@ -71,7 +72,7 @@ class ServerCommand: Command(StandardGroup) {
             for(child in children) {
                 if(ctx.level.test(ctx)) {
                     choice(child.name) {
-                        it.delete().await()
+                        ignored { it.delete().await() }
                         child.run(ctx)
                     }
                 }
@@ -110,7 +111,7 @@ class ServerCommand: Command(StandardGroup) {
             val paginator = paginator(builder) {
                 text        { _,_ -> "Joins for ${ctx.guild.name}" }
                 items       { + names }
-                finalAction { it.delete().await() }
+                finalAction { it.delete().queue({}, {}) }
                 user        { ctx.author }
             }
 
@@ -118,7 +119,7 @@ class ServerCommand: Command(StandardGroup) {
         }
     }
 
-    private inner class ServerOwnerCommand : Command(this@ServerCommand) {
+    private inner class ServerOwnerCommand: Command(this@ServerCommand) {
         override val name = "Owner"
         override val help = "Gets info on the owner of this server."
         override val guildOnly = true
@@ -131,7 +132,7 @@ class ServerCommand: Command(StandardGroup) {
         }
     }
 
-    private inner class ServerSettingsCommand : Command(this@ServerCommand) {
+    private inner class ServerSettingsCommand: Command(this@ServerCommand) {
         override val name = "Settings"
         override val aliases = arrayOf("Config", "Configurations")
         override val help = "Gets info on this server's settings."

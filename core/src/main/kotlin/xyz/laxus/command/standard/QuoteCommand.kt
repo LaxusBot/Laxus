@@ -84,7 +84,7 @@ class QuoteCommand : Command(StandardGroup) {
                     ctx.guild.getTextChannelById(split[0].toLong()) ?: return ctx.replyError {
                         "Could not find a channel with ID: ${split[0]}!"
                     }
-                } catch (e: NumberFormatException) {
+                } catch(e: NumberFormatException) {
                     return ctx.invalidArgs { InvalidID.format(split[0], "channel") }
                 }
 
@@ -97,16 +97,15 @@ class QuoteCommand : Command(StandardGroup) {
 
                 message = try {
                     channel.getMessageById(split[1].toLong()).await()
-                } catch (e: NumberFormatException) {
+                } catch(e: NumberFormatException) {
                     return ctx.invalidArgs { InvalidID.format(split[1], "message") }
-                } catch (e: ErrorResponseException) {
+                } catch(e: ErrorResponseException) {
                     if(e.errorResponse == UNKNOWN_MESSAGE) return ctx.replyError(CannotFindMessage.format(split[1]))
                     throw e
                 }
             }
 
-            else -> return ctx.replyError {
-                "**Too Many Arguments!**\n" +
+            else -> return ctx.error("Too Many Arguments") {
                 "Provide either a channel ID and message ID or just a message ID!"
             }
         }

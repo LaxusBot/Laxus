@@ -25,6 +25,7 @@ dependencies {
 
     // Logging
     compileOnly slf4j()
+    compileOnly logback()
 
     // Projects
     compileOnly project(':commons')

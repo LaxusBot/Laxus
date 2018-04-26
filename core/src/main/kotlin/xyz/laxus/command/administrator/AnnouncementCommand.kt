@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.music.lava
+package xyz.laxus.command.administrator
 
-import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
-import com.sedmelluq.discord.lavaplayer.source.AudioSourceManager
-import java.util.*
-import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager as Default
+import xyz.laxus.command.Command
+import xyz.laxus.command.CommandContext
+import xyz.laxus.command.MustHaveArguments
 
 /**
- * [Default audio player manager][Default] delegate that registers
- * source managers on initialization using a [ServiceLoader].
- *
  * @author Kaidan Gustave
  */
-open class ServiceAudioSourceManager: AudioPlayerManager by Default() {
-    init {
-        ServiceLoader.load(AudioSourceManager::class.java).forEach {
-            registerSourceManager(it)
-        }
+@MustHaveArguments("Specify a role to announce to, and a message.")
+class AnnouncementCommand: Command(AdministratorGroup) {
+    override val name = "Announcement"
+    override val aliases = arrayOf("Announce")
+    override val arguments = "[Role] [Message]"
+    override val help = "Mentions a role with a message in the server's announcements channel."
+
+    override suspend fun execute(ctx: CommandContext) {
+        // parse args
     }
 }

@@ -20,7 +20,6 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
 import com.sedmelluq.discord.lavaplayer.track.AudioItem
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
-import kotlinx.coroutines.experimental.Deferred
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Member
 import net.dv8tion.jda.core.entities.Message
@@ -65,14 +64,14 @@ abstract class MusicCommand(protected val manager: MusicManager): Command(MusicG
         "You must be in ${selfMember.connectedChannel?.name} to use music commands!"
     }
 
-    protected suspend fun CommandContext.singleTrackLoaded(loading: Deferred<Message>, item: AudioTrack) {
+    protected fun CommandContext.singleTrackLoaded(loading: Message, item: AudioTrack) {
         val voiceChannel = checkNotNull(voiceChannel) {
             "When rendering response for a loaded track, the voice channel to play in was null!"
         }
         item.userData = member
         val info = item.info.formattedInfo
         val position = manager.addTrack(voiceChannel, item)
-        loading.await().editMessage {
+        loading.editMessage {
             append(Laxus.Success)
             if(position < 1) {
                 append(" Now playing $info.")
@@ -82,14 +81,14 @@ abstract class MusicCommand(protected val manager: MusicManager): Command(MusicG
         }.queue()
     }
 
-    protected suspend fun CommandContext.playlistLoaded(loading: Deferred<Message>, item: AudioPlaylist) {
+    protected fun CommandContext.playlistLoaded(loading: Message, item: AudioPlaylist) {
         val voiceChannel = checkNotNull(voiceChannel) {
             "When rendering response for a loaded playlist, the voice channel to play in was null!"
         }
 
         val tracks = item.tracks.onEach { it.userData = member }
         manager.addTracks(voiceChannel, tracks)
-        loading.await().editMessage {
+        loading.editMessage {
             append(Laxus.Success)
             if(manager[guild]!!.size + 1 == tracks.size) {
                 append(" Now playing `${tracks.size}` tracks from playlist **${item.name}**.")
@@ -99,8 +98,8 @@ abstract class MusicCommand(protected val manager: MusicManager): Command(MusicG
         }.queue()
     }
 
-    protected suspend fun unsupportedItemType(loading: Deferred<Message>) {
-        loading.await().editMessage("The loaded item is unsupported by this player.").queue()
+    protected fun unsupportedItemType(loading: Message) {
+        loading.editMessage("The loaded item is unsupported by this player.").queue()
     }
 
     protected suspend fun loadTrack(

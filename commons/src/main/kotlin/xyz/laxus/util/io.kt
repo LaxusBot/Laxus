@@ -25,7 +25,7 @@ import java.nio.file.Paths
 import kotlin.reflect.KClass
 
 /**
- * Gets a resource [URL] from the provided [class][KClass],
+ * Gets a resource [URL] from the receiver [class][KClass],
  * or `null` if there is no resource that exists with the
  * given [name].
  *
@@ -36,7 +36,7 @@ import kotlin.reflect.KClass
 inline fun <reified T: Any> KClass<out T>.resourceOf(name: String): URL? = java.getResource(name)
 
 /**
- * Gets a resource [stream][InputStream] from the provided
+ * Gets a resource [stream][InputStream] from the receiver
  * [class][KClass], or `null` if there is no resource that
  * exists with the given [name].
  *
@@ -55,10 +55,34 @@ inline fun <reified T: Any> KClass<out T>.resourceStreamOf(name: String): InputS
  */
 inline fun <reified T: Any> KClass<out T>.hasResourceOf(name: String): Boolean = resourceOf(name) !== null
 
+/**
+ * Gets a resource [URL] from the receiver [class loaded][ClassLoader]
+ * or `null` if there is no resource that exists with the given [name].
+ *
+ * @param name The resource name.
+ *
+ * @return A resource [URL] or `null` if one doesn't exist.
+ */
 inline fun <reified L: ClassLoader> L.resourceOf(name: String): URL? = getResource(name)
 
+/**
+ * Gets a resource [stream][InputStream] from the receiver
+ * [class loaded][ClassLoader] or `null` if there is no
+ * resource that exists with the given [name].
+ *
+ * @param name The resource name.
+ *
+ * @return A resource [stream][InputStream] or `null` if one doesn't exist.
+ */
 inline fun <reified L: ClassLoader> L.resourceStreamOf(name: String): InputStream? = getResourceAsStream(name)
 
+/**
+ * Returns `true` if a resource exists with the given [name].
+ *
+ * @param name The resource name.
+ *
+ * @return `true` if a resource exists with the given [name].
+ */
 inline fun <reified L: ClassLoader> L.hasResourceOf(name: String): Boolean = resourceOf(name) !== null
 
 /**

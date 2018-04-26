@@ -70,16 +70,16 @@ class EventWaiter private constructor(dispatcher: ThreadPoolDispatcher):
         unit: TimeUnit = TimeUnit.SECONDS,
         timeout: (suspend () -> Unit)? = null
     ) {
-        val eventList = taskListType(klazz)
+        val eventSet = taskSetType(klazz)
         val waiting = QueuedTask(condition, action)
 
         Log.debug("Adding task type: '$klazz'")
-        eventList += waiting
+        eventSet += waiting
 
         if(delay > 0) {
             launch(this) {
                 delay(delay, unit)
-                if(eventList.remove(waiting)) {
+                if(eventSet.remove(waiting)) {
                     Log.debug("Removing task type: '$klazz'")
                     timeout?.invoke()
                 }
@@ -94,16 +94,16 @@ class EventWaiter private constructor(dispatcher: ThreadPoolDispatcher):
         unit: TimeUnit = TimeUnit.SECONDS
     ): Deferred<E?> {
         val deferred = CompletableDeferred<E?>()
-        val eventList = taskListType(klazz)
+        val eventSet = taskSetType(klazz)
         val waiting = AwaitableTask(condition, deferred)
 
         Log.debug("Adding task type: '$klazz'")
-        eventList += waiting
+        eventSet += waiting
 
         if(delay > 0) {
             launch(this) {
                 delay(delay, unit)
-                eventList.remove(waiting)
+                eventSet.remove(waiting)
                 Log.debug("Removing task type: '$klazz'")
                 // The receiveEvent method is supposed to return null
                 //if no matching Events are fired within its
@@ -138,22 +138,20 @@ class EventWaiter private constructor(dispatcher: ThreadPoolDispatcher):
         }
     }
 
-    private fun <E: Event> taskListType(klazz: KClass<E>): MutableSet<ITask<E>> {
-        @Suppress("UNCHECKED_CAST")
-        return tasks[klazz].let {
-            it as? MutableSet<ITask<E>> ?: concurrentSet<ITask<E>>().also {
-                tasks[klazz] = it as MutableSet<ITask<*>>
-            }
-        }
+    @Suppress("UNCHECKED_CAST")
+    private fun <E: Event> taskSetType(klazz: KClass<E>): MutableSet<ITask<E>> {
+        return tasks.computeIfAbsent(klazz) { concurrentSet() } as MutableSet<ITask<E>>
     }
 
+    @Suppress("UNCHECKED_CAST")
     private suspend fun <T: Event> dispatchEventType(event: T, klazz: KClass<*>) {
         val set = tasks[klazz] ?: return
-        @Suppress("RemoveExplicitTypeArguments", "UNCHECKED_CAST")
-        set -= set.filterTo(hashSetOf<ITask<*>>()) {
+        val filtered = set.filterTo(hashSetOf()) {
             val waiting = (it as ITask<T>)
             waiting(event)
         }
+        Log.debug("Removing ${filtered.size} tasks with type: '$klazz'")
+        set -= filtered
     }
 
     private interface ITask<in T: Event> {

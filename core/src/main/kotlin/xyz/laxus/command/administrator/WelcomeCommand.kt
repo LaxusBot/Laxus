@@ -30,7 +30,7 @@ import xyz.laxus.util.noMatch
  * @author Kaidan Gustave
  */
 class WelcomeCommand: EmptyCommand(AdministratorGroup) {
-    companion object {
+    private companion object {
         private const val MESSAGE_MAX_LENGTH = 1900
     }
 

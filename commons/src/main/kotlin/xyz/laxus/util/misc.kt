@@ -99,7 +99,7 @@ inline fun <reified T> T.modifyUnless(condition: Boolean, block: (T) -> T): T = 
 inline val <reified E: Enum<E>> E.niceName inline get() = titleName
 
 /**
- * Returns a title-case formatted name of an [Enum].
+ * A title-case formatted name of an [Enum].
  *
  * This is assuming that the Enum constant in question has a
  * name that follows typical java enum naming conventions.

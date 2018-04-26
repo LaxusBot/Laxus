@@ -116,7 +116,7 @@ data class StarMessage(val starboard: Starboard, val starred: Message) {
 
     fun delete() {
         if(entryIsCreated) {
-            entry.delete().queue()
+            entry.delete().queue({}, {})
         }
         DBStarEntries.removeAllEntries(starred.idLong, guild.idLong)
     }

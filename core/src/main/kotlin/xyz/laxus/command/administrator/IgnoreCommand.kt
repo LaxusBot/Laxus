@@ -15,10 +15,7 @@
  */
 package xyz.laxus.command.administrator
 
-import xyz.laxus.command.Command
-import xyz.laxus.command.CommandContext
-import xyz.laxus.command.EmptyCommand
-import xyz.laxus.command.Experiment
+import xyz.laxus.command.*
 import xyz.laxus.jda.util.findRoles
 import xyz.laxus.jda.util.findTextChannels
 import xyz.laxus.util.db.isIgnored
@@ -38,6 +35,7 @@ class IgnoreCommand: EmptyCommand(AdministratorGroup) {
         IgnoreRoleCommand()
     )
 
+    @MustHaveArguments("Specify a channel to ignore.")
     private inner class IgnoreChannelCommand: Command(this@IgnoreCommand) {
         override val name = "Channel"
         override val arguments = "[Channel]"
@@ -62,6 +60,7 @@ class IgnoreCommand: EmptyCommand(AdministratorGroup) {
         }
     }
 
+    @MustHaveArguments("Specify a role to ignore.")
     private inner class IgnoreRoleCommand: Command(this@IgnoreCommand) {
         override val name = "Role"
         override val arguments = "[Role]"

@@ -19,6 +19,11 @@ package xyz.laxus.db.entities
  * @author Kaidan Gustave
  */
 interface Tag {
+    companion object {
+        const val MaxNameLength = 50
+        const val MaxContentLength = 1900
+    }
+
     val name: String
     val content: String
     val ownerId: Long?

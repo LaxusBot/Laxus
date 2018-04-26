@@ -36,8 +36,10 @@ inline fun <reified T> List<T>.listOut(kind: String, argument: String, conversio
     val s = this@listOut.size
     for(i in 0 until 4) {
         append("${this@listOut[i].let(conversion)}\n")
-        if(i == 3 && s > 4)
-            append("And ${s - 4} other $kind${if(s - 4 > 1) "s..." else "..."}")
+        if(i == 3 && s > 4) {
+            append("And ${s - 4} other $kind")
+            append(if(s - 4 > 1) "s..." else "...")
+        }
         if(i + 1 == s)
             break
     }
@@ -65,7 +67,7 @@ fun formatTrackTime(duration: Long): String {
 
     var seconds = (duration / 1000.0).roundToLong()
     val hours = seconds / (60 * 60)
-    seconds %= (60L * 60L)
+    seconds %= (60 * 60)
     val minutes = seconds / 60
     seconds %= 60
     return (if(hours > 0) "$hours:" else "") +

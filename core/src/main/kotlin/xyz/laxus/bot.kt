@@ -25,6 +25,7 @@ import me.kgustave.json.readJSObject
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.OnlineStatus
 import net.dv8tion.jda.core.Permission.MESSAGE_MANAGE
+import net.dv8tion.jda.core.entities.ChannelType.*
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.events.Event
@@ -32,6 +33,7 @@ import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.ShutdownEvent
 import net.dv8tion.jda.core.events.guild.GuildJoinEvent
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
+import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageDeleteEvent
 import net.dv8tion.jda.core.requests.Requester.MEDIA_TYPE_JSON
@@ -40,6 +42,7 @@ import org.slf4j.Logger
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.CommandMap
+import xyz.laxus.entities.TagErrorException
 import xyz.laxus.entities.tagMethods
 import xyz.laxus.jda.listeners.SuspendedListener
 import xyz.laxus.jda.util.listeningTo
@@ -50,17 +53,14 @@ import xyz.laxus.util.collections.CaseInsensitiveHashMap
 import xyz.laxus.util.collections.FixedSizeCache
 import xyz.laxus.util.collections.concurrentHashMap
 import xyz.laxus.util.collections.sumByLong
-import xyz.laxus.util.db.getCustomCommand
-import xyz.laxus.util.db.isBlacklisted
-import xyz.laxus.util.db.isJoinWhitelisted
-import xyz.laxus.util.db.prefixes
+import xyz.laxus.util.db.*
 import java.io.IOException
 import java.time.OffsetDateTime
 import java.time.OffsetDateTime.now
 import java.time.temporal.ChronoUnit.SECONDS
-import java.util.*
 import java.util.concurrent.TimeUnit.HOURS
 import kotlin.collections.ArrayList
+import kotlin.collections.HashSet
 import kotlin.coroutines.experimental.coroutineContext
 
 class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
@@ -133,6 +133,7 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
             is ReadyEvent -> onReady(event)
             is GuildJoinEvent -> onGuildJoinEvent(event)
             is GuildLeaveEvent -> onGuildLeaveEvent(event)
+            is GuildMemberJoinEvent -> onGuildMemberJoin(event) // Does not suspend!
             is GuildMessageDeleteEvent -> onGuildMessageDelete(event) // Does not suspend!
             is ShutdownEvent -> onShutdown(event) // Does not suspend!
         }
@@ -186,7 +187,15 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
                         put("args", args)
                     }
 
-                    ctx.reply(parser.parse(customCommand))
+                    val parsed = try {
+                        parser.parse(customCommand)
+                    } catch(e: TagErrorException) {
+                        return ctx.replyError {
+                            e.message ?: "Custom command \"$name\" could not be processed for an unknown reason!"
+                        }
+                    }
+
+                    ctx.reply(parsed)
                 }
             }
         }
@@ -235,13 +244,39 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
         updateStats(event.jda)
     }
 
+    private fun onGuildMemberJoin(event: GuildMemberJoinEvent) {
+        val guild = event.guild
+        // If there's no welcome then we just return.
+        val welcome = guild.welcome ?: return
+        // We can't even send messages to the channel so we return
+        if(!welcome.first.canTalk()) return
+        // We prevent possible spam by creating a cooldown key 'welcomes|U:<User ID>|G:<Guild ID>'
+        val cooldownKey = "welcomes|U:${event.user.idLong}|G:${guild.idLong}"
+        val remaining = getRemainingCooldown(cooldownKey)
+        // Still on cooldown - we're done here
+        if(remaining > 0) return
+        val message = parser.clear()
+            .put("guild", guild)
+            .put("channel", welcome.first)
+            .put("user", event.user)
+            .parse(welcome.second)
+        // Too long or empty means we can't send, so we just return because it'll break otherwise
+        if(message.isEmpty() || message.length > 2000) return
+        // Send Message
+        welcome.first.sendMessage(message).queue()
+        // Apply cooldown
+        applyCooldown(cooldownKey, 100)
+    }
+
     private fun onGuildMessageDelete(event: GuildMessageDeleteEvent) {
-        val cached = synchronized(callCache) { callCache[event.messageIdLong] } ?: return
+        val cached = synchronized(callCache) { callCache.remove(event.messageIdLong) } ?: return
         val channel = event.channel
         if(cached.size > 1 && event.guild.selfMember.hasPermission(channel, MESSAGE_MANAGE)) {
-            channel.deleteMessages(cached).queue()
+            Log.debug("Deleting messages linked to call with Message ID: ${event.messageIdLong}")
+            channel.deleteMessages(cached).queue({}, {})
         } else if(cached.size < 3) { // Don't try to delete more than two
-            cached.forEach { it.delete().queue() }
+            Log.debug("Deleting messages linked to call with Message ID: ${event.messageIdLong}")
+            cached.forEach { it.delete().queue({}, {}) }
         }
     }
 
@@ -346,8 +381,13 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
     }
 
     internal fun linkCall(id: Long, message: Message) {
-        if(!message.channelType.isGuild) return
-        callCache.computeIfAbsent(id) { HashSet() } += message
+        if(!message.isFromType(TEXT)) return
+        Log.debug("Linking response (ID: ${message.idLong}) to call message ID: $id")
+        val messages = callCache[id] ?: HashSet<Message>().also {
+            callCache[id]
+        }
+        messages.add(message)
+        callCache.computeIfAbsent(id) { HashSet() }.add(message)
     }
 
     interface Listener {

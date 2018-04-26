@@ -43,8 +43,7 @@ class RemoveCommand(manager: MusicManager): MusicCommand(manager) {
 
         val position = ignored(null) { args.toInt().takeIf { 0 < it && it <= queue.size }?.minus(1) }
 
-        if(position === null) return ctx.replyError {
-            "**Invalid position**\n" +
+        if(position === null) return ctx.error("Invalid Position") {
             "Track number must be between 1 and ${queue.size}!"
         }
 

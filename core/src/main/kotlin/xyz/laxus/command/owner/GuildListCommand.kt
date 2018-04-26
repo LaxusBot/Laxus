@@ -47,7 +47,7 @@ class GuildListCommand: Command(OwnerGroup) {
         numberItems      { true }
         itemsPerPage     { 10 }
         text             { t, u -> "Page $t/$u" }
-        finalAction      { it.delete().queue() }
+        finalAction      { it.delete().queue({}, {}) }
     }
 
     override suspend fun execute(ctx: CommandContext) {

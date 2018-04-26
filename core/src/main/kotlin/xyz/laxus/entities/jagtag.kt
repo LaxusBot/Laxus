@@ -33,51 +33,37 @@ import kotlin.streams.toList
 
 internal val tagMethods: Collection<Method> by lazy {
     arrayListOf(
-        method("user", { get<User>("user").name }, { input ->
+        method("user", function = { get<User>("user").name }, biFunction = { input ->
             if(input[0].isEmpty()) {
                 throw ParseException("Invalid 'user' statement")
             }
-            return@method userSearch(this, input).name
+            userSearch(this, input).name
         }),
 
         method("nick", function = {
             val user = get<User>("user")
-            if("guild" !in this) {
-                user.name
-            } else {
-                return@method get<Guild>("guild").getMember(user)?.nickname ?: user.name
-            }
+            get<Guild>("guild")?.getMember(user)?.nickname ?: user.name
         }, biFunction = { input ->
             if(input[0].isEmpty())
                 throw ParseException("Invalid 'nick' statement")
             val user = userSearch(this, input)
-            if("guild" !in this) {
-                user.name
-            } else {
-                get<Guild>("guild").getMember(user)?.nickname ?: user.name
-            }
+            get<Guild>("guild")?.getMember(user)?.nickname ?: user.name
         }),
 
-        Method("discrim", ParseFunction { env ->
-            env.get<User>("user").discriminator
-        }, ParseBiFunction { env, input ->
+        method("discrim", function = { get<User>("user").discriminator }, biFunction = { input ->
             if(input[0].isEmpty())
                 throw ParseException("Invalid 'user' statement")
-            userSearch(env, input).discriminator
+            userSearch(this, input).discriminator
         }),
 
-        Method("@user", ParseFunction { env ->
-            if(env.contains("guild"))
-                env.get<Guild>("guild").getMember(env.get<User>("user"))!!.asMention
-            else
-                env.get<User>("user").asMention
-        }, ParseBiFunction { env, input ->
+        method("@user", function = {
+            val user = get<User>("user")
+            get<Guild>("guild")?.getMember(user)?.asMention ?: user.asMention
+        }, biFunction = { input ->
             if(input[0].isEmpty())
                 throw ParseException("Invalid '@user' statement")
-            if(env.contains("guild"))
-                env.get<Guild>("guild").getMember(userSearch(env, input))!!.asMention
-            else
-                userSearch(env, input).asMention
+            val user = userSearch(this, input)
+            get<Guild>("guild")?.getMember(user)?.asMention ?: user.asMention
         }),
 
         Method("userid", ParseFunction { env ->

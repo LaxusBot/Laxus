@@ -78,7 +78,7 @@ shadowJar {
 
     manifest {
         attributes 'Manifest-Version': "${ver.major}.${ver.minor}",
-                   'Implementation-Version': "$ver",
+                   'Implementation-Version': "${ver.major}.${ver.minor}",
                    'Main-Class': mainClassName
     }
 }

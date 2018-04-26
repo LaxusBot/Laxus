@@ -24,6 +24,7 @@ import net.dv8tion.jda.core.Permission
 import xyz.laxus.command.CommandContext
 import xyz.laxus.music.MusicManager
 import xyz.laxus.util.*
+import xyz.laxus.util.db.getCommandLevel
 import kotlin.coroutines.experimental.coroutineContext
 
 /**
@@ -45,7 +46,11 @@ class PlayCommand(manager: MusicManager): MusicCommand(manager) {
 
         if(query.isEmpty()) {
             // Allow this command to act as a stand-in for a separate "unpause" command
-            val level = ctx.bot.commands["Pause"]!!.run { ctx.level }
+            val level = ctx.bot.searchCommand("Pause")?.run {
+                if(ctx.isGuild && this.hasAdjustableLevel) {
+                    guild.getCommandLevel(this) ?: this.defaultLevel
+                } else this.defaultLevel
+            }!!
             if(level.test(ctx)) {
                 if(!guild.isPlaying) return ctx.notPlaying()
                 if(!member.inPlayingChannel) return ctx.notInPlayingChannel()
@@ -95,11 +100,11 @@ class PlayCommand(manager: MusicManager): MusicCommand(manager) {
 
         when(item) {
             null -> ctx.replyWarning(noMatch("results", query))
-            is AudioTrack -> ctx.singleTrackLoaded(loading, item)
-            is AudioPlaylist -> ctx.playlistLoaded(loading, item)
+            is AudioTrack -> ctx.singleTrackLoaded(loading.await(), item)
+            is AudioPlaylist -> ctx.playlistLoaded(loading.await(), item)
 
             // This shouldn't happen, but...
-            else -> unsupportedItemType(loading)
+            else -> unsupportedItemType(loading.await())
         }
     }
 }

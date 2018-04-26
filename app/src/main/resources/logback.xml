@@ -58,7 +58,7 @@
 
     <!-- Rolling Policy -->
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>${user.dir}/test-logs/Laxus.%d{yyyy-MM-dd}.log</fileNamePattern>
+      <fileNamePattern>${user.dir}/logs/Laxus.%d{yyyy-MM-dd}.log</fileNamePattern>
       <!-- 30 Days Max Policy -->
       <maxHistory>30</maxHistory>
     </rollingPolicy>

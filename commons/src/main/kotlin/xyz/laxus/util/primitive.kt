@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("Unused")
 @file:JvmName("PrimitivesKt")
 package xyz.laxus.util
 
@@ -33,10 +32,45 @@ fun emptyShortArray() = ShortArray(0)
 fun emptyIntArray() = IntArray(0)
 fun emptyLongArray() = LongArray(0)
 
-fun arrayOf(vararg bytes: Byte) = bytes
-fun arrayOf(vararg shorts: Short) = shorts
-fun arrayOf(vararg ints: Int) = ints
-fun arrayOf(vararg longs: Long) = longs
+@Deprecated(
+    message = "Kotlin stdlib already contains a suitable function.",
+    replaceWith = ReplaceWith(
+        expression = "byteArrayOf(Array<out Byte>)",
+        imports = ["kotlin.byteArrayOf"]
+    ),
+    level = DeprecationLevel.HIDDEN
+)
+fun arrayOf(vararg bytes: Byte) = byteArrayOf(*bytes)
+
+@Deprecated(
+    message = "Kotlin stdlib already contains a suitable function.",
+    replaceWith = ReplaceWith(
+        expression = "shortArrayOf(Array<out Short>)",
+        imports = ["kotlin.shortArrayOf"]
+    ),
+    level = DeprecationLevel.HIDDEN
+)
+fun arrayOf(vararg shorts: Short) = shortArrayOf(*shorts)
+
+@Deprecated(
+    message = "Kotlin stdlib already contains a suitable function.",
+    replaceWith = ReplaceWith(
+        expression = "intArrayOf(Array<out Int>)",
+        imports = ["kotlin.intArrayOf"]
+    ),
+    level = DeprecationLevel.HIDDEN
+)
+fun arrayOf(vararg ints: Int) = intArrayOf(*ints)
+
+@Deprecated(
+    message = "Kotlin stdlib already contains a suitable function.",
+    replaceWith = ReplaceWith(
+        expression = "longArrayOf(Array<out Long>)",
+        imports = ["kotlin.longArrayOf"]
+    ),
+    level = DeprecationLevel.HIDDEN
+)
+fun arrayOf(vararg longs: Long) = longArrayOf(*longs)
 
 /**
  * Generates a pseudo-random [Double] in the range [[min], [max]).
@@ -54,6 +88,8 @@ fun arrayOf(vararg longs: Long) = longs
  *
  * @return A pseudo-random [Double] in the range [[min], [max]).
  *
+ * @throws IllegalArgumentException If [max] <= [min]
+ *
  * @see Math.random
  */
 fun random(min: Int = 0, max: Int = 1): Double {
@@ -69,6 +105,8 @@ fun random(min: Int = 0, max: Int = 1): Double {
  *
  * @return A pseudo-random [Int] in the range [0, [max]).
  *
+ * @throws IllegalArgumentException If [max] <= 0
+ *
  * @see random
  * @see Math.random
  */
@@ -82,17 +120,23 @@ fun randomInt(max: Int): Int = randomInt(0, max)
  *
  * @return A pseudo-random [Int] in the range [[min], [max]).
  *
+ * @throws IllegalArgumentException If [max] <= [min]
+ *
  * @see random
  * @see Math.random
  */
 fun randomInt(min: Int, max: Int): Int = random(min, max).roundToInt()
 
 /**
- * Generates a pseudo-random [Int] in this range.
+ * Generates a pseudo-random [Int] in this range
+ *
+ * The receiver should be interpreted as start inclusive, end exclusive.
  *
  * @receiver An [IntRange] to generate from.
  *
  * @return A pseudo-random [Int] in this range.
+ *
+ * @throws IllegalArgumentException If [first][IntRange.first] <= [last][IntRange.last]
  *
  * @see random
  * @see randomInt
