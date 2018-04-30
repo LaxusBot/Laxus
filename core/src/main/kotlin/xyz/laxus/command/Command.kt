@@ -250,7 +250,14 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
         try {
             execute(ctx)
         } catch(t: Throwable) {
-            Bot.error("${fullname} encountered an exception:", t)
+            val additionalInfo = buildString {
+                if(ctx.isGuild) {
+                    appendln("Guild: ${ctx.guild.name} (ID: ${ctx.guild.idLong})")
+                    appendln("Channel: #${ctx.guild.name} (ID: ${ctx.textChannel.idLong})")
+                }
+                append("Author: ${ctx.author.let { "${it.name}#${it.discriminator} (ID: ${it.idLong})" }}")
+            }
+            Bot.error("$fullname encountered an exception:\n$additionalInfo", t)
             return ctx.replyError(UnexpectedError)
         }
 

@@ -57,11 +57,11 @@ class CleanCommand: Command(ModeratorGroup) {
 
         // Reason
         val reasonMatcher = reasonPattern.matchEntire(args)
-        val reason: String? = if(reasonMatcher !== null) {
+        val reason = reasonMatcher?.let {
             val groups = reasonMatcher.groupValues
             args = groups[1]
-            groups[2]
-        } else null
+            return@let groups[2]
+        }
 
         val quotes = HashSet<String>()
         val ids = HashSet<Long>()
@@ -77,7 +77,7 @@ class CleanCommand: Command(ModeratorGroup) {
         // Raw ID's
         val idsMatcher = discordID.findAll(args)
         for(res in idsMatcher)
-            ids.add(res.groupValues[1].trim().toLong())
+            ids.add(res.groupValues[0].trim().toLong())
         args = args.replace(discordID, "").trim()
 
         // Bots Flag
@@ -129,35 +129,29 @@ class CleanCommand: Command(ModeratorGroup) {
         messages -= ctx.message // Remove call message
         var pastTwoWeeks = false
 
-        // Get right away if we're cleaning all
-        val toDelete = if(cleanAll) messages else {
-            val toDelete = LinkedList<Message>()
-            // Filter based on flags
-            for(message in messages) {
-                if(!message.creationTime.isBefore(twoWeeksPrior)) {
-                    toDelete += when {
-                        message.author.idLong in ids                             -> message
-                        bots && message.author.isBot                             -> message
-                        embeds && message.embeds.isNotEmpty()                    -> message
-                        links && linkPattern in message.contentRaw               -> message
-                        files && message.attachments.isNotEmpty()                -> message
-                        images && message.hasImage                               -> message
-                        quotes.any { it in message.contentRaw.toLowerCase() }    -> message
-                        else -> null
-                    } ?: continue
-                } else {
-                    pastTwoWeeks = true
-                    break
-                }
+        // Filter based on flags
+        val toDelete = LinkedList<Message>()
+        for(message in messages) {
+            if(message.creationTime.isBefore(twoWeeksPrior)) {
+                toDelete += if(cleanAll) message else when {
+                    message.author.idLong in ids                          -> message
+                    bots && message.author.isBot                          -> message
+                    embeds && message.embeds.isNotEmpty()                 -> message
+                    links && linkPattern in message.contentRaw            -> message
+                    files && message.attachments.isNotEmpty()             -> message
+                    images && message.hasImage                            -> message
+                    quotes.any { it in message.contentRaw.toLowerCase() } -> message
+                    else -> null
+                } ?: continue
+            } else {
+                pastTwoWeeks = true
+                break
             }
-            toDelete
         }
 
         // If it's empty, either nothing fit the criteria or all of it was past 2 weeks
-        if(toDelete.isEmpty()) return ctx.replyError {
-            if(pastTwoWeeks) "Messages older than 2 weeks cannot be deleted!"
-            else "Found no messages to delete!"
-        }
+        if(toDelete.isEmpty()) return ctx.replyError("Found no messages to delete!")
+        if(pastTwoWeeks) return ctx.replyError("Messages older than 2 weeks cannot be deleted!")
 
         val numDeleted = toDelete.size
 

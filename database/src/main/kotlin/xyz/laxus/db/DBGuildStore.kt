@@ -88,7 +88,7 @@ object DBGuildStore: Table() {
     }
 
     fun clearNonGuilds(guildIds: Set<Long>) {
-        connection.prepare("SELECT * FROM guild_store") { statement ->
+        connection.prepare("SELECT * FROM guild_store", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement.executeQuery {
                 it.whileNext {
                     if(it.getLong("guild_id") !in guildIds) it.deleteRow()

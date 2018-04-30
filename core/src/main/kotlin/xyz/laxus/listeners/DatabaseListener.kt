@@ -192,20 +192,9 @@ object DatabaseListener: EventListener {
     }
 
     private fun cleanDatabase(jda: JDA) {
-        val shardId: Short? = jda.shardInfo?.shardId?.toShort()
-        if(shardId !== null) {
-            jda.guildCache.forEach {
-                if(!DBGuildStore.isStored(shardId, it.idLong)) {
-                    DBGuildStore.addGuild(shardId, it.idLong)
-                }
-            }
-        } else {
-            jda.guildCache.forEach {
-                if(!DBGuildStore.isStored(it.idLong)) {
-                    DBGuildStore.addGuild(shardId, it.idLong)
-                }
-            }
-        }
+        val shardId = jda.shardInfo?.shardId?.toShort()
+        val guildIds = if(shardId !== null) jda.asBot().shardManager.guildCache else jda.guildCache
+        DBGuildStore.clearNonGuilds(guildIds.mapTo(HashSet()) { it.idLong })
     }
 
     private fun Role.tryRemoveRoleMe() {
