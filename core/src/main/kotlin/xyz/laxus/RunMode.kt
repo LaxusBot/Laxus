@@ -26,22 +26,10 @@ import xyz.laxus.command.CommandContext
 enum class RunMode(val level: Level): Bot.Listener {
     SERVICE(Level.INFO),
     IDLE(Level.OFF) {
-        override fun checkCall(event: MessageReceivedEvent, bot: Bot, name: String, args: String): Boolean {
+        override fun checkCall(event: MessageReceivedEvent,
+                               bot: Bot, name: String, args: String): Boolean {
             return event.author.idLong == Laxus.DevId
         }
     },
-    DEBUG(Level.DEBUG) {
-        override fun onCommandCall(ctx: CommandContext, command: Command) {
-            Bot.Log.debug("Call to Command \"${command.fullname}\"")
-        }
-
-        override fun onCommandTerminated(ctx: CommandContext, command: Command, msg: String) {
-            super.onCommandTerminated(ctx, command, msg)
-            Bot.Log.debug("Terminated Command \"${command.fullname}\" with message: \"$msg\"")
-        }
-
-        override fun onCommandCompleted(ctx: CommandContext, command: Command) {
-            Bot.Log.debug("Completed Command \"${command.fullname}\"")
-        }
-    };
+    DEBUG(Level.DEBUG);
 }

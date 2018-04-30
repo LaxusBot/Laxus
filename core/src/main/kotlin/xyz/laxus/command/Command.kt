@@ -19,12 +19,14 @@ package xyz.laxus.command
 import com.typesafe.config.Config
 import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.Permission
+import xyz.laxus.Bot
 import xyz.laxus.Laxus
 import xyz.laxus.command.Command.CooldownScope.*
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.isAdmin
 import xyz.laxus.util.commandArgs
 import xyz.laxus.util.db.getCommandLevel
+import xyz.laxus.util.db.ignoredRoles
 import xyz.laxus.util.db.isIgnored
 import xyz.laxus.util.db.isMod
 import xyz.laxus.util.ignored
@@ -196,6 +198,12 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
                 if(!Level.MODERATOR.test(ctx))
                     return
             }
+            val roles = ctx.member.roles
+            if(ctx.guild.ignoredRoles.any { it in roles }) {
+                if(!Level.MODERATOR.test(ctx))
+                    return
+            }
+
             for(p in botPermissions) {
                 if(p.isChannel) {
                     if(p.name.startsWith("VOICE")) {
@@ -242,14 +250,14 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
         try {
             execute(ctx)
         } catch(t: Throwable) {
-            ctx.bot.mode.onException(ctx, this, t)
+            Bot.error("${fullname} encountered an exception:", t)
             return ctx.replyError(UnexpectedError)
         }
 
         key?.takeIf { autoCooldown == AutoCooldownMode.AFTER }?.let { ctx.bot.applyCooldown(key, cooldown) }
 
         ctx.bot.incrementUses(this)
-        ctx.bot.mode.onCommandCompleted(ctx, this)
+        Bot.Log.debug("Completed Command \"$fullname\"")
     }
 
     protected abstract suspend fun execute(ctx: CommandContext)
@@ -297,7 +305,8 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
     }) = error(InvalidArguments, block)
 
     private fun CommandContext.terminate(text: String) {
-        bot.mode.onCommandTerminated(this, this@Command, text)
+        reply(text)
+        Bot.Log.debug("Terminated Command \"$fullname\" with message: \"$text\"")
     }
 
     private val CommandContext.cooldownKey: String get() {

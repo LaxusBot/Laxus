@@ -204,7 +204,7 @@ object ModLog: SuspendedListener {
             return Log.warn("Could not find ban for target (ID: ${event.user.idLong})")
         }
 
-        val moderator = entry.user.takeIf { !it.isSelf } ?: return
+        val moderator = entry.user?.takeIf { !it.isSelf } ?: return
         val reason = entry.reason ?: DefaultReason
 
         log(modLog, target, moderator, BAN, reason)
@@ -221,7 +221,7 @@ object ModLog: SuspendedListener {
             return Log.warn("Could not find unban for target (ID: ${event.user.idLong})")
         }
 
-        val moderator = entry.user.takeIf { !it.isSelf } ?: return
+        val moderator = entry.user?.takeIf { !it.isSelf } ?: return
         val reason = entry.reason ?: DefaultReason
 
         log(modLog, target, moderator, UNBAN, reason)
@@ -244,7 +244,7 @@ object ModLog: SuspendedListener {
             return Log.debug("Could not find kick for target (ID: ${event.user.idLong})")
         }
 
-        val moderator = entry.user.takeIf { !it.isSelf } ?: return
+        val moderator = entry.user?.takeIf { !it.isSelf } ?: return
         val reason = entry.reason ?: DefaultReason
 
         log(modLog, target, moderator, KICK, reason)
@@ -272,7 +272,7 @@ object ModLog: SuspendedListener {
             return Log.warn("Could not find role update for target (ID: ${event.user.idLong})")
         }
 
-        val moderator = entry.user.takeIf { !it.isSelf } ?: return
+        val moderator = entry.user?.takeIf { !it.isSelf } ?: return
 
         log(modLog, target, moderator, MUTE, null)
     }
@@ -299,7 +299,7 @@ object ModLog: SuspendedListener {
             return Log.warn("Could not find role update for target (ID: ${event.user.idLong})")
         }
 
-        val moderator = entry.user.takeIf { !it.isSelf } ?: return
+        val moderator = entry.user?.takeIf { !it.isSelf } ?: return
 
         log(modLog, target, moderator, UNMUTE, null)
     }

@@ -173,7 +173,7 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
         if(mode.checkCall(event, this@Bot, name, args)) {
             val ctx = CommandContext(event, args, this@Bot, coroutineContext)
             commands[name]?.let { command ->
-                mode.onCommandCall(ctx, command)
+                Bot.Log.debug("Call to Command \"${command.fullname}\"")
                 return command.run(ctx)
             }
 
@@ -392,12 +392,6 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
 
     interface Listener {
         fun checkCall(event: MessageReceivedEvent, bot: Bot, name: String, args: String): Boolean = true
-        fun onCommandCall(ctx: CommandContext, command: Command) {}
-        fun onCommandTerminated(ctx: CommandContext, command: Command, msg: String) { ctx.reply(msg) }
-        fun onCommandCompleted(ctx: CommandContext, command: Command) {}
-        fun onException(ctx: CommandContext, command: Command, exception: Throwable) {
-            Log.error("${command.fullname} encountered an exception:", exception)
-        }
     }
 
     class Builder internal constructor() {
