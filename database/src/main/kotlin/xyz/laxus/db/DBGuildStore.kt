@@ -25,17 +25,17 @@ import xyz.laxus.db.sql.ResultSetType.*
 /**
  * @author Kaidan Gustave
  */
-@TableName("GUILD_STORE")
+@TableName("guild_store")
 @Columns(
-    Column("SHARD_ID", SMALLINT, nullable = true, def = "NULL"),
-    Column("GUILD_ID", BIGINT, unique = true)
+    Column("shard_id", SMALLINT, nullable = true, def = "NULL"),
+    Column("guild_id", BIGINT, primary = true)
 )
-object DBGuildStore : Table() {
+object DBGuildStore: Table() {
     fun getGuilds(): Set<Long> {
         val set = HashSet<Long>()
-        connection.prepare("SELECT GUILD_ID FROM GUILD_STORE", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT guild_id FROM guild_store", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement.executeQuery {
-                it.whileNext { set += it.getLong("GUILD_ID") }
+                it.whileNext { set += it.getLong("guild_id") }
             }
         }
         return set
@@ -43,24 +43,24 @@ object DBGuildStore : Table() {
 
     fun addGuild(guildId: Long) = addGuild(null, guildId)
     fun addGuild(shardId: Short?, guildId: Long) {
-        connection.prepare("SELECT * FROM GUILD_STORE WHERE GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_store WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(it.next()) {
                     // moved shards?
-                    if(it.getNullShort("SHARD_ID") != shardId) it.update {
-                        it["SHARD_ID"] = shardId
+                    if(it.getNullShort("shard_id") != shardId) it.update {
+                        it["shard_id"] = shardId
                     } else return // data is consistent
                 } else it.insert {
-                    it["SHARD_ID"] = shardId
-                    it["GUILD_ID"] = guildId
+                    it["shard_id"] = shardId
+                    it["guild_id"] = guildId
                 }
             }
         }
     }
 
     fun isStored(guildId: Long): Boolean {
-        return connection.prepare("SELECT * FROM GUILD_STORE WHERE GUILD_ID = ?") { statement ->
+        return connection.prepare("SELECT * FROM guild_store WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 it.next()
@@ -69,7 +69,7 @@ object DBGuildStore : Table() {
     }
 
     fun isStored(shardId: Short, guildId: Long): Boolean {
-        return connection.prepare("SELECT * FROM GUILD_STORE WHERE SHARD_ID = ? AND GUILD_ID = ?") { statement ->
+        return connection.prepare("SELECT * FROM guild_store WHERE shard_id = ? AND guild_id = ?") { statement ->
             statement[1] = shardId
             statement[2] = guildId
             statement.executeQuery {
@@ -79,10 +79,20 @@ object DBGuildStore : Table() {
     }
 
     fun removeGuild(guildId: Long) {
-        connection.prepare("SELECT * FROM GUILD_STORE WHERE GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_store WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(it.next()) it.deleteRow()
+            }
+        }
+    }
+
+    fun clearNonGuilds(guildIds: Set<Long>) {
+        connection.prepare("SELECT * FROM guild_store") { statement ->
+            statement.executeQuery {
+                it.whileNext {
+                    if(it.getLong("guild_id") !in guildIds) it.deleteRow()
+                }
             }
         }
     }

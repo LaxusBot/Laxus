@@ -23,10 +23,10 @@ import xyz.laxus.db.sql.ResultSetType.*
 /**
  * @author Kaidan Gustave
  */
-@TableName("WELCOMES")
+@TableName("welcomes")
 @Columns(
-    Column("GUILD_ID", BIGINT, unique = true),
-    Column("MESSAGE", "$VARCHAR(1900)")
+    Column("guild_id", BIGINT, primary = true),
+    Column("message", "$VARCHAR(1900)")
 )
 object DBWelcomes: Table() {
     fun hasWelcome(guildId: Long): Boolean {
@@ -35,11 +35,11 @@ object DBWelcomes: Table() {
 
     fun getWelcome(guildId: Long): Pair<Long, String>? {
         val channelId = DBChannels.getChannel(guildId, DBChannels.Type.WELCOME) ?: return null
-        connection.prepare("SELECT MESSAGE FROM WELCOMES WHERE GUILD_ID = ?") { statement ->
+        connection.prepare("SELECT message FROM welcomes WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(it.next()) {
-                    return channelId to it.getString("MESSAGE")
+                    return channelId to it.getString("message")
                 }
             }
         }
@@ -49,14 +49,14 @@ object DBWelcomes: Table() {
     fun setWelcome(guildId: Long, channelId: Long, message: String) {
         require(message.length <= 1900) { "Welcome message must not be longer than 1900 characters!" }
         DBChannels.setChannel(guildId, channelId, DBChannels.Type.WELCOME)
-        connection.prepare("SELECT * FROM WELCOMES WHERE GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM welcomes WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(!it.next()) it.insert {
-                    it["GUILD_ID"] = guildId
-                    it["MESSAGE"] = message
+                    it["guild_id"] = guildId
+                    it["message"] = message
                 } else it.update {
-                    it["MESSAGE"] = message
+                    it["message"] = message
                 }
             }
         }
@@ -64,7 +64,7 @@ object DBWelcomes: Table() {
 
     fun removeWelcome(guildId: Long) {
         DBChannels.removeChannel(guildId, DBChannels.Type.WELCOME)
-        connection.prepare("SELECT * FROM WELCOMES WHERE GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM welcomes WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(it.next()) it.deleteRow()

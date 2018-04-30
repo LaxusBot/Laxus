@@ -25,24 +25,24 @@ import xyz.laxus.util.checkInRange
 /**
  * @author Kaidan Gustave
  */
-@TableName("STAR_SETTINGS")
+@TableName("star_settings")
 @Columns(
-    Column("GUILD_ID", BIGINT, unique = true),
-    Column("CHANNEL_ID", BIGINT),
-    Column("THRESHOLD", SMALLINT, def = "5"),
-    Column("MAX_AGE", INT, def = "72"),
-    Column("IGNORED", "$VARCHAR(2000)", nullable = true, def = "NULL")
+    Column("guild_id", BIGINT, primary = true),
+    Column("channel_id", BIGINT),
+    Column("threshold", SMALLINT, def = "5"),
+    Column("max_age", INT, def = "72"),
+    Column("ignored", "$BIGINT[]", def = "ARRAY[]::BIGINT[]")
 )
 object DBStarSettings: Table() {
     fun hasSettings(guildId: Long): Boolean {
-        return connection.prepare("SELECT * FROM STAR_SETTINGS WHERE GUILD_ID = ?") { statement ->
+        return connection.prepare("SELECT * FROM star_settings WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery { it.next() }
         }
     }
 
     fun getSettings(guildId: Long): StarSettings? {
-        connection.prepare("SELECT * FROM STAR_SETTINGS WHERE GUILD_ID = ?") { statement ->
+        connection.prepare("SELECT * FROM star_settings WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(it.next()) {
@@ -56,27 +56,28 @@ object DBStarSettings: Table() {
     fun setSettings(settings: StarSettings) {
         checkInRange(settings.threshold.toInt(), 3..12)
         checkInRange(settings.maxAge, 6..(24 * 14))
-        connection.prepare("SELECT * FROM STAR_SETTINGS WHERE GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM star_settings WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = settings.guildId
             statement.executeQuery {
+                val array = sqlArrayOf(SQLArrayType.INT_8, *settings.ignored.toTypedArray())
                 if(!it.next()) it.insert {
-                    it["GUILD_ID"] = settings.guildId
-                    it["CHANNEL_ID"] = settings.channelId
-                    it["THRESHOLD"] = settings.threshold
-                    it["MAX_AGE"] = settings.maxAge
-                    it["IGNORED"] = settings.ignored.takeIf { it.isNotEmpty() }?.joinToString("|")
+                    it["guild_id"] = settings.guildId
+                    it["channel_id"] = settings.channelId
+                    it["threshold"] = settings.threshold
+                    it["max_age"] = settings.maxAge
+                    it["ignored"] = array
                 } else it.update {
-                    it["CHANNEL_ID"] = settings.channelId
-                    it["THRESHOLD"] = settings.threshold
-                    it["MAX_AGE"] = settings.maxAge
-                    it["IGNORED"] = settings.ignored.takeIf { it.isNotEmpty() }?.joinToString("|")
+                    it["channel_id"] = settings.channelId
+                    it["threshold"] = settings.threshold
+                    it["max_age"] = settings.maxAge
+                    it["ignored"] = array
                 }
             }
         }
     }
 
     fun removeSettings(guildId: Long) {
-        connection.prepare("SELECT * FROM STAR_SETTINGS WHERE GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM star_settings WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(it.next()) it.deleteRow()

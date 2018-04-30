@@ -26,6 +26,7 @@ laxus.sh
 /**/test-requests/
 
 ### Data Files ###
+/backup/
 *.json
 *.mv.db
 *.h2.db

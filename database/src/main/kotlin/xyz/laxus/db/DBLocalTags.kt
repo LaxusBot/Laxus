@@ -26,17 +26,17 @@ import xyz.laxus.db.sql.ResultSetType.*
 /**
  * @author Kaidan Gustave
  */
-@TableName("LOCAL_TAGS")
+@TableName("local_tags")
 @Columns(
-    Column("NAME", "$VARCHAR(50)", unique = true),
-    Column("CONTENT", "$VARCHAR(1900)"),
-    Column("OWNER_ID", BIGINT, nullable = true),
-    Column("GUILD_ID", BIGINT, unique = true)
+    Column("name", "$VARCHAR(50)", primary = true),
+    Column("content", "$VARCHAR(1900)"),
+    Column("owner_id", BIGINT, nullable = true),
+    Column("guild_id", BIGINT, primary = true)
 )
 object DBLocalTags : Table() {
     fun getTags(guildId: Long): List<LocalTag> {
         val list = ArrayList<LocalTag>()
-        connection.prepare("SELECT * FROM LOCAL_TAGS WHERE GUILD_ID = ?") { statement ->
+        connection.prepare("SELECT * FROM local_tags WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 it.whileNext {
@@ -49,7 +49,7 @@ object DBLocalTags : Table() {
 
     fun getTags(userId: Long, guildId: Long): List<LocalTag> {
         val list = ArrayList<LocalTag>()
-        connection.prepare("SELECT * FROM LOCAL_TAGS WHERE OWNER_ID = ? AND GUILD_ID = ?") { statement ->
+        connection.prepare("SELECT * FROM local_tags WHERE owner_id = ? AND guild_id = ?") { statement ->
             statement[1] = userId
             statement[2] = guildId
             statement.executeQuery {
@@ -62,7 +62,7 @@ object DBLocalTags : Table() {
     }
 
     fun getTagByName(name: String, guildId: Long): LocalTag? {
-        connection.prepare("SELECT * FROM LOCAL_TAGS WHERE LOWER(NAME) = LOWER(?) AND GUILD_ID = ?") { statement ->
+        connection.prepare("SELECT * FROM local_tags WHERE LOWER(name) = LOWER(?) AND guild_id = ?") { statement ->
             statement[1] = name
             statement[2] = guildId
             statement.executeQuery {
@@ -78,15 +78,15 @@ object DBLocalTags : Table() {
         require(name.length <= 50) { "Tag name length exceeds maximum of 50 characters!" }
         require(content.length <= 1900) { "Tag content length exceeds maximum of 50 characters!" }
 
-        connection.prepare("SELECT * FROM LOCAL_TAGS WHERE LOWER(NAME) = LOWER(?) AND GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM local_tags WHERE LOWER(name) = LOWER(?) AND guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = name
             statement[2] = guildId
             statement.executeQuery {
                 if(!it.next()) it.insert {
-                    it["NAME"] = name
-                    it["CONTENT"] = content
-                    it["OWNER_ID"] = ownerId
-                    it["GUILD_ID"] = guildId
+                    it["name"] = name
+                    it["content"] = content
+                    it["owner_id"] = ownerId
+                    it["guild_id"] = guildId
                 }
             }
         }
@@ -96,19 +96,19 @@ object DBLocalTags : Table() {
         require(tag.name.length <= 50) { "Tag name length exceeds maximum of 50 characters!" }
         require(tag.content.length <= 1900) { "Tag content length exceeds maximum of 50 characters!" }
 
-        connection.prepare("SELECT * FROM LOCAL_TAGS WHERE LOWER(NAME) = LOWER(?) AND GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM local_tags WHERE LOWER(name) = LOWER(?) AND guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = tag.name
             statement[2] = tag.guildId
             statement.executeQuery {
                 if(it.next()) it.update {
-                    it["CONTENT"] = tag.content
+                    it["content"] = tag.content
                 }
             }
         }
     }
 
     fun deleteTag(tag: LocalTag) {
-        connection.prepare("SELECT * FROM LOCAL_TAGS WHERE LOWER(NAME) = LOWER(?) AND GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM local_tags WHERE LOWER(name) = LOWER(?) AND guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = tag.name
             statement[2] = tag.guildId
             statement.executeQuery {
@@ -120,12 +120,12 @@ object DBLocalTags : Table() {
     fun overrideTag(tag: LocalTag) {
         require(tag.ownerId === null) { "Cannot override a local tag with non-null ownerId!" }
 
-        connection.prepare("SELECT * FROM LOCAL_TAGS WHERE LOWER(NAME) = LOWER(?) AND GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM local_tags WHERE LOWER(name) = LOWER(?) AND guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = tag.name
             statement[2] = tag.guildId
             statement.executeQuery {
                 if(it.next()) it.update {
-                    it["OWNER_ID"] = tag.ownerId
+                    it["owner_id"] = tag.ownerId
                 }
             }
         }

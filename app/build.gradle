@@ -46,7 +46,7 @@ dependencies {
     compile lavaplayer()
 
     // Database
-    compile h2()
+    compile postgres()
 
     // Configuration
     compile hocon()

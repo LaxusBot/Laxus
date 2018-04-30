@@ -24,15 +24,16 @@ import xyz.laxus.db.sql.ResultSetType.*
 /**
  * @author Kaidan Gustave
  */
-@TableName("GUILD_CHANNELS")
+@AllPrimary
+@TableName("guild_channels")
 @Columns(
-    Column("GUILD_ID", BIGINT, unique = true),
-    Column("CHANNEL_ID", BIGINT, unique = true),
-    Column("TYPE", "$VARCHAR(50)", unique = true)
+    Column("guild_id", BIGINT),
+    Column("channel_id", BIGINT),
+    Column("type", "$VARCHAR(50)")
 )
 object DBChannels : Table() {
     fun isChannel(guildId: Long, channelId: Long, type: Type): Boolean {
-        return connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND CHANNEL_ID = ? AND TYPE = ?") { statement ->
+        return connection.prepare("SELECT * FROM guild_channels WHERE guild_id = ? AND channel_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = channelId
             statement[3] = type.name
@@ -42,7 +43,7 @@ object DBChannels : Table() {
 
     fun hasChannel(guildId: Long, type: Type): Boolean {
         require(type.single, type::notSingle)
-        return connection.prepare("SELECT CHANNEL_ID FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
+        return connection.prepare("SELECT channel_id FROM guild_channels WHERE guild_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery { it.next() }
@@ -51,12 +52,12 @@ object DBChannels : Table() {
 
     fun getChannel(guildId: Long, type: Type): Long? {
         require(type.single, type::notSingle)
-        connection.prepare("SELECT CHANNEL_ID FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
+        connection.prepare("SELECT channel_id FROM guild_channels WHERE guild_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
                 if(it.next()) {
-                    return it.getLong("CHANNEL_ID")
+                    return it.getLong("channel_id")
                 }
             }
         }
@@ -66,11 +67,11 @@ object DBChannels : Table() {
     fun getChannels(guildId: Long, type: Type): List<Long> {
         require(type.multi, type::notMulti)
         val channels = ArrayList<Long>()
-        connection.prepare("SELECT CHANNEL_ID FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
+        connection.prepare("SELECT channel_id FROM guild_channels WHERE guild_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
-                it.whileNext { channels += it.getLong("CHANNEL_ID") }
+                it.whileNext { channels += it.getLong("channel_id") }
             }
         }
         return channels
@@ -78,18 +79,18 @@ object DBChannels : Table() {
 
     fun setChannel(guildId: Long, channelId: Long, type: Type) {
         require(type.single, type::notSingle)
-        connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_channels WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
                 if(!it.next()) it.insert {
-                    it["GUILD_ID"] = guildId
-                    it["CHANNEL_ID"] = channelId
-                    it["TYPE"] = type.name
+                    it["guild_id"] = guildId
+                    it["channel_id"] = channelId
+                    it["type"] = type.name
                 } else it.update {
-                    it["GUILD_ID"] = guildId
-                    it["CHANNEL_ID"] = channelId
-                    it["TYPE"] = type.name
+                    it["guild_id"] = guildId
+                    it["channel_id"] = channelId
+                    it["type"] = type.name
                 }
             }
         }
@@ -97,15 +98,15 @@ object DBChannels : Table() {
 
     fun addChannel(guildId: Long, channelId: Long, type: Type) {
         require(type.multi, type::notMulti)
-        connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND CHANNEL_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_channels WHERE guild_id = ? AND channel_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = channelId
             statement[3] = type.name
             statement.executeQuery {
                 if(!it.next()) it.insert {
-                    it["GUILD_ID"] = guildId
-                    it["CHANNEL_ID"] = channelId
-                    it["TYPE"] = type.name
+                    it["guild_id"] = guildId
+                    it["channel_id"] = channelId
+                    it["type"] = type.name
                 }
             }
         }
@@ -113,7 +114,7 @@ object DBChannels : Table() {
 
     fun removeChannel(guildId: Long, type: Type) {
         require(type.single, type::notSingle)
-        connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_channels WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -124,7 +125,7 @@ object DBChannels : Table() {
 
     fun removeChannel(guildId: Long, channelId: Long, type: Type) {
         require(type.multi, type::notMulti)
-        connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND CHANNEL_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_channels WHERE guild_id = ? AND channel_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = channelId
             statement[3] = type.name
@@ -136,7 +137,7 @@ object DBChannels : Table() {
 
     fun removeChannels(guildId: Long, type: Type) {
         require(type.multi, type::notMulti)
-        connection.prepare("SELECT * FROM GUILD_CHANNELS WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_channels WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {

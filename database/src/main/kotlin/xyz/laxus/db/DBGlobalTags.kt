@@ -26,16 +26,16 @@ import xyz.laxus.db.sql.ResultSetType.*
 /**
  * @author Kaidan Gustave
  */
-@TableName("GLOBAL_TAGS")
+@TableName("global_tags")
 @Columns(
-    Column("NAME", "$VARCHAR(50)", unique = true),
-    Column("CONTENT", "$VARCHAR(1900)"),
-    Column("OWNER_ID", BIGINT, nullable = true)
+    Column("name", "$VARCHAR(50)", primary = true),
+    Column("content", "$VARCHAR(1900)"),
+    Column("owner_id", BIGINT, nullable = true)
 )
-object DBGlobalTags : Table() {
+object DBGlobalTags: Table() {
     fun getTags(): List<Tag> {
         val list = ArrayList<Tag>()
-        connection.prepare("SELECT * FROM GLOBAL_TAGS") { statement ->
+        connection.prepare("SELECT * FROM global_tags") { statement ->
             statement.executeQuery {
                 it.whileNext {
                     list += GlobalTagImpl(it)
@@ -47,7 +47,7 @@ object DBGlobalTags : Table() {
 
     fun getTags(userId: Long): List<Tag> {
         val list = ArrayList<Tag>()
-        connection.prepare("SELECT * FROM GLOBAL_TAGS WHERE OWNER_ID = ?") { statement ->
+        connection.prepare("SELECT * FROM global_tags WHERE owner_id = ?") { statement ->
             statement[1] = userId
             statement.executeQuery {
                 it.whileNext {
@@ -59,7 +59,7 @@ object DBGlobalTags : Table() {
     }
 
     fun getTagByName(name: String): Tag? {
-        connection.prepare("SELECT * FROM GLOBAL_TAGS WHERE LOWER(NAME) = LOWER(?)") { statement ->
+        connection.prepare("SELECT * FROM global_tags WHERE LOWER(name) = LOWER(?)") { statement ->
             statement[1] = name
             statement.executeQuery {
                 if(it.next()) {
@@ -74,13 +74,13 @@ object DBGlobalTags : Table() {
         require(name.length <= 50) { "Tag name length exceeds maximum of 50 characters!" }
         require(content.length <= 1900) { "Tag content length exceeds maximum of 50 characters!" }
 
-        connection.prepare("SELECT * FROM GLOBAL_TAGS WHERE LOWER(NAME) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM global_tags WHERE LOWER(name) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = name
             statement.executeQuery {
                 if(!it.next()) it.insert {
-                    it["NAME"] = name
-                    it["CONTENT"] = content
-                    it["OWNER_ID"] = ownerId
+                    it["name"] = name
+                    it["content"] = content
+                    it["owner_id"] = ownerId
                 }
             }
         }
@@ -90,18 +90,18 @@ object DBGlobalTags : Table() {
         require(tag.name.length <= 50) { "Tag name length exceeds maximum of 50 characters!" }
         require(tag.content.length <= 1900) { "Tag content length exceeds maximum of 50 characters!" }
 
-        connection.prepare("SELECT * FROM GLOBAL_TAGS WHERE LOWER(NAME) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM global_tags WHERE LOWER(name) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = tag.name
             statement.executeQuery {
                 if(it.next()) it.update {
-                    it["CONTENT"] = tag.content
+                    it["content"] = tag.content
                 }
             }
         }
     }
 
     fun deleteTag(name: String) {
-        connection.prepare("SELECT * FROM GLOBAL_TAGS WHERE LOWER(NAME) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM global_tags WHERE LOWER(name) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = name
             statement.executeQuery {
                 if(it.next()) it.deleteRow()
@@ -112,11 +112,11 @@ object DBGlobalTags : Table() {
     fun overrideTag(tag: Tag) {
         require(tag.ownerId === null) { "Cannot override a local tag with non-null ownerId!" }
 
-        connection.prepare("SELECT * FROM GLOBAL_TAGS WHERE LOWER(NAME) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM global_tags WHERE LOWER(name) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = tag.name
             statement.executeQuery {
                 if(it.next()) it.update {
-                    it["OWNER_ID"] = tag.ownerId
+                    it["owner_id"] = tag.ownerId
                 }
             }
         }

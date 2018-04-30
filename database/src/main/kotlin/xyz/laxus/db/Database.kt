@@ -17,6 +17,7 @@
 package xyz.laxus.db
 
 import com.typesafe.config.Config
+import xyz.laxus.db.schema.AllPrimary
 import xyz.laxus.db.schema.Columns
 import xyz.laxus.db.schema.TableName
 import xyz.laxus.util.*
@@ -77,31 +78,34 @@ object Database: AutoCloseable {
             }
 
             val columns = klazz.findAnnotation<Columns>()?.value ?: emptyArray()
-            val uniqueColumns = columns.filter { it.unique }
+            val allPrimary = klazz.findAnnotation<AllPrimary>() !== null
+            val primaryColumns = if(!allPrimary) columns.filter { it.primary } else columns.toList()
 
             val createStatement = buildString {
-                append("CREATE TABLE IF NOT EXISTS $tableName(")
+                append("CREATE TABLE IF NOT EXISTS ${tableName.toLowerCase()}(")
                 columns.forEachIndexed { index, column ->
-                    append("${column.name} ${column.type}")
+                    append("${column.name.toLowerCase()} ${column.type.toUpperCase()}")
                     val default = column.def
 
-                    if(default == "null" || column.nullable) {
+                    if(default.toUpperCase() == "NULL" || column.nullable) {
                         append(" NULL")
+                    } else {
+                        append(" NOT NULL")
                     }
 
                     if(default.isNotBlank()) {
                         append(" DEFAULT $default")
                     }
 
-                    if(index != columns.lastIndex || uniqueColumns.isNotEmpty()) {
+                    if(index != columns.lastIndex || primaryColumns.isNotEmpty()) {
                         append(", ")
                     }
 
-                    if(index == columns.lastIndex && uniqueColumns.isNotEmpty()) {
-                        append("UNIQUE(")
-                        uniqueColumns.forEachIndexed { uniqueIndex, uniqueColumn ->
-                            append(uniqueColumn.name)
-                            if(uniqueIndex != uniqueColumns.lastIndex) {
+                    if(index == columns.lastIndex && primaryColumns.isNotEmpty()) {
+                        append("PRIMARY KEY(")
+                        primaryColumns.forEachIndexed { uniqueIndex, primaryColumn ->
+                            append(primaryColumn.name.toLowerCase())
+                            if(uniqueIndex != primaryColumns.lastIndex) {
                                 append(", ")
                             }
                         }
