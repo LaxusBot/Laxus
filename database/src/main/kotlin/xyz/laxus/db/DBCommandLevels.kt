@@ -20,20 +20,20 @@ import xyz.laxus.db.sql.*
 import xyz.laxus.db.sql.ResultSetConcur.*
 import xyz.laxus.db.sql.ResultSetType.*
 
-@TableName("COMMAND_LEVELS")
+@TableName("command_levels")
 @Columns(
-    Column("GUILD_ID", BIGINT, unique = true),
-    Column("COMMAND_NAME", "$VARCHAR(100)", unique = true),
-    Column("COMMAND_LEVEL", "$VARCHAR(25)")
+    Column("guild_id", BIGINT, primary = true),
+    Column("command_name", "$VARCHAR(100)", primary = true),
+    Column("command_level", "$VARCHAR(25)")
 )
-object DBCommandLevels : Table() {
+object DBCommandLevels: Table() {
     fun getCommandLevel(guildId: Long, commandName: String): String? {
-        connection.prepare("SELECT COMMAND_LEVEL FROM COMMAND_LEVELS WHERE GUILD_ID = ? AND LOWER(COMMAND_NAME) = LOWER(?)") { statement ->
+        connection.prepare("SELECT command_level FROM command_levels WHERE guild_id = ? AND LOWER(command_name) = LOWER(?)") { statement ->
             statement[1] = guildId
             statement[2] = commandName
             statement.executeQuery {
                 if(it.next()) {
-                    return it.getString("COMMAND_LEVEL").toUpperCase()
+                    return it.getString("command_level").toUpperCase()
                 }
             }
         }
@@ -41,19 +41,19 @@ object DBCommandLevels : Table() {
     }
 
     fun setCommandLevel(guildId: Long, commandName: String, commandLevel: String?) {
-        connection.prepare("SELECT * FROM COMMAND_LEVELS WHERE GUILD_ID = ? AND LOWER(COMMAND_NAME) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM command_levels WHERE guild_id = ? AND LOWER(command_name) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = commandName
             statement.executeQuery {
                 if(it.next()) { // data exists
                     if(commandLevel === null) it.deleteRow() // delete
                     else it.update { // update
-                        it["COMMAND_LEVEL"] = commandLevel.toUpperCase()
+                        it["command_level"] = commandLevel.toUpperCase()
                     }
                 } else if(commandLevel !== null) it.insert { // insert
-                    it["GUILD_ID"] = guildId
-                    it["COMMAND_NAME"] = commandName.toUpperCase()
-                    it["COMMAND_LEVEL"] = commandLevel.toUpperCase()
+                    it["guild_id"] = guildId
+                    it["command_name"] = commandName.toUpperCase()
+                    it["command_level"] = commandLevel.toUpperCase()
                 }
                 // else do nothing
             }

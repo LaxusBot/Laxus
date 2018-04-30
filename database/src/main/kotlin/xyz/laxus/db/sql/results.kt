@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:Suppress("unused")
 package xyz.laxus.db.sql
 
+import xyz.laxus.db.schema.SQLArray
 import xyz.laxus.db.schema.SQLTime
 import java.sql.ResultSet
 
@@ -99,12 +101,25 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: Array<*>
     }
 }
 
+inline operator fun <reified R: ResultSet> R.set(column: String, value: SQLArray?) {
+    if(value === null) {
+        updateNull(column)
+    } else {
+        updateObject(column, value)
+    }
+}
+
 inline operator fun <reified R: ResultSet> R.set(column: String, value: SQLTime?) {
     if(value === null) {
         updateNull(column)
     } else {
         updateTime(column, value)
     }
+}
+
+inline fun <reified T> ResultSet.array(column: String): Array<out T> {
+    @Suppress("UNCHECKED_CAST")
+    return getArray(column).array as Array<T>
 }
 
 inline fun <reified R: ResultSet> R.getNullShort(column: String): Short? {

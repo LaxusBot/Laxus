@@ -23,23 +23,19 @@ import xyz.laxus.db.sql.ResultSetType.*
 /**
  * @author Kaidan Gustave
  */
-@TableName("GUILD_SETTINGS")
+@TableName("guild_settings")
 @Columns(
-    Column("GUILD_ID", BIGINT, unique = true),
-    Column("IS_ROLE_PERSIST", BOOLEAN, def = "false"),
-    Column("ROLE_ME_LIMIT", SMALLINT, nullable = true, def = "null")
+    Column("guild_id", BIGINT, primary = true),
+    Column("is_role_persist", BOOLEAN, def = "false"),
+    Column("role_me_limit", SMALLINT, nullable = true, def = "null")
 )
-object DBGuildSettings : Table() {
-    private const val GUILD_ID = "GUILD_ID"
-    private const val IS_ROLE_PERSIST = "IS_ROLE_PERSIST"
-    private const val ROLE_ME_LIMIT = "ROLE_ME_LIMIT"
-
+object DBGuildSettings: Table() {
     fun isRolePersist(guildId: Long): Boolean {
-        connection.prepare("SELECT $IS_ROLE_PERSIST FROM GUILD_SETTINGS WHERE $GUILD_ID = ?") { statement ->
+        connection.prepare("SELECT is_role_persist FROM guild_settings WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(it.next()) {
-                    return it.getBoolean(IS_ROLE_PERSIST)
+                    return it.getBoolean("is_role_persist")
                 }
             }
         }
@@ -47,11 +43,11 @@ object DBGuildSettings : Table() {
     }
 
     fun getRoleMeLimit(guildId: Long): Short? {
-        connection.prepare("SELECT $ROLE_ME_LIMIT FROM GUILD_SETTINGS WHERE $GUILD_ID = ?") { statement ->
+        connection.prepare("SELECT role_me_limit FROM guild_settings WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(it.next()) {
-                    return it.getNullShort(ROLE_ME_LIMIT)
+                    return it.getNullShort("role_me_limit")
                 }
             }
         }
@@ -59,14 +55,14 @@ object DBGuildSettings : Table() {
     }
 
     fun setIsRolePersist(guildId: Long, isRolePersist: Boolean) {
-        connection.prepare("SELECT * FROM GUILD_SETTINGS WHERE $GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_settings WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(!it.next()) it.insert {
-                    it[GUILD_ID] = guildId
-                    it[IS_ROLE_PERSIST] = isRolePersist
+                    it["guild_id"] = guildId
+                    it["is_role_persist"] = isRolePersist
                 } else it.update {
-                    it[IS_ROLE_PERSIST] = isRolePersist
+                    it["is_role_persist"] = isRolePersist
                 }
             }
         }
@@ -76,21 +72,21 @@ object DBGuildSettings : Table() {
     }
 
     fun setRoleMeLimit(guildId: Long, roleMeLimit: Short?) {
-        connection.prepare("SELECT * FROM GUILD_SETTINGS WHERE $GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_settings WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(!it.next()) it.insert {
-                    it[GUILD_ID] = guildId
-                    it[ROLE_ME_LIMIT] = roleMeLimit
+                    it["guild_id"] = guildId
+                    it["role_me_limit"] = roleMeLimit
                 } else it.update {
-                    it[ROLE_ME_LIMIT] = roleMeLimit
+                    it["role_me_limit"] = roleMeLimit
                 }
             }
         }
     }
 
     fun removeSettings(guildId: Long) {
-        connection.prepare("SELECT * FROM GUILD_SETTINGS WHERE $GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_settings WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(it.next()) it.deleteRow()

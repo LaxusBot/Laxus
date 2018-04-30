@@ -25,25 +25,20 @@ import xyz.laxus.db.sql.ResultSetType.*
 /**
  * @author Kaidan Gustave
  */
-@TableName("CASES")
+@TableName("cases")
 @Columns(
-    Column("CASE_NUMBER", INT, unique = true),
-    Column("GUILD_ID", BIGINT, unique = true),
-    Column("MESSAGE_ID", BIGINT),
-    Column("MOD_ID", BIGINT),
-    Column("TARGET_ID", BIGINT),
-    Column("IS_ON_USER", BOOLEAN),
-    Column("ACTION", "$VARCHAR(50)"),
-    Column("REASON", "$VARCHAR(300)", nullable = true, def = "NULL")
+    Column("case_number", INT, primary = true),
+    Column("guild_id", BIGINT, primary = true),
+    Column("message_id", BIGINT),
+    Column("mod_id", BIGINT),
+    Column("target_id", BIGINT),
+    Column("is_on_user", BOOLEAN),
+    Column("action", "$VARCHAR(50)"),
+    Column("reason", "$VARCHAR(300)", nullable = true, def = "NULL")
 )
 object DBCases: Table() {
-    private const val GET_CASES           = "SELECT * FROM CASES WHERE GUILD_ID = ? ORDER BY CASE_NUMBER ASC"
-    private const val GET_CASE_BY_NUMBER  = "SELECT * FROM CASES WHERE CASE_NUMBER = ? AND GUILD_ID = ?"
-    private const val GET_CASES_BY_MOD_ID = "SELECT * FROM CASES WHERE GUILD_ID = ? AND MOD_ID = ? ORDER BY CASE_NUMBER ASC"
-    private const val SET_REASON          = "SELECT REASON FROM CASES WHERE CASE_NUMBER = ? AND GUILD_ID = ?"
-
     fun getCurrentCaseNumber(guildId: Long): Int {
-        connection.prepare("SELECT COUNT(*) FROM CASES WHERE GUILD_ID = ?") { statement ->
+        connection.prepare("SELECT COUNT(*) FROM cases WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(it.next()) {
@@ -56,7 +51,7 @@ object DBCases: Table() {
 
     fun getCases(guildId: Long): List<Case> {
         val cases = ArrayList<Case>()
-        connection.prepare(GET_CASES) { statement ->
+        connection.prepare("SELECT * FROM cases WHERE guild_id = ? ORDER BY case_number ASC") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 it.whileNext {
@@ -68,7 +63,7 @@ object DBCases: Table() {
     }
 
     fun getCase(number: Int, guildId: Long): Case? {
-        connection.prepare(GET_CASE_BY_NUMBER) { statement ->
+        connection.prepare("SELECT * FROM cases WHERE case_number = ? AND guild_id = ?") { statement ->
             statement[1] = number
             statement[2] = guildId
             statement.executeQuery {
@@ -82,7 +77,7 @@ object DBCases: Table() {
 
     fun getCasesByModId(guildId: Long, modId: Long): List<Case> {
         val cases = ArrayList<Case>()
-        connection.prepare(GET_CASES_BY_MOD_ID) { statement ->
+        connection.prepare("SELECT * FROM cases WHERE guild_id = ? AND mod_id = ? ORDER BY case_number ASC") { statement ->
             statement[1] = guildId
             statement[2] = modId
             statement.executeQuery {
@@ -96,7 +91,7 @@ object DBCases: Table() {
 
     fun getCasesWithoutReasonByModId(guildId: Long, modId: Long): List<Case> {
         val cases = ArrayList<Case>()
-        connection.prepare("SELECT * FROM CASES WHERE GUILD_ID = ? AND MOD_ID = ? AND REASON IS NULL ORDER BY CASE_NUMBER DESC") { statement ->
+        connection.prepare("SELECT * FROM cases WHERE guild_id = ? AND mod_id = ? AND reason IS NULL ORDER BY case_number DESC") { statement ->
             statement[1] = guildId
             statement[2] = modId
             statement.executeQuery {
@@ -109,37 +104,37 @@ object DBCases: Table() {
     }
 
     fun addCase(case: Case) {
-        connection.prepare(GET_CASES, SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM cases WHERE guild_id = ? ORDER BY case_number ASC", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = case.guildId
             statement.executeQuery {
                 it.insert {
-                    it["CASE_NUMBER"] = case.number
-                    it["GUILD_ID"] = case.guildId
-                    it["MOD_ID"] = case.modId
-                    it["MESSAGE_ID"] = case.messageId
-                    it["TARGET_ID"] = case.targetId
-                    it["IS_ON_USER"] = case.isOnUser
-                    it["ACTION"] = case.action.name
-                    it["REASON"] = case.reason
+                    it["case_number"] = case.number
+                    it["guild_id"] = case.guildId
+                    it["mod_id"] = case.modId
+                    it["message_id"] = case.messageId
+                    it["target_id"] = case.targetId
+                    it["is_on_user"] = case.isOnUser
+                    it["action"] = case.action.name
+                    it["reason"] = case.reason
                 }
             }
         }
     }
 
     fun updateCase(case: Case) {
-        connection.prepare(SET_REASON, SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT reason FROM cases WHERE case_number = ? AND guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = case.number
             statement[2] = case.guildId
             statement.executeQuery {
                 if(it.next()) it.update {
-                    it["REASON"] = case.reason
+                    it["reason"] = case.reason
                 }
             }
         }
     }
 
     fun removeAllCases(guildId: Long) {
-        connection.prepare(GET_CASES, SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM cases WHERE guild_id = ? ORDER BY case_number ASC", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 it.whileNext { it.deleteRow() }

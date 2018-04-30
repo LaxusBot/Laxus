@@ -13,24 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.db
-
-import xyz.laxus.db.schema.*
-import xyz.laxus.util.delegation.annotation
+package xyz.laxus.db.schema
 
 /**
  * @author Kaidan Gustave
  */
-abstract class Table: AutoCloseable {
-    protected val connection by lazy { Database.connection }
-    val name by annotation<TableName, String?> { it.value }
-    val columns by annotation<Columns, Array<out Column>?> { it.value }
-
-    protected fun <T> sqlArrayOf(type: SQLArrayType, vararg elements: T): SQLArray {
-        return connection.createArrayOf(type.serverName, elements)
-    }
-
-    override fun close() {
-        // Can be overriden if necessary
-    }
+enum class SQLArrayType(val serverName: String) {
+    INT_2("int2"),
+    INT_4("int4"),
+    INT_8("int8"),
+    FLOAT_4("float4"),
+    FLOAT_8("float8"),
+    BOOL("bool"),
+    VARCHAR("varchar");
 }

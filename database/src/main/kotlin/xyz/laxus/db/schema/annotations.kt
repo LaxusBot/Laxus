@@ -15,21 +15,44 @@
  */
 package xyz.laxus.db.schema
 
-@Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.CLASS)
+import kotlin.annotation.AnnotationRetention.*
+import kotlin.annotation.AnnotationTarget.*
+
+/**
+ * Marks a [table object][xyz.laxus.db.Table]
+ * to use the provided [value] as it's name.
+ */
+@Retention(RUNTIME)
+@Target(CLASS)
 annotation class TableName(val value: String)
 
+/**
+ * An annotation representing a column
+ * on a [table][xyz.laxus.db.Table].
+ */
 @Repeatable
-@Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.CLASS)
+@Retention(RUNTIME)
+@Target(CLASS)
 annotation class Column(
     val name: String,
     val type: String,
     val nullable: Boolean = false,
-    val unique: Boolean = false,
+    val primary: Boolean = false,
     val def: String = ""
 )
 
-@Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.CLASS)
+/**
+ * Multi-annotation for [Column].
+ */
+@Retention(RUNTIME)
+@Target(CLASS)
 annotation class Columns(vararg val value: Column)
+
+/**
+ * Automatically registers all [Column] annotations
+ * on the same [table object][xyz.laxus.db.Table]
+ * as [primary keys][Column.primary].
+ */
+@Retention(RUNTIME)
+@Target(CLASS)
+annotation class AllPrimary

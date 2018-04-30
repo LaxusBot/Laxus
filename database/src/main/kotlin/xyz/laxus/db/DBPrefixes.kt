@@ -20,14 +20,15 @@ import xyz.laxus.db.sql.*
 import xyz.laxus.db.sql.ResultSetConcur.*
 import xyz.laxus.db.sql.ResultSetType.*
 
-@TableName("PREFIXES")
+@AllPrimary
+@TableName("prefixes")
 @Columns(
-    Column("GUILD_ID", BIGINT, unique = true),
-    Column("PREFIX", "$VARCHAR(50)", unique = true)
+    Column("guild_id", BIGINT),
+    Column("prefix", "$VARCHAR(50)")
 )
 object DBPrefixes: Table() {
     fun hasPrefix(guildId: Long, prefix: String): Boolean {
-        return connection.prepare("SELECT * FROM PREFIXES WHERE GUILD_ID = ? AND LOWER(PREFIX) = LOWER(?)") { statement ->
+        return connection.prepare("SELECT * FROM prefixes WHERE guild_id = ? AND LOWER(prefix) = LOWER(?)") { statement ->
             statement[1] = guildId
             statement[2] = prefix
             statement.executeQuery {
@@ -38,11 +39,11 @@ object DBPrefixes: Table() {
 
     fun getPrefixes(guildId: Long): Set<String> {
         val prefixes = HashSet<String>()
-        connection.prepare("SELECT PREFIX FROM PREFIXES WHERE GUILD_ID = ?") { statement ->
+        connection.prepare("SELECT prefix FROM prefixes WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 it.whileNext {
-                    prefixes += it.getString("PREFIX")
+                    prefixes += it.getString("prefix")
                 }
             }
         }
@@ -50,20 +51,20 @@ object DBPrefixes: Table() {
     }
 
     fun addPrefix(guildId: Long, prefix: String) {
-        connection.prepare("SELECT * FROM PREFIXES WHERE GUILD_ID = ? AND LOWER(PREFIX) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM prefixes WHERE guild_id = ? AND LOWER(prefix) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = prefix
             statement.executeQuery {
                 if(!it.next()) it.insert {
-                    it["GUILD_ID"] = guildId
-                    it["PREFIX"] = prefix
+                    it["guild_id"] = guildId
+                    it["prefix"] = prefix
                 }
             }
         }
     }
 
     fun removePrefix(guildId: Long, prefix: String) {
-        connection.prepare("SELECT * FROM PREFIXES WHERE GUILD_ID = ? AND LOWER(PREFIX) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM prefixes WHERE guild_id = ? AND LOWER(prefix) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = prefix
             statement.executeQuery {
@@ -73,7 +74,7 @@ object DBPrefixes: Table() {
     }
 
     fun removeAllPrefixes(guildId: Long) {
-        connection.prepare("SELECT PREFIX FROM PREFIXES WHERE GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM prefixes WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 it.whileNext { it.deleteRow() }

@@ -26,14 +26,15 @@ import xyz.laxus.db.sql.set
 /**
  * @author Kaidan Gustave
  */
-@TableName("GUILDS")
+@AllPrimary
+@TableName("guilds")
 @Columns(
-    Column("GUILD_ID", BIGINT, unique = true),
-    Column("TYPE", "$VARCHAR(50)", unique = true)
+    Column("guild_id", BIGINT),
+    Column("type", "$VARCHAR(50)")
 )
-object DBGuilds : Table() {
+object DBGuilds: Table() {
     fun isGuild(guildId: Long, type: Type): Boolean {
-        return connection.prepare("SELECT * FROM GUILDS WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        return connection.prepare("SELECT * FROM guilds WHERE guild_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -43,20 +44,20 @@ object DBGuilds : Table() {
     }
 
     fun addGuild(guildId: Long, type: Type) {
-        connection.prepare("SELECT * FROM GUILDS WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guilds WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
                 if(!it.next()) it.insert {
-                    it["GUILD_ID"] = guildId
-                    it["TYPE"] = type.name
+                    it["guild_id"] = guildId
+                    it["type"] = type.name
                 }
             }
         }
     }
 
     fun removeGuild(guildId: Long, type: Type) {
-        connection.prepare("SELECT * FROM GUILDS WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guilds WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {

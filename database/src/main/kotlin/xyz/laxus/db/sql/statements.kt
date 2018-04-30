@@ -15,12 +15,12 @@
  */
 package xyz.laxus.db.sql
 
-import org.h2.value.Value.*
 import org.intellij.lang.annotations.Language
 import xyz.laxus.db.Database
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
+import java.sql.Types.*
 
 inline fun <reified R> Connection.prepare(
     @Language("sql") sql: String,
@@ -38,7 +38,7 @@ inline fun <reified R> PreparedStatement.executeQuery(block: (ResultSet) -> R): 
 
 inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: String?) {
     if(value === null) {
-        setNull(index, STRING)
+        setNull(index, VARCHAR)
     } else {
         setString(index, value)
     }
@@ -46,7 +46,7 @@ inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Stri
 
 inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Short?) {
     if(value === null) {
-        setNull(index, SHORT)
+        setNull(index, SMALLINT)
     } else {
         setShort(index, value)
     }
@@ -54,7 +54,7 @@ inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Shor
 
 inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Int?) {
     if(value === null) {
-        setNull(index, INT)
+        setNull(index, INTEGER)
     } else {
         setInt(index, value)
     }
@@ -62,7 +62,7 @@ inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Int?
 
 inline operator fun <reified S: PreparedStatement> S.set(index: Int, value: Long?) {
     if(value === null) {
-        setNull(index, LONG)
+        setNull(index, BIGINT)
     } else {
         setLong(index, value)
     }

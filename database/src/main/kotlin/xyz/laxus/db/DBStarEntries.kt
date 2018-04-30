@@ -26,13 +26,13 @@ import xyz.laxus.db.sql.ResultSetType.*
 /**
  * @author Kaidan Gustave
  */
-@TableName("STAR_ENTRIES")
+@TableName("star_entries")
 @Columns(
-    Column("STARRED_ID", BIGINT, unique = true),
-    Column("ENTRY_ID", BIGINT, nullable = true, def = "NULL"),
-    Column("STARBOARD_ID", BIGINT),
-    Column("GUILD_ID", BIGINT, unique = true),
-    Column("USER_ID", BIGINT, unique = true)
+    Column("starred_id", BIGINT, primary = true),
+    Column("entry_id", BIGINT, nullable = true, def = "NULL"),
+    Column("starboard_id", BIGINT),
+    Column("guild_id", BIGINT, primary = true),
+    Column("user_id", BIGINT, primary = true)
 )
 object DBStarEntries : Table() {
     fun addStar(starredId: Long, guildId: Long, userId: Long, entryId: Long? = null) {
@@ -40,17 +40,17 @@ object DBStarEntries : Table() {
             "No StarSettings found for Guild ID: $guildId"
         }
 
-        connection.prepare("SELECT * FROM STAR_ENTRIES WHERE STARRED_ID = ? AND GUILD_ID = ? AND USER_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM star_entries WHERE starred_id = ? AND guild_id = ? AND user_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = starredId
             statement[2] = guildId
             statement[3] = userId
             statement.executeQuery {
                 if(!it.next()) it.insert {
-                    it["STARRED_ID"] = starredId
-                    it["ENTRY_ID"] = entryId
-                    it["STARBOARD_ID"] = starboardId
-                    it["GUILD_ID"] = guildId
-                    it["USER_ID"] = userId
+                    it["starred_id"] = starredId
+                    it["entry_id"] = entryId
+                    it["starboard_id"] = starboardId
+                    it["guild_id"] = guildId
+                    it["user_id"] = userId
                 }
             }
         }
@@ -60,18 +60,18 @@ object DBStarEntries : Table() {
 
     fun getStars(starredId: Long, guildId: Long): List<Long> {
         val stars = ArrayList<Long>()
-        connection.prepare("SELECT USER_ID FROM STAR_ENTRIES WHERE STARRED_ID = ? AND GUILD_ID = ?") { statement ->
+        connection.prepare("SELECT USER_ID FROM star_entries WHERE starred_id = ? AND guild_id = ?") { statement ->
             statement[1] = starredId
             statement[2] = guildId
             statement.executeQuery {
-                it.whileNext { stars += it.getLong("USER_ID") }
+                it.whileNext { stars += it.getLong("user_id") }
             }
         }
         return stars
     }
 
     fun isStarring(starredId: Long, guildId: Long, userId: Long): Boolean {
-        return connection.prepare("SELECT * FROM STAR_ENTRIES WHERE STARRED_ID = ? AND GUILD_ID = ? AND USER_ID = ?") { statement ->
+        return connection.prepare("SELECT * FROM star_entries WHERE starred_id = ? AND guild_id = ? AND user_id = ?") { statement ->
             statement[1] = starredId
             statement[2] = guildId
             statement[3] = userId
@@ -80,19 +80,20 @@ object DBStarEntries : Table() {
     }
 
     fun getStarCount(starredId: Long, guildId: Long): Int {
-        var count = 0
-        connection.prepare("SELECT * FROM STAR_ENTRIES WHERE STARRED_ID = ? AND GUILD_ID = ?") { statement ->
+        connection.prepare("SELECT COUNT(*) FROM star_entries WHERE starred_id = ? AND guild_id = ?") { statement ->
             statement[1] = starredId
             statement[2] = guildId
             statement.executeQuery {
-                it.whileNext { count++ }
+                if(it.next()) {
+                    return it.getInt("COUNT(*)")
+                }
             }
         }
-        return count
+        return 0
     }
 
     fun removeEntry(userId: Long, starredId: Long, guildId: Long) {
-        connection.prepare("SELECT * FROM STAR_ENTRIES WHERE STARRED_ID = ? AND GUILD_ID = ? AND USER_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM star_entries WHERE starred_id = ? AND guild_id = ? AND user_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = userId
             statement[2] = starredId
             statement[3] = guildId
@@ -103,7 +104,7 @@ object DBStarEntries : Table() {
     }
 
     fun removeAllEntries(starredId: Long, guildId: Long) {
-        connection.prepare("SELECT * FROM STAR_ENTRIES WHERE STARRED_ID = ? AND GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM star_entries WHERE starred_id = ? AND guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = starredId
             statement[2] = guildId
             statement.executeQuery {
@@ -113,12 +114,12 @@ object DBStarEntries : Table() {
     }
 
     fun setEntry(entryId: Long, starredId: Long, guildId: Long) {
-        connection.prepare("SELECT * FROM STAR_ENTRIES WHERE STARRED_ID = ? AND GUILD_ID = ? AND ENTRY_ID IS NOT NULL", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM star_entries WHERE starred_id = ? AND guild_id = ? AND entry_id IS NOT NULL", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = starredId
             statement[2] = guildId
             statement.executeQuery {
                 it.whileNext {
-                    it.update { it["ENTRY_ID"] = entryId }
+                    it.update { it["entry_id"] = entryId }
                 }
             }
         }

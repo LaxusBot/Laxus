@@ -19,52 +19,49 @@ import xyz.laxus.db.schema.*
 import xyz.laxus.db.sql.*
 import xyz.laxus.db.sql.ResultSetConcur.*
 import xyz.laxus.db.sql.ResultSetType.*
-import xyz.laxus.util.ignored
 
 /**
  * @author Kaidan Gustave
  */
-@TableName("ROLE_PERSIST")
+@TableName("role_persist")
 @Columns(
-    Column("GUILD_ID", BIGINT, unique = true),
-    Column("USER_ID", BIGINT, unique = true),
-    Column("ROLE_IDS", "$VARCHAR(2000)")
+    Column("guild_id", BIGINT, primary = true),
+    Column("user_id", BIGINT, primary = true),
+    Column("role_ids", "$BIGINT[]")
 )
 object DBRolePersist: Table() {
     fun getRolePersist(guildId: Long, userId: Long): List<Long> {
-        val list = ArrayList<Long>()
-        connection.prepare("SELECT ROLE_IDS FROM ROLE_PERSIST WHERE GUILD_ID = ? AND USER_ID = ?") { statement ->
+        connection.prepare("SELECT role_ids FROM role_persist WHERE guild_id = ? AND user_id = ?") { statement ->
             statement[1] = guildId
             statement[2] = userId
             statement.executeQuery {
                 if(it.next()) {
-                    it.getString("ROLE_IDS").split('|').mapNotNullTo(list) {
-                        ignored(null) { it.toLong() }
-                    }
+                    return it.array<Long>("role_ids").toList()
                 }
             }
         }
-        return list
+        return emptyList()
     }
 
     fun setRolePersist(guildId: Long, userId: Long, roleIds: List<Long>) {
-        connection.prepare("SELECT * FROM ROLE_PERSIST WHERE GUILD_ID = ? AND USER_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM role_persist WHERE guild_id = ? AND user_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = userId
             statement.executeQuery {
+                val array = sqlArrayOf(SQLArrayType.INT_8, *roleIds.toTypedArray())
                 if(!it.next()) it.insert {
-                    it["GUILD_ID"] = guildId
-                    it["USER_ID"] = userId
-                    it["ROLE_IDS"] = roleIds.joinToString("|")
+                    it["guild_id"] = guildId
+                    it["user_id"] = userId
+                    it["role_ids"] = array
                 } else it.update {
-                    it["ROLE_IDS"] = roleIds.joinToString("|")
+                    it["role_ids"] = array
                 }
             }
         }
     }
 
     fun removeRolePersist(guildId: Long, userId: Long) {
-        connection.prepare("SELECT * FROM ROLE_PERSIST WHERE GUILD_ID = ? AND USER_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM role_persist WHERE guild_id = ? AND user_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = userId
             statement.executeQuery {
@@ -74,7 +71,7 @@ object DBRolePersist: Table() {
     }
 
     fun removeAllRolePersist(guildId: Long) {
-        connection.prepare("SELECT * FROM ROLE_PERSIST WHERE GUILD_ID = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM role_persist WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 it.whileNext { it.deleteRow() }

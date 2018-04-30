@@ -24,15 +24,16 @@ import xyz.laxus.db.sql.ResultSetType.*
 /**
  * @author Kaidan Gustave
  */
-@TableName("GUILD_ROLES")
+@AllPrimary
+@TableName("guild_roles")
 @Columns(
-    Column("GUILD_ID", BIGINT, unique = true),
-    Column("ROLE_ID", BIGINT, unique = true),
-    Column("TYPE", "$VARCHAR(50)", unique = true)
+    Column("guild_id", BIGINT),
+    Column("role_id", BIGINT),
+    Column("type", "$VARCHAR(50)")
 )
 object DBRoles: Table() {
     fun isRole(guildId: Long, roleId: Long, type: Type): Boolean {
-        return connection.prepare("SELECT * FROM GUILD_ROLES WHERE GUILD_ID = ? AND ROLE_ID = ? AND TYPE = ?") { statement ->
+        return connection.prepare("SELECT * FROM guild_roles WHERE guild_id = ? AND role_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = roleId
             statement[3] = type.name
@@ -42,7 +43,7 @@ object DBRoles: Table() {
 
     fun hasRole(guildId: Long, type: Type): Boolean {
         require(type.single, type::notSingle)
-        return connection.prepare("SELECT * FROM GUILD_ROLES WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
+        return connection.prepare("SELECT * FROM guild_roles WHERE guild_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery { it.next() }
@@ -51,12 +52,12 @@ object DBRoles: Table() {
 
     fun getRole(guildId: Long, type: Type): Long? {
         require(type.single, type::notSingle)
-        connection.prepare("SELECT ROLE_ID FROM GUILD_ROLES WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
+        connection.prepare("SELECT role_id FROM guild_roles WHERE guild_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
                 if(it.next()) {
-                    return it.getLong("ROLE_ID")
+                    return it.getLong("role_id")
                 }
             }
         }
@@ -66,11 +67,11 @@ object DBRoles: Table() {
     fun getRoles(guildId: Long, type: Type): List<Long> {
         require(type.multi, type::notMulti)
         val roles = ArrayList<Long>()
-        connection.prepare("SELECT ROLE_ID FROM GUILD_ROLES WHERE GUILD_ID = ? AND TYPE = ?") { statement ->
+        connection.prepare("SELECT role_id FROM guild_roles WHERE guild_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
-                it.whileNext { roles += it.getLong("ROLE_ID") }
+                it.whileNext { roles += it.getLong("role_id") }
             }
         }
         return roles
@@ -78,18 +79,16 @@ object DBRoles: Table() {
 
     fun setRole(guildId: Long, roleId: Long, type: Type) {
         require(type.single, type::notSingle)
-        connection.prepare("SELECT * FROM GUILD_ROLES WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_roles WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
                 if(!it.next()) it.insert {
-                    it["GUILD_ID"] = guildId
-                    it["ROLE_ID"] = roleId
-                    it["TYPE"] = type.name
+                    it["guild_id"] = guildId
+                    it["role_id"] = roleId
+                    it["type"] = type.name
                 } else it.update {
-                    it["GUILD_ID"] = guildId
-                    it["ROLE_ID"] = roleId
-                    it["TYPE"] = type.name
+                    it["role_id"] = roleId
                 }
             }
         }
@@ -97,15 +96,15 @@ object DBRoles: Table() {
 
     fun addRole(guildId: Long, roleId: Long, type: Type) {
         require(type.multi, type::notMulti)
-        connection.prepare("SELECT * FROM GUILD_ROLES WHERE GUILD_ID = ? AND ROLE_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_roles WHERE guild_id = ? AND role_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = roleId
             statement[3] = type.name
             statement.executeQuery {
                 if(!it.next()) it.insert {
-                    it["GUILD_ID"] = guildId
-                    it["ROLE_ID"] = roleId
-                    it["TYPE"] = type.name
+                    it["guild_id"] = guildId
+                    it["role_id"] = roleId
+                    it["type"] = type.name
                 }
             }
         }
@@ -113,7 +112,7 @@ object DBRoles: Table() {
 
     fun removeRole(guildId: Long, type: Type) {
         require(type.single, type::notSingle)
-        connection.prepare("SELECT ROLE_ID FROM GUILD_ROLES WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT role_id FROM guild_roles WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -124,7 +123,7 @@ object DBRoles: Table() {
 
     fun removeRole(guildId: Long, roleId: Long, type: Type) {
         require(type.multi, type::notMulti)
-        connection.prepare("SELECT * FROM GUILD_ROLES WHERE GUILD_ID = ? AND ROLE_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_roles WHERE guild_id = ? AND role_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = roleId
             statement[3] = type.name
@@ -136,7 +135,7 @@ object DBRoles: Table() {
 
     fun removeRoles(guildId: Long, type: Type) {
         require(type.multi, type::notMulti)
-        connection.prepare("SELECT ROLE_ID FROM GUILD_ROLES WHERE GUILD_ID = ? AND TYPE = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_roles WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {

@@ -20,15 +20,15 @@ import xyz.laxus.db.sql.*
 import xyz.laxus.db.sql.ResultSetConcur.*
 import xyz.laxus.db.sql.ResultSetType.*
 
-@TableName("CUSTOM_COMMANDS")
+@TableName("custom_commands")
 @Columns(
-    Column("GUILD_ID", BIGINT, unique = true),
-    Column("NAME", "$VARCHAR(50)", unique = true),
-    Column("CONTENT", "$VARCHAR(1900)")
+    Column("guild_id", BIGINT, primary = true),
+    Column("name", "$VARCHAR(50)", primary = true),
+    Column("content", "$VARCHAR(1900)")
 )
-object DBCustomCommands : Table() {
+object DBCustomCommands: Table() {
     fun hasCustomCommand(guildId: Long, name: String): Boolean {
-        return connection.prepare("SELECT * FROM CUSTOM_COMMANDS WHERE GUILD_ID = ? AND LOWER(NAME) = LOWER(?)") { statement ->
+        return connection.prepare("SELECT * FROM custom_commands WHERE guild_id = ? AND LOWER(name) = LOWER(?)") { statement ->
             statement[1] = guildId
             statement[2] = name
             statement.executeQuery { it.next() }
@@ -37,11 +37,11 @@ object DBCustomCommands : Table() {
 
     fun getCustomCommands(guildId: Long): List<Pair<String, String>> {
         val list = ArrayList<Pair<String, String>>()
-        connection.prepare("SELECT * FROM CUSTOM_COMMANDS WHERE GUILD_ID = ?") { statement ->
+        connection.prepare("SELECT * FROM custom_commands WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 it.whileNext {
-                    list += (it.getString("NAME") to it.getString("CONTENT"))
+                    list += (it.getString("name") to it.getString("content"))
                 }
             }
         }
@@ -49,11 +49,11 @@ object DBCustomCommands : Table() {
     }
 
     fun getCustomCommand(guildId: Long, name: String): String? {
-        connection.prepare("SELECT * FROM CUSTOM_COMMANDS WHERE GUILD_ID = ? AND LOWER(NAME) = LOWER(?)") { statement ->
+        connection.prepare("SELECT * FROM custom_commands WHERE guild_id = ? AND LOWER(name) = LOWER(?)") { statement ->
             statement[1] = guildId
             statement[2] = name
             statement.executeQuery {
-                if(it.next()) return it.getString("CONTENT")
+                if(it.next()) return it.getString("content")
             }
         }
         return null
@@ -62,23 +62,23 @@ object DBCustomCommands : Table() {
     fun setCustomCommand(guildId: Long, name: String, content: String) {
         require(name.length <= 50) { "Custom Command name length exceeds maximum of 50 characters!" }
         require(content.length <= 1900) { "Custom Command content length exceeds maximum of 50 characters!" }
-        connection.prepare("SELECT * FROM CUSTOM_COMMANDS WHERE GUILD_ID = ? AND LOWER(NAME) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM custom_commands WHERE guild_id = ? AND LOWER(name) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = name
             statement.executeQuery {
                 if(!it.next()) it.insert {
-                    it["GUILD_ID"] = guildId
-                    it["NAME"] = name
-                    it["CONTENT"] = content
+                    it["guild_id"] = guildId
+                    it["name"] = name
+                    it["content"] = content
                 } else it.update {
-                    it["CONTENT"] = content
+                    it["content"] = content
                 }
             }
         }
     }
 
     fun removeCustomCommand(guildId: Long, name: String) {
-        connection.prepare("SELECT * FROM CUSTOM_COMMANDS WHERE GUILD_ID = ? AND LOWER(NAME) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM custom_commands WHERE guild_id = ? AND LOWER(name) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = name
             statement.executeQuery {
