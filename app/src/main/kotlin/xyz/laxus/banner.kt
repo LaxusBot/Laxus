@@ -17,7 +17,7 @@
 package xyz.laxus
 
 import ch.qos.logback.core.pattern.color.ANSIConstants.*
-import xyz.laxus.util.resourceStreamOf
+import xyz.laxus.util.io.resourceStreamOf
 import kotlin.math.max
 
 private const val RESET = "${ESC_START}0;$DEFAULT_FG$ESC_END"

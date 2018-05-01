@@ -13,10 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.api.spark
 
-include ':api'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import spark.Service
+
+internal val service: Service by lazy { Service.ignite() }
+
+internal fun port(port: Int) {
+    service.port(port)
+}
+
+internal fun host(host: String) {
+    service.ipAddress(host)
+}

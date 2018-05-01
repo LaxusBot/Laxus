@@ -13,10 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.api.util
 
-include ':api'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import org.eclipse.jetty.http.HttpStatus
+
+/**
+ * @author Kaidan Gustave
+ */
+enum class HttpStatusCode(val code: Int) {
+    OK(HttpStatus.OK_200),
+    BAD_REQUEST(HttpStatus.BAD_REQUEST_400),
+    UNAUTHORIZED(HttpStatus.UNAUTHORIZED_401);
+
+    companion object {
+        fun codeOf(code: Int) = requireNotNull(values().find { it.code == code }) {
+            "Unable to find HttpStatusCode value with code: $code!"
+        }
+    }
+}
