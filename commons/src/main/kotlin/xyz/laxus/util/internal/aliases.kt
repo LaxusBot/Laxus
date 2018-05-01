@@ -13,16 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-dependencies {
-    // Kotlin
-    compileOnly kotlinModule('reflect')
-    compileOnly kotlinxCoroutines('core')
-    compileOnly kotlinxCoroutines('jdk8')
+package xyz.laxus.util.internal
 
-    // Configuration
-    compileOnly hocon()
+import kotlinx.coroutines.experimental.CoroutineScope
 
-    // Logging
-    compileOnly logback()
-    compileOnly slf4j()
-}
+typealias CoroutineBody<T> = suspend CoroutineScope.() -> T

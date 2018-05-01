@@ -13,16 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-dependencies {
-    // Kotlin
-    compileOnly kotlinModule('reflect')
-    compileOnly kotlinxCoroutines('core')
-    compileOnly kotlinxCoroutines('jdk8')
+@file:JvmName("IOUtil")
+package xyz.laxus.util.io
 
-    // Configuration
-    compileOnly hocon()
+import java.nio.ByteBuffer
 
-    // Logging
-    compileOnly logback()
-    compileOnly slf4j()
+fun ByteBuffer.toByteArray(): ByteArray {
+    if(position() > 0 && remaining() >= 0)
+        position(0) // Return to start if necessary
+    val byteA = ByteArray(remaining())
+    get(byteA)
+    return byteA
 }

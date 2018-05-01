@@ -15,6 +15,7 @@
  */
 package xyz.laxus.util
 
+import xyz.laxus.util.io.resourceStreamOf
 import java.io.InputStream
 import java.util.*
 import kotlin.reflect.KClass

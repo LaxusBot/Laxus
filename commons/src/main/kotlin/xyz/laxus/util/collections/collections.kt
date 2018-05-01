@@ -268,6 +268,9 @@ fun <T> synchronizedMutableList(list: MutableList<T>): MutableList<T> {
     return Collections.synchronizedList(list)
 }
 
+fun <K, V> Map<K, V>.contentEquals(other: Map<K, V>) = entries.all { it.value == other[it.key] }
+
+
 /**
  * Filters all null values from the [Array].
  *
