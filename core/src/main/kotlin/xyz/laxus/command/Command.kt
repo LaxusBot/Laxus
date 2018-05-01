@@ -19,9 +19,11 @@ package xyz.laxus.command
 import com.typesafe.config.Config
 import net.dv8tion.jda.core.JDABuilder
 import net.dv8tion.jda.core.Permission
+import net.dv8tion.jda.core.entities.Guild
 import xyz.laxus.Bot
 import xyz.laxus.Laxus
 import xyz.laxus.command.Command.CooldownScope.*
+import xyz.laxus.db.stats.DBCommandUsage
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.isAdmin
 import xyz.laxus.util.commandArgs
@@ -261,9 +263,14 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
             return ctx.replyError(UnexpectedError)
         }
 
+        DBCommandUsage.addUsage(
+            fullname.toLowerCase(),
+            ctx.takeIf { it.isGuild }?.guild?.idLong,
+            ctx.channel.idLong, ctx.author.idLong
+        )
+
         key?.takeIf { autoCooldown == AutoCooldownMode.AFTER }?.let { ctx.bot.applyCooldown(key, cooldown) }
 
-        ctx.bot.incrementUses(this)
         Bot.Log.debug("Completed Command \"$fullname\"")
     }
 
@@ -293,6 +300,10 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
         }
 
         return null
+    }
+
+    suspend fun uses(guild: Guild? = null): Long {
+        return DBCommandUsage.getUsage(fullname.toLowerCase(), guild?.idLong)
     }
 
     protected val CommandContext.level: Level get() {

@@ -32,6 +32,7 @@ dependencies {
 
     // Kotlin Coroutines
     compileOnly kotlinxCoroutines('core')
+    compileOnly kotlinxHtml()
 
     // Database
     compileOnly h2()

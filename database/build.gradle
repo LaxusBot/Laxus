@@ -16,6 +16,7 @@
 dependencies {
     // Kotlin
     compileOnly kotlinModule('reflect')
+    compileOnly kotlinxCoroutines('core')
 
     // Database
     compileOnly postgres()

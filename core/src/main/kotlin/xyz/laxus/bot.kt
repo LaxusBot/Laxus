@@ -49,7 +49,6 @@ import xyz.laxus.jda.util.listeningTo
 import xyz.laxus.logging.LogLevel
 import xyz.laxus.logging.NormalFilter
 import xyz.laxus.util.*
-import xyz.laxus.util.collections.CaseInsensitiveHashMap
 import xyz.laxus.util.collections.FixedSizeCache
 import xyz.laxus.util.collections.concurrentHashMap
 import xyz.laxus.util.collections.sumByLong
@@ -67,7 +66,6 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
     companion object Log: Logger by createLogger(Bot::class)
 
     private val cooldowns = concurrentHashMap<String, OffsetDateTime>()
-    private val uses = CaseInsensitiveHashMap<Int>()
     private val callCache = FixedSizeCache<Long, MutableSet<Message>>(builder.callCacheSize)
     private val cycleContext = newSingleThreadContext("CycleContext")
     private val botsListContext = newSingleThreadContext("BotsListContext")
@@ -110,14 +108,6 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
     fun cleanCooldowns() {
         val now = now()
         cooldowns.entries.filter { it.value.isBefore(now) }.forEach { cooldowns -= it.key }
-    }
-
-    fun getUses(command: Command): Int {
-        return uses.computeIfAbsent(command.name) { 0 }
-    }
-
-    fun incrementUses(command: Command) {
-        uses[command.name] = (uses[command.name] ?: 0) + 1
     }
 
     fun searchCommand(query: String): Command? {
