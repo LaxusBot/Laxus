@@ -21,6 +21,7 @@ import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.jda.menus.updatingMenu
 import xyz.laxus.jda.menus.updatingMenuBuilder
+import xyz.laxus.jda.util.embed
 import xyz.laxus.util.*
 import xyz.laxus.util.concurrent.duration
 import java.util.concurrent.TimeUnit.*
@@ -40,6 +41,9 @@ class MemoryCommand: Command(OwnerGroup) {
     override val help = "Gets Laxus's runtime memory statistics."
     override val hasAdjustableLevel = false
     override val botPermissions = arrayOf(MESSAGE_EMBED_LINKS)
+    override val children = arrayOf<Command>(
+        MemorySnapshotCommand()
+    )
 
     private val builder = updatingMenuBuilder {
         interval = duration(3, SECONDS)
@@ -105,6 +109,28 @@ class MemoryCommand: Command(OwnerGroup) {
             now < last -> down
             now > last -> up
             else       -> same
+        }
+    }
+
+    private inner class MemorySnapshotCommand: Command(this@MemoryCommand) {
+        override val name = "Snapshot"
+        override val help = "Gets a snapshot of Laxus's memory."
+        override val hasAdjustableLevel = false
+        override val botPermissions = arrayOf(MESSAGE_EMBED_LINKS)
+
+        override suspend fun execute(ctx: CommandContext) {
+            val memory = runtime.memory
+            val embed = embed {
+                title { "Laxus Runtime Statistics" }
+                code("ini") {
+                    + "[ Current Memory Usage ]     ${(memory.total - memory.free) / mb}mb\n"
+                    + "[ Free Memory Available ]    ${memory.free / mb}mb\n"
+                    + "[ Total Memory Usage ]       ${memory.total / mb}mb\n"
+                    + "[ Maximum Memory Available ] ${memory.max / mb}mb"
+                }
+                if(ctx.isGuild) color { ctx.selfMember.color }
+            }
+            ctx.reply(embed)
         }
     }
 }

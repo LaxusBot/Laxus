@@ -18,14 +18,15 @@ package xyz.laxus.jda.util
 
 import net.dv8tion.jda.core.MessageBuilder
 import net.dv8tion.jda.core.entities.Message
-import net.dv8tion.jda.core.entities.MessageChannel
 import net.dv8tion.jda.core.entities.MessageEmbed
 import net.dv8tion.jda.core.requests.restaction.MessageAction
 import xyz.laxus.jda.KEmbedBuilder
+import kotlin.annotation.AnnotationRetention.*
+import kotlin.annotation.AnnotationTarget.*
 
 @DslMarker
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
-@Retention(AnnotationRetention.SOURCE)
+@Target(CLASS, FUNCTION, PROPERTY)
+@Retention(SOURCE)
 internal annotation class MessageDsl
 
 @MessageDsl
@@ -52,34 +53,8 @@ inline fun MessageAction.embed(crossinline init: KEmbedBuilder.() -> Unit): Mess
 inline fun embed(init: KEmbedBuilder.() -> Unit): MessageEmbed = KEmbedBuilder().apply(init).build()
 
 @MessageDsl
-inline fun <reified M: Message> M.editMessage(block: MessageAction.() -> Unit): MessageAction {
+inline fun Message.editMessage(block: MessageAction.() -> Unit): MessageAction {
     return editMessage(this).also(block)
-}
-
-@MessageDsl
-inline fun MessageChannel.sendTextFile(filename: String, block: StringBuilder.() -> Unit): MessageAction {
-    return sendTextFile(filename, buildString(block))
-}
-
-@MessageDsl
-fun MessageChannel.sendTextFile(filename: String, content: String): MessageAction {
-    val f = createTempFile(prefix = filename, suffix = ".txt")
-    f.writeText(content)
-    return sendFile(f, filename)
-}
-
-@MessageDsl
-inline fun MessageAction.addTextFile(filename: String, block: StringBuilder.() -> Unit): MessageAction {
-    return addTextFile(filename, buildString(block))
-}
-
-@MessageDsl
-fun MessageAction.addTextFile(filename: String, content: String): MessageAction {
-    val f = createTempFile(prefix = filename, suffix = ".txt")
-    f.writeText(content)
-    val mThis = addFile(f, filename)
-    f.delete()
-    return mThis
 }
 
 fun filterMassMentions(string: String): String {
