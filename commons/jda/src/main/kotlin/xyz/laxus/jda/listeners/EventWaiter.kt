@@ -103,8 +103,9 @@ class EventWaiter private constructor(dispatcher: ThreadPoolDispatcher):
         if(delay > 0) {
             launch(this) {
                 delay(delay, unit)
-                eventSet.remove(waiting)
-                Log.debug("Removing task type: '$klazz'")
+                if(eventSet.remove(waiting)) {
+                    Log.debug("Removing task type: '$klazz'")
+                }
                 // The receiveEvent method is supposed to return null
                 //if no matching Events are fired within its
                 //lifecycle.
@@ -152,6 +153,9 @@ class EventWaiter private constructor(dispatcher: ThreadPoolDispatcher):
         }
         Log.debug("Removing ${filtered.size} tasks with type: '$klazz'")
         set -= filtered
+        if(set.isEmpty()) {
+            tasks -= klazz
+        }
     }
 
     private interface ITask<in T: Event> {
