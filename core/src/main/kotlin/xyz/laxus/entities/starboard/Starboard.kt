@@ -29,6 +29,20 @@ class Starboard(val guild: Guild, settings: StarSettings): MutableMap<Long, Star
     val settings = settings
         get() = guild.starboardSettings ?: field
 
+    var threshold: Short
+        get() = settings.threshold
+        set(value) = settings.let {
+            it.threshold = value
+            it.update()
+        }
+
+    var maxAge: Int
+        get() = settings.maxAge
+        set(value) = settings.let {
+            it.maxAge = value
+            it.update()
+        }
+
     var channel: TextChannel?
         get() = guild.starboardChannel
         set(value) {
@@ -46,6 +60,8 @@ class Starboard(val guild: Guild, settings: StarSettings): MutableMap<Long, Star
         if(starred.textChannel.isNSFW) {
             return
         }
+
+        val settings = settings
 
         // Channel is ignored
         if(starred.channel.idLong in settings.ignored) {
