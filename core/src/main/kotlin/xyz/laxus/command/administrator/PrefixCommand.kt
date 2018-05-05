@@ -106,6 +106,9 @@ class PrefixCommand: EmptyCommand(AdministratorGroup) {
 
         override suspend fun execute(ctx: CommandContext) {
             val prefixes = ctx.guild.prefixes
+            if(prefixes.isEmpty()) return ctx.replyWarning {
+                "This server has no custom prefixes!"
+            }
             builder.clearItems()
             val paginator = paginator(builder) {
                 items { + prefixes }

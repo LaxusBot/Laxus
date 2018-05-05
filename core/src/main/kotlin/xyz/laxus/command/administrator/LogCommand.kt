@@ -15,6 +15,7 @@
  */
 package xyz.laxus.command.administrator
 
+import net.dv8tion.jda.core.EmbedBuilder
 import net.dv8tion.jda.core.entities.TextChannel
 import xyz.laxus.command.*
 import xyz.laxus.db.entities.StarSettings
@@ -22,6 +23,7 @@ import xyz.laxus.entities.starboard.hasStarboard
 import xyz.laxus.entities.starboard.starboard
 import xyz.laxus.entities.starboard.starboardChannel
 import xyz.laxus.entities.starboard.starboardSettings
+import xyz.laxus.jda.util.embed
 import xyz.laxus.jda.util.findTextChannels
 import xyz.laxus.util.commandArgs
 import xyz.laxus.util.db.hasModLog
@@ -122,15 +124,21 @@ class LogCommand: EmptyCommand(AdministratorGroup) {
         override val defaultLevel get() = Level.MODERATOR
 
         override suspend fun execute(ctx: CommandContext) {
-            val message = buildString {
-                appendln("__Types of logs available on **${ctx.guild.name}**__")
-                Type.values().forEach {
-                    appendln("**${it.titleName}** - ${it.description}")
-                    appendln()
+            val embed = embed {
+                title { "__Types of logs available on **${ctx.guild.name}**__" }
+                color { ctx.selfMember.color }
+                val types = Type.values()
+                types.forEachIndexed { i, type ->
+                    field(type.titleName) {
+                        appendln(type.description)
+                        if(i < types.lastIndex) {
+                            append(EmbedBuilder.ZERO_WIDTH_SPACE)
+                        }
+                    }
                 }
-            }.trim()
+            }
 
-            ctx.reply(message)
+            ctx.reply(embed)
         }
     }
 
@@ -203,7 +211,7 @@ class LogCommand: EmptyCommand(AdministratorGroup) {
                         }
 
                         val threshold = try {
-                           value.toShort().takeIf { it !in 3..12 } ?: return ctx.error(InvalidArguments) {
+                           value.toShort().takeIf { it in 3..12 } ?: return ctx.error(InvalidArguments) {
                                 "Threshold must be a positive integer between 3 and 12"
                             }
                         } catch(e: NumberFormatException) {
@@ -212,7 +220,13 @@ class LogCommand: EmptyCommand(AdministratorGroup) {
                             }
                         }
 
-                        starboard.settings.threshold = threshold
+                        if(threshold == starboard.threshold) return ctx.replyError {
+                            "Starboard max age is already set to `$threshold`!"
+                        }
+
+                        starboard.threshold = threshold
+
+                        ctx.replySuccess("Successfully set starboard threshold to `$threshold`!")
                     }
 
                     "maxage" -> {
@@ -221,7 +235,7 @@ class LogCommand: EmptyCommand(AdministratorGroup) {
                         }
 
                         val maxAge = try {
-                            value.toInt().takeIf { it !in 6..(24 * 14) } ?: return ctx.error(InvalidArguments) {
+                            value.toInt().takeIf { it in 6..(24 * 14) } ?: return ctx.error(InvalidArguments) {
                                 "Maximum age must be a positive integer between 6 and ${24 * 14} (unit is hours)"
                             }
                         } catch(e: NumberFormatException) {
@@ -230,8 +244,14 @@ class LogCommand: EmptyCommand(AdministratorGroup) {
                             }
                         }
 
-                        starboard.settings.maxAge = maxAge
+                        if(maxAge == starboard.maxAge) return ctx.replyError {
+                            "Starboard max age is already set to `$maxAge`!"
+                        }
+                        starboard.maxAge = maxAge
+                        ctx.replySuccess("Successfully set starboard max age to `$maxAge`!")
                     }
+
+                    else -> ctx.replyError("'$configuration' is not a valid configuration option for starboard!")
                 }
             }
         };

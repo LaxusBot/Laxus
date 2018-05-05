@@ -17,7 +17,7 @@
 package xyz.laxus.util
 
 val commandArgs = Regex("\\s+")
-val discordID = Regex("\\d{17,20}")
+val discordID = Regex("\\d+")
 val emoteRegex = Regex("<:\\S{2,32}:($discordID>)")
 val userMention = Regex("<@!?($discordID)>")
 val reasonPattern = Regex("(^.+)\\s(?:for\\s+)([\\s\\S]+)$", RegexOption.DOT_MATCHES_ALL)

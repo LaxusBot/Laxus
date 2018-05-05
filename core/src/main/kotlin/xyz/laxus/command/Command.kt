@@ -253,7 +253,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
             val additionalInfo = buildString {
                 if(ctx.isGuild) {
                     appendln("Guild: ${ctx.guild.name} (ID: ${ctx.guild.idLong})")
-                    appendln("Channel: #${ctx.guild.name} (ID: ${ctx.textChannel.idLong})")
+                    appendln("Channel: #${ctx.textChannel.name} (ID: ${ctx.textChannel.idLong})")
                 }
                 append("Author: ${ctx.author.let { "${it.name}#${it.discriminator} (ID: ${it.idLong})" }}")
             }
@@ -311,11 +311,6 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
         "See `${bot.prefix}$fullname help` for more information on this command!"
     }) = error(InvalidArguments, block)
 
-    private fun CommandContext.terminate(text: String) {
-        reply(text)
-        Bot.Log.debug("Terminated Command \"$fullname\" with message: \"$text\"")
-    }
-
     private val CommandContext.cooldownKey: String get() {
         return when(cooldownScope) {
             USER -> cooldownScope.genKey(name, author.idLong)
@@ -341,6 +336,11 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
             }
         }
         return cooldownScope
+    }
+
+    private fun CommandContext.terminate(text: String) {
+        reply(text)
+        Bot.Log.debug("Terminated Command \"$fullname\" with message: \"$text\"")
     }
 
     override fun compareTo(other: Command): Int {
