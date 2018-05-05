@@ -15,6 +15,7 @@
  */
 package xyz.laxus.command.standard
 
+import net.dv8tion.jda.core.Permission
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.jda.util.embed
@@ -34,6 +35,7 @@ class AvatarCommand: Command(StandardGroup) {
     override val arguments = "<User>"
     override val help = "Gets a user's avatar."
     override val guildOnly = false
+    override val botPermissions = arrayOf(Permission.MESSAGE_EMBED_LINKS)
 
     override suspend fun execute(ctx: CommandContext) {
         val query = ctx.args

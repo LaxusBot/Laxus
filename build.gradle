@@ -35,7 +35,7 @@ buildscript {
     }
 }
 
-def ver = [major: 0, minor: 5, revision: 2]
+def ver = [major: 0, minor: 5, revision: 3]
 
 allprojects {
     group = 'xyz.laxus'

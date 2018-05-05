@@ -253,7 +253,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
             val additionalInfo = buildString {
                 if(ctx.isGuild) {
                     appendln("Guild: ${ctx.guild.name} (ID: ${ctx.guild.idLong})")
-                    appendln("Channel: #${ctx.guild.name} (ID: ${ctx.textChannel.idLong})")
+                    appendln("Channel: #${ctx.textChannel.name} (ID: ${ctx.textChannel.idLong})")
                 }
                 append("Author: ${ctx.author.let { "${it.name}#${it.discriminator} (ID: ${it.idLong})" }}")
             }
