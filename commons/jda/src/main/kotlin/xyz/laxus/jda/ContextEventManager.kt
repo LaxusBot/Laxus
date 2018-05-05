@@ -16,27 +16,30 @@
 package xyz.laxus.jda
 
 import kotlinx.coroutines.experimental.CoroutineStart
+import kotlinx.coroutines.experimental.Job
 import kotlinx.coroutines.experimental.asCoroutineDispatcher
 import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.hooks.IEventManager
 import xyz.laxus.jda.listeners.SuspendedListener
+import xyz.laxus.util.collections.concurrentHashMap
+import xyz.laxus.util.concurrent.atomicInt
 import xyz.laxus.util.createLogger
 import java.util.concurrent.Executors.newCachedThreadPool
 import java.util.concurrent.ThreadFactory
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.experimental.suspendCoroutine
 
 class ContextEventManager : IEventManager {
     companion object {
         private val LOG = createLogger(ContextEventManager::class)
         // For debugging
-        /*@JvmField*/ val ThreadNumber = AtomicInteger(0)
+        /*@JvmField*/ val ThreadNumber = atomicInt(initial = 0)
     }
 
     private val context = newCachedThreadPool(Factory()).asCoroutineDispatcher()
     private val listeners = HashSet<Any>()
+    private val tasks = concurrentHashMap<Event, Job>()
 
     override fun handle(event: Event) {
         val job = launch(context, CoroutineStart.LAZY) {
@@ -58,8 +61,11 @@ class ContextEventManager : IEventManager {
             }
         }
 
+        tasks[event] = job
+
         job.invokeOnCompletion {
             it?.let { LOG.error("A job encountered an exception:", it) }
+            tasks -= event
         }
 
         job.start()

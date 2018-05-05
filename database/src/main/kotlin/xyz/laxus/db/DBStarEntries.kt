@@ -85,7 +85,7 @@ object DBStarEntries : Table() {
             statement[2] = guildId
             statement.executeQuery {
                 if(it.next()) {
-                    return it.getInt("COUNT(*)")
+                    return it.getInt("COUNT")
                 }
             }
         }

@@ -59,10 +59,6 @@ val Message.starCount: Int get() {
     return DBStarEntries.getStarCount(idLong, guild.idLong)
 }
 
-fun Guild.createStarboard(channel: TextChannel): Starboard {
-    return StarboardManager.createStarboard(channel)
-}
-
 fun Guild.removeStarboard() {
     StarboardManager.removeStarboard(this)
 }

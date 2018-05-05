@@ -175,6 +175,7 @@ object ModLog: SuspendedListener {
                         }
                     } catch(t: Throwable) {
                         if(t is CancellationException) throw t
+                        Log.error("Encountered an unhandled exception while logging an moderation event:", t)
                     } finally {
                         // Always clear auditCache after a pass
                         Log.debug("Clearing audit cache...")

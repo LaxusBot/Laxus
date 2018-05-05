@@ -13,12 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:Suppress("unused")
 package xyz.laxus.jda.util
 
 import kotlinx.coroutines.experimental.delay
 import net.dv8tion.jda.core.requests.RestAction
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.experimental.suspendCoroutine
+
+fun passContextToRestAction(enable: Boolean = true) {
+    RestAction.setPassContext(enable)
+}
 
 suspend inline fun <reified T> RestAction<T>.await() = suspendCoroutine<T> { cont ->
     queue({ cont.resume(it) }, { cont.resumeWithException(it) })

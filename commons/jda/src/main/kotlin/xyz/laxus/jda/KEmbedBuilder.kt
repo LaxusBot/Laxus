@@ -48,14 +48,21 @@ class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
         return length
     }
 
+    @MessageDsl
     var title: String? = null
+    @MessageDsl
     var url: String? = null
+    @MessageDsl
     var thumbnail: String? = null
+    @MessageDsl
     var image: String? = null
-
+    @MessageDsl
     var author: Entity? = null
+    @MessageDsl
     var footer: Entity? = null
+    @MessageDsl
     var time: TemporalAccessor? = null
+    @MessageDsl
     var color: Color? = null
 
     @PublishedApi
@@ -86,64 +93,79 @@ class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
     private operator fun component9()  = footer
     private operator fun component10() = image
 
+    @MessageDsl
     override fun append(csq: CharSequence?): KEmbedBuilder {
         description.append(csq)
         return this
     }
 
+    @MessageDsl
     override fun append(csq: CharSequence?, start: Int, end: Int): KEmbedBuilder {
         description.append(csq, start, end)
         return this
     }
 
+    @MessageDsl
     override fun append(c: Char): KEmbedBuilder {
         description.append(c)
         return this
     }
 
+    @MessageDsl
     fun append(any: Any?) = append(((any as? IMentionable)?.asMention) ?: any.toString())
 
+    @MessageDsl
     fun appendln(any: Any?) = append(any).appendln()
 
+    @MessageDsl
     fun appendln() = append("\n")
 
+    @MessageDsl
     operator fun plusAssign(any: Any?) { append(any) }
 
+    @MessageDsl
     operator fun String.unaryPlus(): KEmbedBuilder {
         description.append(this)
         return this@KEmbedBuilder
     }
 
+    @MessageDsl
     inline fun image(lazy: () -> String): KEmbedBuilder {
         image = lazy()
         return this
     }
 
+    @MessageDsl
     inline fun url(lazy: () -> String): KEmbedBuilder {
         url = lazy()
         return this
     }
 
+    @MessageDsl
     inline fun title(lazy: () -> String): KEmbedBuilder {
         title = lazy()
         return this
     }
 
+    @MessageDsl
     inline fun thumbnail(lazy: () -> String): KEmbedBuilder {
         thumbnail = lazy()
         return this
     }
 
+    @MessageDsl
     inline fun time(lazy: () -> TemporalAccessor): KEmbedBuilder {
         time = lazy()
         return this
     }
 
+    @MessageDsl
     inline fun color(lazy: () -> Color?): KEmbedBuilder {
         color = lazy()
         return this
     }
 
+    @MessageDsl
     inline fun author(lazy: Entity.() -> Unit): KEmbedBuilder {
         val data = Entity()
         data.lazy()
@@ -151,6 +173,7 @@ class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
         return this
     }
 
+    @MessageDsl
     inline fun footer(lazy: Entity.() -> Unit): KEmbedBuilder {
         val data = Entity()
         data.lazy()
@@ -158,6 +181,7 @@ class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
         return this
     }
 
+    @MessageDsl
     inline fun field(name: String = ZERO_WIDTH_SPACE,
                      inline: Boolean = true,
                      lazy: Field.() -> Unit): KEmbedBuilder {
@@ -167,6 +191,7 @@ class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
         return this
     }
 
+    @MessageDsl
     inline fun code(lang: String, block: () -> Unit) {
         + "```$lang\n"
         block()
@@ -174,20 +199,28 @@ class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
     }
 
     @MessageDsl
-    data class Entity @PublishedApi internal constructor(var value: String = ZERO_WIDTH_SPACE,
-                                                         var url: String? = null,
-                                                         var icon: String? = null) {
+    data class Entity @PublishedApi internal constructor(
+        @MessageDsl
+        var value: String = ZERO_WIDTH_SPACE,
+        @MessageDsl
+        var url: String? = null,
+        @MessageDsl
+        var icon: String? = null
+    ) {
+        @MessageDsl
         inline fun value(lazy: () -> String): Entity {
             val value = lazy()
             this.value = value.modifyIf(value.isBlank()) { ZERO_WIDTH_SPACE }
             return this
         }
 
+        @MessageDsl
         inline fun url(lazy: () -> String?): Entity {
             url = lazy()
             return this
         }
 
+        @MessageDsl
         inline fun icon(lazy: () -> String?): Entity {
             icon = lazy()
             return this
@@ -196,30 +229,39 @@ class KEmbedBuilder @PublishedApi internal constructor(): Appendable {
 
     @MessageDsl
     data class Field @PublishedApi internal constructor(
+        @MessageDsl
         var name: String = ZERO_WIDTH_SPACE,
+        @MessageDsl
         var inline: Boolean = true
     ): Appendable {
         @PublishedApi
         internal val value = StringBuilder()
 
+        @MessageDsl
         operator fun String.unaryPlus(): Field {
             append(this)
             return this@Field
         }
 
+        @MessageDsl
         override fun append(csq: CharSequence?): Field {
             value.append(csq)
             return this
         }
 
+        @MessageDsl
         override fun append(csq: CharSequence?, start: Int, end: Int) = append(csq?.subSequence(start..end))
+        @MessageDsl
 
         override fun append(c: Char) = append(c.toString())
 
+        @MessageDsl
         fun appendln(any: Any?) = append(any).appendln()
 
+        @MessageDsl
         fun appendln() = append(lineSeparator)
 
+        @MessageDsl
         fun append(any: Any?) = append(((any as? IMentionable)?.asMention) ?: any.toString())
     }
 }

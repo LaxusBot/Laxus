@@ -17,19 +17,21 @@ package xyz.laxus
 
 import ch.qos.logback.classic.Level
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import xyz.laxus.command.Command
-import xyz.laxus.command.CommandContext
 
 /**
  * @author Kaidan Gustave
  */
-enum class RunMode(val level: Level): Bot.Listener {
+enum class RunMode(val level: Level): Bot.CallVerifier {
     SERVICE(Level.INFO),
-    IDLE(Level.OFF) {
-        override fun checkCall(event: MessageReceivedEvent,
-                               bot: Bot, name: String, args: String): Boolean {
-            return event.author.idLong == Laxus.DevId
+    IDLE(Level.ERROR) {
+        override fun checkCall(event: MessageReceivedEvent, bot: Bot, name: String, args: String): Boolean {
+            return Laxus.DevId == event.author.idLong
         }
     },
-    DEBUG(Level.DEBUG);
+    DEBUG(Level.DEBUG),
+    TEST(Level.DEBUG) {
+        override fun checkCall(event: MessageReceivedEvent, bot: Bot, name: String, args: String): Boolean {
+            return Laxus.DevId == event.author.idLong // TODO
+        }
+    };
 }

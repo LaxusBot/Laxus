@@ -30,6 +30,10 @@ import kotlin.coroutines.experimental.CoroutineContext
 import kotlin.reflect.KClass
 import kotlin.reflect.full.allSuperclasses
 
+private typealias WaiterCancellation = suspend () -> Unit
+private typealias WaiterCondition<E> = suspend (E) -> Boolean
+private typealias WaiterAction<E> = suspend (E) -> Unit
+
 /**
  * @author Kaidan Gustave
  */
@@ -45,30 +49,30 @@ class EventWaiter private constructor(dispatcher: ThreadPoolDispatcher):
     inline fun <reified E: Event> waitFor(
         delay: Long = -1,
         unit: TimeUnit = TimeUnit.SECONDS,
-        noinline timeout: (suspend () -> Unit)? = null,
-        noinline condition: suspend (E) -> Boolean,
-        noinline action: suspend (E) -> Unit
+        noinline timeout: WaiterCancellation? = null,
+        noinline condition: WaiterCondition<E>,
+        noinline action: WaiterAction<E>
     ) = waitForEvent(E::class, condition, action, delay, unit, timeout)
 
     inline fun <reified E: Event> receive(
         delay: Long = -1,
         unit: TimeUnit = TimeUnit.SECONDS,
-        noinline condition: suspend (E) -> Boolean
+        noinline condition: WaiterCondition<E>
     ): Deferred<E?> = receiveEvent(E::class, condition, delay, unit)
 
     suspend inline fun <reified E: Event> delayUntil(
         delay: Long = -1,
         unit: TimeUnit = TimeUnit.SECONDS,
-        noinline condition: suspend (E) -> Boolean
+        noinline condition: WaiterCondition<E>
     ): Boolean = delayUntilEvent(E::class, condition, delay, unit)
 
     fun <E: Event> waitForEvent(
         klazz: KClass<E>,
-        condition: suspend (E) -> Boolean,
-        action: suspend (E) -> Unit,
+        condition: WaiterCondition<E>,
+        action: WaiterAction<E>,
         delay: Long = -1,
         unit: TimeUnit = TimeUnit.SECONDS,
-        timeout: (suspend () -> Unit)? = null
+        timeout: WaiterCancellation? = null
     ) {
         val eventSet = taskSetType(klazz)
         val waiting = QueuedTask(condition, action)
@@ -89,7 +93,7 @@ class EventWaiter private constructor(dispatcher: ThreadPoolDispatcher):
 
     fun <E: Event> receiveEvent(
         klazz: KClass<E>,
-        condition: suspend (E) -> Boolean,
+        condition: WaiterCondition<E>,
         delay: Long = -1,
         unit: TimeUnit = TimeUnit.SECONDS
     ): Deferred<E?> {
@@ -103,8 +107,9 @@ class EventWaiter private constructor(dispatcher: ThreadPoolDispatcher):
         if(delay > 0) {
             launch(this) {
                 delay(delay, unit)
-                eventSet.remove(waiting)
-                Log.debug("Removing task type: '$klazz'")
+                if(eventSet.remove(waiting)) {
+                    Log.debug("Removing task type: '$klazz'")
+                }
                 // The receiveEvent method is supposed to return null
                 //if no matching Events are fired within its
                 //lifecycle.
@@ -121,7 +126,7 @@ class EventWaiter private constructor(dispatcher: ThreadPoolDispatcher):
 
     suspend fun <E: Event> delayUntilEvent(
         klazz: KClass<E>,
-        condition: suspend (E) -> Boolean,
+        condition: WaiterCondition<E>,
         delay: Long = -1,
         unit: TimeUnit = TimeUnit.SECONDS
     ): Boolean = receiveEvent(klazz, condition, delay, unit).await() !== null
@@ -144,25 +149,28 @@ class EventWaiter private constructor(dispatcher: ThreadPoolDispatcher):
     }
 
     @Suppress("UNCHECKED_CAST")
-    private suspend fun <T: Event> dispatchEventType(event: T, klazz: KClass<*>) {
+    private suspend fun <E: Event> dispatchEventType(event: E, klazz: KClass<*>) {
         val set = tasks[klazz] ?: return
         val filtered = set.filterTo(hashSetOf()) {
-            val waiting = (it as ITask<T>)
+            val waiting = (it as ITask<E>)
             waiting(event)
         }
         Log.debug("Removing ${filtered.size} tasks with type: '$klazz'")
         set -= filtered
+        if(set.isEmpty()) {
+            tasks -= klazz
+        }
     }
 
-    private interface ITask<in T: Event> {
-        suspend operator fun invoke(event: T): Boolean
+    private interface ITask<in E: Event> {
+        suspend operator fun invoke(event: E): Boolean
     }
 
-    private class QueuedTask<in T: Event>(
-        private val condition: suspend (T) -> Boolean,
-        private val action: suspend (T) -> Unit
-    ): ITask<T> {
-        override suspend fun invoke(event: T): Boolean {
+    private class QueuedTask<in E: Event>(
+        private val condition: WaiterCondition<E>,
+        private val action: WaiterAction<E>
+    ): ITask<E> {
+        override suspend fun invoke(event: E): Boolean {
             // Ignore exception, return false
             ignored {
                 if(condition(event)) {
@@ -175,11 +183,11 @@ class EventWaiter private constructor(dispatcher: ThreadPoolDispatcher):
         }
     }
 
-    private class AwaitableTask<in T: Event>(
-        private val condition: suspend (T) -> Boolean,
-        private val completion: CompletableDeferred<T?>
-    ): ITask<T> {
-        override suspend fun invoke(event: T): Boolean {
+    private class AwaitableTask<in E: Event>(
+        private val condition: WaiterCondition<E>,
+        private val completion: CompletableDeferred<E?>
+    ): ITask<E> {
+        override suspend fun invoke(event: E): Boolean {
             try {
                 if(condition(event)) {
                     completion.complete(event)
@@ -188,7 +196,7 @@ class EventWaiter private constructor(dispatcher: ThreadPoolDispatcher):
                 return false
             } catch(t: Throwable) {
                 // In the case this ever throws an error,
-                // we need to complete this exceptionally.
+                //we need to complete this exceptionally.
                 completion.completeExceptionally(t)
                 return true
             }

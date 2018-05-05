@@ -20,7 +20,6 @@ import com.jagrosh.jagtag.JagTag
 import com.jagrosh.jagtag.Parser
 import kotlinx.coroutines.experimental.*
 import me.kgustave.json.JSObject
-import me.kgustave.json.jsonObject
 import me.kgustave.json.readJSObject
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.OnlineStatus
@@ -67,11 +66,11 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
 
     private val cooldowns = concurrentHashMap<String, OffsetDateTime>()
     private val callCache = FixedSizeCache<Long, MutableSet<Message>>(builder.callCacheSize)
-    private val cycleContext = newSingleThreadContext("CycleContext")
-    private val botsListContext = newSingleThreadContext("BotsListContext")
-
     private val dBotsKey = builder.dBotsKey
     private val dBotsListKey = builder.dBotsListKey
+
+    private val cycleContext = newSingleThreadContext("Cycle Context")
+    private val botsListContext = newSingleThreadContext("BotsList Context")
 
     val test = builder.test
     val prefix = if(test) Laxus.TestPrefix else Laxus.Prefix
@@ -282,15 +281,15 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
     }
 
     private suspend fun updateStats(jda: JDA) {
-        val body = jsonObject { "server_count" to jda.guildCache.size() }
-
-        jda.shardInfo?.let {
-            body["shard_id"] = it.shardId
-            body["shard_count"] = it.shardTotal
+        val body = JSObject {
+            "server_count" to jda.guildCache.size()
+            jda.shardInfo?.let {
+                "shard_id" to it.shardId
+                "shard_count" to it.shardTotal
+            }
         }
 
-        val bodyString = body.toJsonString(0)
-        val requestBody = RequestBody.create(MEDIA_TYPE_JSON, bodyString)
+        val requestBody = RequestBody.create(MEDIA_TYPE_JSON, body.toJsonString(0))
 
         dBotsKey?.let {
             // Run this as a child job
@@ -380,11 +379,11 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
         callCache.computeIfAbsent(id) { HashSet() }.add(message)
     }
 
-    interface Listener {
+    interface CallVerifier {
         fun checkCall(event: MessageReceivedEvent, bot: Bot, name: String, args: String): Boolean = true
     }
 
-    class Builder internal constructor() {
+    internal class Builder {
         val groups = ArrayList<Command.Group>()
         var test = false
         var dBotsKey: String? = null

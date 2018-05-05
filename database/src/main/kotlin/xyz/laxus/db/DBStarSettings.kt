@@ -31,7 +31,7 @@ import xyz.laxus.util.checkInRange
     Column("channel_id", BIGINT),
     Column("threshold", SMALLINT, def = "5"),
     Column("max_age", INT, def = "72"),
-    Column("ignored", "$BIGINT[]", def = "ARRAY[]::BIGINT[]")
+    Column("ignored", "$BIGINT[]", def = "$ARRAY[]::$BIGINT[]")
 )
 object DBStarSettings: Table() {
     fun hasSettings(guildId: Long): Boolean {

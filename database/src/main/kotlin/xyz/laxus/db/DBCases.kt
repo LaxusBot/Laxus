@@ -42,7 +42,7 @@ object DBCases: Table() {
             statement[1] = guildId
             statement.executeQuery {
                 if(it.next()) {
-                    return it.getInt("COUNT(*)")
+                    return it.getInt("COUNT")
                 }
             }
         }
