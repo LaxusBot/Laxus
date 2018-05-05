@@ -15,6 +15,17 @@
  */
 package xyz.laxus.jda.util
 
+import net.dv8tion.jda.core.JDA
+import net.dv8tion.jda.core.entities.impl.JDAImpl
+import net.dv8tion.jda.core.hooks.IEventManager
 import net.dv8tion.jda.core.utils.cache.CacheView
 
 val <T> CacheView<T>.size: Long get() = size()
+
+val JDA.eventManager: IEventManager get() {
+    val impl = requireNotNull(this as? JDAImpl) {
+        "${this} is not an instance of JDAImpl!"
+    }
+
+    return impl.eventManager
+}

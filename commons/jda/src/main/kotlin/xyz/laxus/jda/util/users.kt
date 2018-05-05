@@ -41,26 +41,26 @@ inline fun <reified U: User> U.unbanFrom(guild: Guild): AuditableRestAction<Void
     return guild.controller.unban(this)
 }
 
-inline val <reified U: User> U.game: Game? inline get() {
+inline val User.game: Game? inline get() {
     return mutualGuilds.first().getMember(this)?.game
 }
 
-inline val <reified U: User> U.status: OnlineStatus inline get() {
+inline val User.status: OnlineStatus inline get() {
     return mutualGuilds.first().getMember(this)?.onlineStatus ?: OnlineStatus.OFFLINE
 }
 
-inline val <reified U: User> U.isSelf: Boolean inline get() {
+inline val User.isSelf: Boolean inline get() {
     return this is SelfUser || jda.selfUser.idLong == idLong
 }
 
-inline val <reified M: Member> M.connectedChannel: VoiceChannel? inline get() {
+inline val Member.connectedChannel: VoiceChannel? inline get() {
     return voiceState.channel
 }
 
-inline val <reified M: Member> M.isConnected: Boolean inline get() {
+inline val Member.isConnected: Boolean inline get() {
     return connectedChannel !== null
 }
 
-inline val <reified M: Member> M.isAdmin: Boolean inline get() {
+inline val Member.isAdmin: Boolean inline get() {
     return Permission.ADMINISTRATOR in permissions || isOwner
 }

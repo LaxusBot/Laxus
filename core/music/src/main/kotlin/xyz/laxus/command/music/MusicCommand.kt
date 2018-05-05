@@ -71,7 +71,7 @@ abstract class MusicCommand(protected val manager: MusicManager): Command(MusicG
         item.userData = member
         val info = item.info.formattedInfo
         val position = manager.addTrack(voiceChannel, item)
-        loading.editMessage {
+        loading.editMessage(clear = true) {
             append(Laxus.Success)
             if(position < 1) {
                 append(" Now playing $info.")
@@ -88,7 +88,7 @@ abstract class MusicCommand(protected val manager: MusicManager): Command(MusicG
 
         val tracks = item.tracks.onEach { it.userData = member }
         manager.addTracks(voiceChannel, tracks)
-        loading.editMessage {
+        loading.editMessage(clear = true) {
             append(Laxus.Success)
             if(manager[guild]!!.size + 1 == tracks.size) {
                 append(" Now playing `${tracks.size}` tracks from playlist **${item.name}**.")
@@ -99,7 +99,8 @@ abstract class MusicCommand(protected val manager: MusicManager): Command(MusicG
     }
 
     protected fun unsupportedItemType(loading: Message) {
-        loading.editMessage("The loaded item is unsupported by this player.").queue()
+        loading.editMessage("The loaded item is unsupported by this player.")
+            .override(true).reset().queue()
     }
 
     protected suspend fun loadTrack(

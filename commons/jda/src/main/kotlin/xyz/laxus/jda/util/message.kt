@@ -53,8 +53,14 @@ inline fun MessageAction.embed(crossinline init: KEmbedBuilder.() -> Unit): Mess
 inline fun embed(init: KEmbedBuilder.() -> Unit): MessageEmbed = KEmbedBuilder().apply(init).build()
 
 @MessageDsl
-inline fun Message.editMessage(block: MessageAction.() -> Unit): MessageAction {
-    return editMessage(this).also(block)
+inline fun Message.editMessage(clear: Boolean = true, block: MessageAction.() -> Unit): MessageAction {
+    return editMessage(this).also {
+        if(clear) {
+            it.override(true)
+            it.reset()
+        }
+        it.block()
+    }
 }
 
 fun filterMassMentions(string: String): String {

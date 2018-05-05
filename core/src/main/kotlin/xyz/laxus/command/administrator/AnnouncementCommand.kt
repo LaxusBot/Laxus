@@ -17,6 +17,7 @@
 
 package xyz.laxus.command.administrator
 
+import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.Role
 import net.dv8tion.jda.core.entities.TextChannel
 import xyz.laxus.command.Command
@@ -26,6 +27,7 @@ import xyz.laxus.jda.util.*
 import xyz.laxus.util.commandArgs
 import xyz.laxus.util.db.announcementRoles
 import xyz.laxus.util.db.announcementsChannel
+import xyz.laxus.util.db.isAnnouncements
 import xyz.laxus.util.multipleRoles
 import xyz.laxus.util.multipleTextChannels
 import xyz.laxus.util.noMatch
@@ -41,7 +43,12 @@ class AnnouncementCommand: Command(AdministratorGroup) {
     override val help = "Mentions a role with a message in the server's announcements channel."
     override val children = arrayOf(
         AnnouncementAddRoleCommand(),
-        AnnouncementChannelCommand()
+        AnnouncementChannelCommand(),
+        AnnouncementRemoveRoleCommand()
+    )
+    override val botPermissions = arrayOf(
+        Permission.MANAGE_ROLES,
+        Permission.MANAGE_PERMISSIONS
     )
 
     override suspend fun execute(ctx: CommandContext) {
@@ -147,11 +154,54 @@ class AnnouncementCommand: Command(AdministratorGroup) {
         }
     }
 
+    @MustHaveArguments("Specify a role to add.")
     private inner class AnnouncementAddRoleCommand: Command(this@AnnouncementCommand) {
         override val name = "AddRole"
+        override val arguments = "[Role]"
+        override val help = "Adds an announcement role."
 
         override suspend fun execute(ctx: CommandContext) {
+            val query = ctx.args
+            val guild = ctx.guild
+            val found = guild.findRoles(query)
+            val target = when {
+                found.isEmpty() -> return ctx.replyError(noMatch("roles", query))
+                found.size > 1 -> return ctx.replyError(found.multipleRoles(query))
+                else -> found[0]
+            }
 
+            if(target.isAnnouncements) return ctx.replyError {
+                "**${target.name}** is already an announcements role!"
+            }
+
+            target.isAnnouncements = true
+            ctx.replySuccess("Successfully added **${target.name}** as an announcements role!")
+        }
+    }
+
+    @MustHaveArguments("Specify a role to remove.")
+    private inner class AnnouncementRemoveRoleCommand: Command(this@AnnouncementCommand) {
+        override val name = "RemoveRole"
+        override val arguments = "[Role]"
+        override val help = "Removes an announcement role."
+
+        override suspend fun execute(ctx: CommandContext) {
+            val query = ctx.args
+            val guild = ctx.guild
+            val announcementRoles = guild.announcementRoles
+            val found = guild.findRoles(query).filter { it in announcementRoles }
+            val target = when {
+                found.isEmpty() -> return ctx.replyError(noMatch("announcement roles", query))
+                found.size > 1 -> return ctx.replyError(found.multipleRoles(query))
+                else -> found[0]
+            }
+
+            if(!target.isAnnouncements) return ctx.replyError {
+                "**${target.name}** is not an announcements role!"
+            }
+
+            target.isAnnouncements = false
+            ctx.replySuccess("Successfully removed announcements role **${target.name}**!")
         }
     }
 }
