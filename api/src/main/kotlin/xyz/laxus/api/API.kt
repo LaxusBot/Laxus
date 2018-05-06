@@ -13,27 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus
+package xyz.laxus.api
 
-import xyz.laxus.api.API
-import xyz.laxus.db.Database
-import xyz.laxus.util.onJvmShutdown
+import xyz.laxus.api.spark.port
+import xyz.laxus.api.spark.service
 
 /**
  * @author Kaidan Gustave
  */
-object Main {
+object API {
     @JvmStatic
     fun main(args: Array<String>) {
-        sendBanner()
-        Database.start()
-        Laxus.start()
-        API.start()
+        start()
+    }
 
-        onJvmShutdown("Main Shutdown") {
-            Database.close()
-            Laxus.stop()
-            API.stop()
-        }
+    fun start() {
+        port(9090)
+    }
+
+    fun stop() {
+        service.stop()
     }
 }

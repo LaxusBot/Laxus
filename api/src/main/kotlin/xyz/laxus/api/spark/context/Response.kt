@@ -16,6 +16,8 @@
 @file:Suppress("MemberVisibilityCanBePrivate")
 package xyz.laxus.api.spark.context
 
+import kotlinx.html.HTML
+import kotlinx.html.HtmlTagMarker
 import me.kgustave.json.JSObject
 import xyz.laxus.api.util.ContentType
 import xyz.laxus.api.util.HttpStatusCode
@@ -57,5 +59,12 @@ class Response(val context: RouteContext, private val base: spark.Response) {
     suspend inline fun respondJson(block: JSObject.() -> Unit) {
         contentType(ContentType.Application.Json.withCharset(Charsets.UTF_8))
         return context.sendJson(block)
+    }
+
+    @ContextDsl
+    @HtmlTagMarker
+    suspend inline fun respondHtml(crossinline block: HTML.() -> Unit) {
+        contentType(ContentType.Text.Html.withCharset(Charsets.UTF_8))
+        return context.sendHtml(block)
     }
 }

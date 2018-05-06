@@ -16,8 +16,11 @@
 package xyz.laxus.api.spark.context
 
 import kotlinx.coroutines.experimental.channels.Channel
+import kotlinx.html.HTML
+import kotlinx.html.HtmlTagMarker
+import kotlinx.html.html
+import kotlinx.html.stream.createHTML
 import me.kgustave.json.JSObject
-import me.kgustave.json.jsonObject
 
 /**
  * @author Kaidan Gustave
@@ -41,7 +44,11 @@ class RouteContext(request: spark.Request, response: spark.Response) {
         return channel.receive()
     }
 
-    suspend inline fun sendJson(block: JSObject.() -> Unit) = send(jsonObject(block))
+    suspend inline fun sendJson(block: JSObject.() -> Unit) = send(JSObject(block))
+
+    @HtmlTagMarker
+    suspend inline fun sendHtml(crossinline block: HTML.() -> Unit) =
+        send(createHTML(prettyPrint = false).html { block() })
 
     suspend fun finish() {
         if(channel.isFull) return

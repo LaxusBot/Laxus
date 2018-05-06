@@ -33,11 +33,19 @@ dependencies {
     compile kotlinModule("script-util")
     runtime kotlinModule("compiler-embeddable")
 
+    // Spark
+    compile "com.sparkjava:spark-core:2.7.2"
+
     // Kotlin Coroutines
     compile kotlinxCoroutines('core')
+    compile kotlinxCoroutines('io')
+    compile kotlinxCoroutines('jdk8')
 
     // Kotlin Json
     compile kotlinJson()
+
+    // Kotlin Html
+    compile kotlinxHtml('jvm')
 
     // JDA & Lavaplayer
     compile jda()
@@ -64,6 +72,7 @@ dependencies {
     compile jagtag()
 
     // Projects
+    compile project(':api')
     compile project(':commons')
     compile project(':commons:jda')
     compile project(':database')
