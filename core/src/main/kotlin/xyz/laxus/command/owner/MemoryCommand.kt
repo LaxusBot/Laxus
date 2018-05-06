@@ -46,9 +46,9 @@ class MemoryCommand: Command(OwnerGroup) {
     )
 
     private val builder = updatingMenuBuilder {
-        interval = duration(3, SECONDS)
-        waiter = Laxus.Waiter
-        text = "${Laxus.Success} Memory:"
+        text { "${Laxus.Success} Memory:" }
+        interval { duration(3, SECONDS) }
+        waiter { Laxus.Waiter }
         timeout {
             delay { 2 }
             unit { MINUTES }

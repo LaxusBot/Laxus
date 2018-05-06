@@ -70,22 +70,26 @@ abstract class Menu(builder: Builder<*,*>) {
             return this as B
         }
 
+        @Menu.Dsl
         inline fun waiter(block: () -> EventWaiter): B {
             waiter = block()
             return this as B
         }
 
+        @Menu.Dsl
         inline fun timeout(block: TimeOut.() -> Unit): B {
             TimeOut().apply {
                 block()
-                timeout = delay
+                this@Builder.timeout = delay
                 this@Builder.unit = unit
             }
             return this as B
         }
 
+        @Menu.Dsl
         inline fun role(block: () -> Role): B = plus(block())
 
+        @Menu.Dsl
         inline fun user(block: () -> User): B = plus(block())
     }
 

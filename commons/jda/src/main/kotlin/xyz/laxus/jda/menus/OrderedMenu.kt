@@ -241,7 +241,7 @@ class OrderedMenu
     }
 
     @Menu.Dsl
-    class Builder : Menu.Builder<OrderedMenu.Builder, OrderedMenu>() {
+    class Builder: Menu.Builder<OrderedMenu.Builder, OrderedMenu>() {
         var color: Color? = null
         var text: String? = null
         var description: String? = null
@@ -258,14 +258,32 @@ class OrderedMenu
         }
 
         fun clearChoices() = _choices.clear()
+
+        @Menu.Dsl
         fun finalAction(block: FinalAction): OrderedMenu.Builder = apply { finalAction = block }
+
+        @Menu.Dsl
         fun choice(name: String, action: FinalAction): OrderedMenu.Builder = apply { set(name, action) }
+
+        @Menu.Dsl
         inline fun description(lazy: () -> String?): OrderedMenu.Builder = apply { description = lazy() }
+
+        @Menu.Dsl
         inline fun text(lazy: () -> String?): OrderedMenu.Builder = apply { text = lazy() }
+
+        @Menu.Dsl
         inline fun useCancelButton(lazy: () -> Boolean): OrderedMenu.Builder = apply { useCancel = lazy() }
+
+        @Menu.Dsl
         inline fun color(lazy: () -> Color?): OrderedMenu.Builder = apply { color = lazy() }
+
+        @Menu.Dsl
         inline fun useLetters(lazy: () -> Boolean): OrderedMenu.Builder = apply { useLetters = lazy() }
+
+        @Menu.Dsl
         inline fun useNumbers(lazy: () -> Boolean): OrderedMenu.Builder = apply { useLetters = !lazy() }
+
+        @Menu.Dsl
         inline fun allowTextInput(lazy: () -> Boolean): OrderedMenu.Builder = apply { allowTypedInput = lazy() }
     }
 

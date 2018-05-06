@@ -20,7 +20,11 @@ import java.util.concurrent.TimeUnit
 /**
  * @author Kaidan Gustave
  */
+@Menu.Dsl
 data class TimeOut(var delay: Long = 0L, var unit: TimeUnit = TimeUnit.SECONDS) {
-    inline infix fun delay(lazy: () -> Long) { delay = lazy() }
-    inline infix fun unit(lazy: () -> TimeUnit) { unit = lazy() }
+    @Menu.Dsl
+    inline fun delay(lazy: () -> Long) { delay = lazy() }
+
+    @Menu.Dsl
+    inline fun unit(lazy: () -> TimeUnit) { unit = lazy() }
 }

@@ -32,7 +32,7 @@ import xyz.laxus.util.formattedName
  * @author Kaidan Gustave
  */
 @MustHaveArguments("Please specify a message ID to quote!")
-class QuoteCommand : Command(StandardGroup) {
+class QuoteCommand: Command(StandardGroup) {
     private companion object {
         private const val CannotFindMessage = "Could not find a message with ID: %s!"
         private const val InvalidID = "\"%s\" is not a valid %s ID"
