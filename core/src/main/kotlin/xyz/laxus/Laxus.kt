@@ -39,7 +39,7 @@ object Laxus {
     const val Prefix = "|"
     const val TestPrefix = "||"
     const val ServerInvite = "https://discord.gg/xkkw54u"
-    const val GitHub = "https://github.com/kgustave/Laxus"
+    const val GitHub = "https://github.com/LaxusBot/Laxus"
 
     val Package = packageOf(Laxus::class)
     val Version = Package.version.implementation ?: "BETA"
