@@ -76,7 +76,7 @@ class CustomCmdCommand: EmptyCommand(AdministratorGroup) {
             val content = parts[1]
 
             if(ctx.guild.hasCustomCommand(name)) return ctx.replyError {
-                "Custom Command named \"$name\" already exists!"
+                "Custom Command named \"**$name**\" already exists!"
             }
 
             ctx.guild.setCustomCommand(name, content)
@@ -136,16 +136,16 @@ class CustomCmdCommand: EmptyCommand(AdministratorGroup) {
             val name = ctx.args
 
             if(ctx.guild.hasCustomCommand(name)) return ctx.replyError {
-                "Custom Command named \"$name\" already exists!"
+                "Custom Command named \"**$name**\" already exists!"
             }
 
             if(ctx.guild.isTag(name) || ctx.jda.isTag(name)) {
-                val tag = checkNotNull(ctx.guild.getTagByName(name)) {
+                val tag = checkNotNull(ctx.guild.getTagByName(name) ?: ctx.jda.getTagByName(name)) {
                     "Expected non-null tag from Guild (ID: ${ctx.guild.idLong}) with name $name"
                 }
 
                 ctx.guild.setCustomCommand(tag.name, tag.content)
-                ctx.replySuccess("Successfully created Custom Command \"**$name**\"!")
+                ctx.replySuccess("Successfully imported tag \"**$name**\" as a Custom Command!")
             } else {
                 ctx.replyError("Tag named \"$name\" does not exist!")
             }
@@ -165,6 +165,7 @@ class CustomCmdCommand: EmptyCommand(AdministratorGroup) {
             waitOnSinglePage { false }
             showPageNumbers  { true }
             numberItems      { true }
+            itemsPerPage     { 10 }
         }
 
         override suspend fun execute(ctx: CommandContext) {
@@ -194,11 +195,11 @@ class CustomCmdCommand: EmptyCommand(AdministratorGroup) {
             val name = ctx.args
 
             if(!ctx.guild.hasCustomCommand(name)) return ctx.replyError {
-                "Custom Command named \"$name\" does not exist!"
+                "Custom Command named \"**$name**\" does not exist!"
             }
 
             ctx.guild.setCustomCommand(name, null)
-            ctx.replySuccess("Successfully created Custom Command \"**$name**\"!")
+            ctx.replySuccess("Successfully removed Custom Command \"**$name**\"!")
         }
     }
 }
