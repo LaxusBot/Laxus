@@ -293,7 +293,7 @@ class Paginator
     }
 
     @Menu.Dsl
-    class Builder : Menu.Builder<Paginator.Builder, Paginator>() {
+    class Builder: Menu.Builder<Paginator.Builder, Paginator>() {
         var colorFun: PageFunction<Color?> = { _, _ -> null }
         var textFun: PageFunction<String?> = { _, _ -> null }
         val items: MutableList<String> = ArrayList()
@@ -343,51 +343,61 @@ class Paginator
             return this
         }
 
+        @Menu.Dsl
         inline fun add(lazy: () -> String): Paginator.Builder {
             items.add(lazy())
             return this
         }
 
+        @Menu.Dsl
         inline fun items(lazy: AddRemoveBlock<String>.() -> Unit): Paginator.Builder {
             block.lazy()
             return this
         }
 
+        @Menu.Dsl
         inline fun columns(lazy: () -> Int): Paginator.Builder {
             columns = lazy()
             return this
         }
 
+        @Menu.Dsl
         inline fun itemsPerPage(lazy: () -> Int): Paginator.Builder {
             itemsPerPage = lazy()
             return this
         }
 
+        @Menu.Dsl
         inline fun numberItems(lazy: () -> Boolean): Paginator.Builder {
             numberItems = lazy()
             return this
         }
 
+        @Menu.Dsl
         inline fun showPageNumbers(lazy: () -> Boolean): Paginator.Builder {
             showPageNumbers = lazy()
             return this
         }
 
+        @Menu.Dsl
         inline fun waitOnSinglePage(lazy: () -> Boolean): Paginator.Builder {
             waitOnSinglePage = lazy()
             return this
         }
 
+        @Menu.Dsl
         inline fun text(crossinline lazy: PageFunction<String?>): Paginator.Builder {
             textFun = { p, t -> lazy(p, t) }
             return this
         }
 
+        @Menu.Dsl
         inline fun color(crossinline lazy: PageFunction<Color?>): Paginator.Builder {
             colorFun = { p, t -> lazy(p, t) }
             return this
         }
 
+        @Menu.Dsl
         fun finalAction(block: FinalAction): Paginator.Builder {
             finalAction = block
             return this

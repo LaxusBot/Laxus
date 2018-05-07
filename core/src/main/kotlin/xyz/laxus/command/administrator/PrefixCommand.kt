@@ -101,7 +101,7 @@ class PrefixCommand: EmptyCommand(AdministratorGroup) {
             showPageNumbers  { true }
             itemsPerPage     { 10 }
             numberItems      { true }
-            text { p, t -> "Server Prefixes${if(t > 1) " [`$p/$t`]" else ""}" }
+            text             { p, t -> "Server Prefixes${if(t > 1) " [`$p/$t`]" else ""}" }
         }
 
         override suspend fun execute(ctx: CommandContext) {

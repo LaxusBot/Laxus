@@ -248,7 +248,7 @@ class Slideshow
     }
 
     @Menu.Dsl
-    class Builder : Menu.Builder<Slideshow.Builder, Slideshow>() {
+    class Builder: Menu.Builder<Slideshow.Builder, Slideshow>() {
         var colorFun: PageFunction<Color?> = { _, _ -> null }
         var textFun: PageFunction<String?> = { _, _ -> null }
         var descriptionFun: PageFunction<String?> = { _, _ -> null }
@@ -284,41 +284,49 @@ class Slideshow
             return this
         }
 
+        @Menu.Dsl
         inline fun add(lazy: () -> String): Slideshow.Builder {
             urls.add(lazy())
             return this
         }
 
+        @Menu.Dsl
         inline fun urls(lazy: AddRemoveBlock<String>.() -> Unit): Slideshow.Builder {
             block.lazy()
             return this
         }
 
+        @Menu.Dsl
         inline fun showPageNumbers(lazy: () -> Boolean): Slideshow.Builder {
             showPageNumbers = lazy()
             return this
         }
 
+        @Menu.Dsl
         inline fun waitOnSinglePage(lazy: () -> Boolean): Slideshow.Builder {
             waitOnSinglePage = lazy()
             return this
         }
 
+        @Menu.Dsl
         inline fun color(crossinline lazy: PageFunction<Color?>): Slideshow.Builder {
             colorFun = { p, t -> lazy(p, t) }
             return this
         }
 
+        @Menu.Dsl
         inline fun text(crossinline lazy: PageFunction<String?>): Slideshow.Builder {
             textFun = { p, t -> lazy(p, t) }
             return this
         }
 
+        @Menu.Dsl
         inline fun description(crossinline lazy: PageFunction<String?>): Slideshow.Builder {
             descriptionFun = { p, t -> lazy(p, t) }
             return this
         }
 
+        @Menu.Dsl
         fun finalAction(block: FinalAction): Slideshow.Builder {
             finalAction = block
             return this

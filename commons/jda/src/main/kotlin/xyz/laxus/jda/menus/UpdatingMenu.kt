@@ -121,29 +121,34 @@ class UpdatingMenu(builder: UpdatingMenu.Builder): Menu(builder) {
     }
 
     @Menu.Dsl
-    class Builder : Menu.Builder<UpdatingMenu.Builder, UpdatingMenu>() {
+    class Builder: Menu.Builder<UpdatingMenu.Builder, UpdatingMenu>() {
         lateinit var update: suspend KEmbedBuilder.(CancelStage) -> Unit
         var color: Color? = null
         var text: String? = null
         var finalAction: FinalAction? = null
         var interval = duration(5, SECONDS)
 
+        @Menu.Dsl
         fun update(update: suspend KEmbedBuilder.(CancelStage) -> Unit): Builder = apply {
             this.update = update
         }
 
+        @Menu.Dsl
         inline fun color(block: () -> Color?): Builder = apply {
             this.color = block()
         }
 
+        @Menu.Dsl
         inline fun text(block: () -> String?): Builder = apply {
             this.text = block()
         }
 
+        @Menu.Dsl
         inline fun interval(block: () -> Duration) = apply {
             this.interval = block()
         }
 
+        @Menu.Dsl
         fun finalAction(block: FinalAction): Builder = apply {
             this.finalAction = block
         }
