@@ -27,6 +27,7 @@ import xyz.laxus.api.util.ContentType
 @ContextDsl
 class Request(val context: RouteContext, private val base: spark.Request) {
     val headers: Set<String> get() = base.headers()
+    val params: Map<String, String> get() = base.params()
     val queryMap: QueryParamsMap get() = base.queryMap()
     val queryParams: Set<String> get() = base.queryParams()
     val attributes: Set<String> get() = base.attributes()
@@ -57,6 +58,10 @@ class Request(val context: RouteContext, private val base: spark.Request) {
 
     fun queryParam(param: String): String? {
         return base.queryParams(param)
+    }
+
+    fun queryParams(param: String): Array<out String> {
+        return base.queryParamsValues(param)
     }
 
     fun attributeOf(attribute: String): Any? {
