@@ -13,17 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:JvmName("StringsUtil")
-@file:Suppress("unused")
-package xyz.laxus.util
+package xyz.laxus.util.reflect
+
+import kotlin.reflect.KAnnotatedElement
+import kotlin.reflect.full.findAnnotation
 
 /**
- * Inversion of [String.matches].
- *
- * @receiver The [String] to check.
- *
- * @param regex The [Regex] to check.
- *
- * @return `false` if the receiver does not match the [regex].
+ * @author Kaidan Gustave
  */
-infix fun String.doesNotMatch(regex: Regex): Boolean = !(this matches regex)
+inline fun <reified A: Annotation> KAnnotatedElement.hasAnnotation() = findAnnotation<A>() !== null
