@@ -17,6 +17,7 @@
 package xyz.laxus.util.reflect
 
 import java.lang.reflect.Modifier
+import kotlin.coroutines.experimental.Continuation
 import kotlin.coroutines.experimental.suspendCoroutine
 import kotlin.reflect.*
 import kotlin.reflect.full.extensionReceiverParameter
@@ -30,11 +31,33 @@ val KFunction<*>.isExtension get() = this.extensionReceiverParameter !== null
 
 val KFunction<*>.isStatic get() = javaMethod?.let { Modifier.isStatic(it.modifiers) } ?: false
 
-suspend fun KFunction<*>.callSuspended(vararg args: Any?): Any? = suspendCoroutine { cont ->
-    try {
-        cont.resume(call(*args, cont))
-    } catch(t: Throwable) {
-        cont.resumeWithException(t)
+val KFunction<*>.suspendParameter: KParameter get() {
+    require(isSuspend) { "Function is not suspendable!" }
+    val lastParam = parameters.last()
+    require(lastParam.isType<Continuation<*>>())
+    return lastParam
+}
+
+suspend fun KFunction<*>.callSuspended(vararg args: Any?): Any? {
+    require(isSuspend) { "Function is not suspendable!" }
+    return suspendCoroutine { cont ->
+        try {
+            cont.resume(call(*args, cont))
+        } catch(t: Throwable) {
+            cont.resumeWithException(t)
+        }
+    }
+}
+
+suspend fun KFunction<*>.callBySuspended(args: Map<KParameter, Any?>): Any? {
+    require(isSuspend) { "Function is not suspendable!" }
+    return suspendCoroutine { cont ->
+        try {
+            val allArgs = args + (parameters.last() to cont)
+            cont.resume(callBy(allArgs))
+        } catch(t: Throwable) {
+            cont.resumeWithException(t)
+        }
     }
 }
 
