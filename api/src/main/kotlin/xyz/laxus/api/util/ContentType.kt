@@ -25,8 +25,7 @@ import javax.annotation.concurrent.Immutable
  */
 @Immutable
 class ContentType private constructor(
-    val mime: String,
-    val extension: String,
+    val mime: String, val extension: String,
     val params: Map<String, String> = mapOf(),
     val charset: Charset? = null
 ) {

@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.spark.annotation
+package xyz.laxus.api.annotation
 
-import spark.route.HttpMethod
+import kotlin.annotation.AnnotationRetention.*
+import kotlin.annotation.AnnotationTarget.*
 
-/**
- * @author Kaidan Gustave
- */
-@Target(AnnotationTarget.FUNCTION)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class Handle(val method: HttpMethod, val extension: String = "")
+@Retention(RUNTIME)
+@Target(FUNCTION, CLASS)
+@ResponseHeader(header = "Access-Control-Allow-Origin", value = "*")
+annotation class CORS

@@ -13,17 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api
+package xyz.laxus.api.annotation
 
-/**
- * @author Kaidan Gustave
- */
-object API {
-    fun start() {
-        port(9090)
-    }
+import spark.route.HttpMethod
 
-    fun stop() {
-        service.stop()
-    }
-}
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class Handle(
+    val method: HttpMethod,
+    val extension: String = ""
+)

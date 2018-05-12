@@ -13,26 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.spark
-
-import spark.Request
-import spark.Response
-import spark.RouteImpl
-import xyz.laxus.api.spark.context.RouteContext
-import xyz.laxus.util.concurrent.task
+package xyz.laxus.api.annotation
 
 /**
  * @author Kaidan Gustave
  */
-class SuspendedRoute(path: String, private val handle: RouteHandle): RouteImpl(path) {
-    override fun handle(request: Request, response: Response): Any? {
-        val task = task {
-            val context = RouteContext(request, response)
-            context.handle()
-            context.finish()
-            return@task context.receive()
-        }
-
-        return task.get()
-    }
-}
+@Target(AnnotationTarget.PROPERTY)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class SubRoute

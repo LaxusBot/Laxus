@@ -13,11 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.spark.annotation
+package xyz.laxus.api.internal
+
+import spark.Request
+import spark.Response
+import spark.RouteImpl
+import xyz.laxus.api.internal.context.RouteContext
+import xyz.laxus.util.concurrent.task
 
 /**
  * @author Kaidan Gustave
  */
-@Target(AnnotationTarget.VALUE_PARAMETER)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class Param(val value: String, val type: ParamType = ParamType.STRING)
+class SuspendedRoute(path: String, private val handle: RouteHandle): RouteImpl(path) {
+    override fun handle(request: Request, response: Response): Any? {
+        val task = task {
+            val context = RouteContext(request, response)
+            context.handle()
+            context.finish()
+            return@task context.receive()
+        }
+
+        return task.get()
+    }
+}

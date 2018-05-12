@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.spark
+package xyz.laxus.api.internal
 
 import spark.route.HttpMethod
-import xyz.laxus.api.spark.context.ContextDsl
-import xyz.laxus.api.spark.context.RouteContext
+import xyz.laxus.api.internal.context.ContextDsl
+import xyz.laxus.api.internal.context.RouteContext
+import xyz.laxus.api.service
 
 internal typealias RouteHandle = suspend RouteContext.() -> Unit
 

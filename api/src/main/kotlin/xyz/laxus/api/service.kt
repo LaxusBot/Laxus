@@ -15,15 +15,14 @@
  */
 package xyz.laxus.api
 
-/**
- * @author Kaidan Gustave
- */
-object API {
-    fun start() {
-        port(9090)
-    }
+import spark.Service
 
-    fun stop() {
-        service.stop()
-    }
+val service: Service by lazy { Service.ignite() }
+
+fun port(port: Int) {
+    service.port(port)
+}
+
+fun host(host: String) {
+    service.ipAddress(host)
 }

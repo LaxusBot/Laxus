@@ -13,17 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api
+package xyz.laxus.api.annotation
 
-/**
- * @author Kaidan Gustave
- */
-object API {
-    fun start() {
-        port(9090)
-    }
-
-    fun stop() {
-        service.stop()
-    }
-}
+@Target(AnnotationTarget.VALUE_PARAMETER)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class QueryParam(val value: String)

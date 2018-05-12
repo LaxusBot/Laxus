@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.spark.annotation
+package xyz.laxus.api.annotation
 
 import xyz.laxus.util.modifyIf
 import xyz.laxus.util.reflect.isCompatibleWith
@@ -25,15 +25,20 @@ import kotlin.reflect.full.withNullability
  * @author Kaidan Gustave
  */
 enum class ParamType {
-    STRING, LONG, INT;
+    STRING, LONG, INT, BOOLEAN;
 
     fun assertTypeMatch(type: KType): Boolean {
         val comparingType = when(this) {
             STRING -> String::class.starProjectedType
             LONG -> Long::class.starProjectedType
             INT -> Int::class.starProjectedType
+            BOOLEAN -> Boolean::class.starProjectedType
         }.modifyIf({ type.isMarkedNullable }) { it.withNullability(true) }
 
         return comparingType.isCompatibleWith(type)
+    }
+
+    companion object {
+        @JvmStatic fun from(type: KType): ParamType? = values().find { it.assertTypeMatch(type) }
     }
 }

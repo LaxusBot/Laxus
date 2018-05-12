@@ -13,16 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.spark
+package xyz.laxus.api.annotation
 
-import spark.Service
-
-internal val service: Service by lazy { Service.ignite() }
-
-internal fun port(port: Int) {
-    service.port(port)
-}
-
-internal fun host(host: String) {
-    service.ipAddress(host)
-}
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class Path(val value: String)

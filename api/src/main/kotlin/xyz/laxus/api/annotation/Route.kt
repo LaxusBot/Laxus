@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.spark.annotation
+package xyz.laxus.api.annotation
 
-/**
- * @author Kaidan Gustave
- */
-@Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class Body
+@Target(AnnotationTarget.CLASS, AnnotationTarget.PROPERTY)
+annotation class Route(val path: String)

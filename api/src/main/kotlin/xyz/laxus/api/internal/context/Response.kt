@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 @file:Suppress("MemberVisibilityCanBePrivate")
-package xyz.laxus.api.spark.context
+package xyz.laxus.api.internal.context
 
 import kotlinx.html.HTML
 import kotlinx.html.HtmlTagMarker

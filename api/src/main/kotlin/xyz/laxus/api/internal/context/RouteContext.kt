@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.spark.context
+package xyz.laxus.api.internal.context
 
 import kotlinx.coroutines.experimental.channels.Channel
 import kotlinx.html.HTML

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 @file:Suppress("unused")
-package xyz.laxus.api.spark.context
+package xyz.laxus.api.internal.context
 
 import spark.QueryParamsMap
 import spark.Session
