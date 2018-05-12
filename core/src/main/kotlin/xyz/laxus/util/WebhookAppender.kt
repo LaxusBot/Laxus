@@ -98,7 +98,7 @@ class WebhookAppender: AppenderBase<ILoggingEvent>() {
                         else        -> null
                     }
                 }
-                footer { value = "Logged at" }
+                footer { value = "Logged" }
                 time {
                     Calendar.getInstance(TimeZone.getTimeZone("GMT")).let { gmt ->
                         gmt.timeInMillis = event.timeStamp
