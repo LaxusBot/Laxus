@@ -15,19 +15,26 @@
  */
 package xyz.laxus.api
 
-import xyz.laxus.api.internal.RouteRunner
 import xyz.laxus.api.annotation.Handle
 import xyz.laxus.api.annotation.Route
 import xyz.laxus.api.annotation.SubRoute
 import xyz.laxus.api.annotation.responseHeaderAnnotations
+import xyz.laxus.api.conversions.BodyConverter
+import xyz.laxus.api.internal.RouteRunner
 import xyz.laxus.util.reflect.hasAnnotation
+import java.util.*
 import kotlin.reflect.KClass
-import kotlin.reflect.KVisibility
+import kotlin.reflect.KType
+import kotlin.reflect.KVisibility.PUBLIC
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.functions
 import kotlin.reflect.full.memberProperties
 
 object RouteRegistry {
+    internal val converters: Map<KType, BodyConverter<*>> = run {
+        ServiceLoader.load(BodyConverter::class.java).associateBy { it.kotlinType }
+    }
+
     fun register(any: Any) {
         val klazz = any::class
         val route = checkNotNull(klazz.findAnnotation<Route>()) {
@@ -44,11 +51,9 @@ object RouteRegistry {
         val responseHeaders = headers + klazz.responseHeaderAnnotations.associate { it.header to it.value }
 
         val subHandlers = klazz.memberProperties.filter {
-            it.hasAnnotation<SubRoute>() && it.visibility == KVisibility.PUBLIC
+            it.hasAnnotation<SubRoute>() && it.visibility == PUBLIC
         }.mapNotNull { it.call(any) } + klazz.java.declaredClasses.mapNotNull {
-            it.kotlin.objectInstance?.takeIf {
-                it::class.hasAnnotation<Route>()
-            }
+            it.kotlin.objectInstance?.takeIf { it::class.hasAnnotation<Route>() }
         }
 
         subHandlers.forEach {
@@ -58,7 +63,7 @@ object RouteRegistry {
         }
 
         val prefix = ancestors.joinToString(separator = "") { it.path }
-        klazz.functions.filter { it.hasAnnotation<Handle>() }.map {
+        klazz.functions.filter { it.hasAnnotation<Handle>() && it.visibility == PUBLIC }.map {
             val handle = checkNotNull(it.findAnnotation<Handle>())
             RouteRunner(prefix + route.path + handle.extension, handle.method, any, it, responseHeaders)
         }.forEach { it.generate() }

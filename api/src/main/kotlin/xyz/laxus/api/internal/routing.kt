@@ -19,6 +19,7 @@ import spark.route.HttpMethod
 import xyz.laxus.api.internal.context.ContextDsl
 import xyz.laxus.api.internal.context.RouteContext
 import xyz.laxus.api.service
+import xyz.laxus.api.util.ContentType
 
 internal typealias RouteHandle = suspend RouteContext.() -> Unit
 
@@ -28,16 +29,26 @@ internal fun path(path: String, group: () -> Unit) {
 }
 
 @ContextDsl
-internal fun get(path: String, handle: RouteHandle) {
-    service.addRoute(HttpMethod.get, SuspendedRoute(path, handle))
+internal fun get(path: String, acceptType: ContentType, handle: RouteHandle) {
+    service.addRoute(HttpMethod.get, SuspendedRoute(path, acceptType, handle))
 }
 
 @ContextDsl
-internal fun post(path: String, handle: RouteHandle) {
-    service.addRoute(HttpMethod.post, SuspendedRoute(path, handle))
+internal fun post(path: String, acceptType: ContentType, handle: RouteHandle) {
+    service.addRoute(HttpMethod.post, SuspendedRoute(path, acceptType, handle))
 }
 
 @ContextDsl
-internal fun delete(path: String, handle: RouteHandle) {
-    service.addRoute(HttpMethod.delete, SuspendedRoute(path, handle))
+internal fun delete(path: String, acceptType: ContentType, handle: RouteHandle) {
+    service.addRoute(HttpMethod.delete, SuspendedRoute(path, acceptType, handle))
+}
+
+@ContextDsl
+internal fun patch(path: String, acceptType: ContentType, handle: RouteHandle) {
+    service.addRoute(HttpMethod.patch, SuspendedRoute(path, acceptType, handle))
+}
+
+@ContextDsl
+internal fun put(path: String, acceptType: ContentType, handle: RouteHandle) {
+    service.addRoute(HttpMethod.put, SuspendedRoute(path, acceptType, handle))
 }

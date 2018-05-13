@@ -16,14 +16,20 @@
 package xyz.laxus.api.internal
 
 import spark.route.HttpMethod
+import xyz.laxus.api.API
+import xyz.laxus.api.RouteRegistry
 import xyz.laxus.api.annotation.*
 import xyz.laxus.api.internal.context.RouteContext
 import xyz.laxus.api.util.ContentType
+import xyz.laxus.api.conversions.ParamType
 import xyz.laxus.util.createLogger
 import xyz.laxus.util.debug
-import xyz.laxus.util.ignored
 import xyz.laxus.util.modifyIf
-import xyz.laxus.util.reflect.*
+import xyz.laxus.util.reflect.callBySuspended
+import xyz.laxus.util.reflect.hasAnnotation
+import xyz.laxus.util.reflect.isNullable
+import xyz.laxus.util.reflect.isType
+import xyz.laxus.util.unsupported
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.extensionReceiverParameter
@@ -45,6 +51,8 @@ internal class RouteRunner(
         }
     }
 
+    private var alreadyRegisteredHeadResolver = false
+    private var contentType: ContentType = ContentType.Any
     private val responseHeaders = headers.toMutableMap()
     private val paramResolvers: List<ParameterResolver<*>>
     private val handle: RouteHandle = {
@@ -82,6 +90,7 @@ internal class RouteRunner(
             }
 
             paramResolvers += when {
+                it.hasAnnotation<Body>()       -> mapBody(it)
                 it.hasAnnotation<Header>()     -> mapHeader(it)
                 it.hasAnnotation<Param>()      -> mapParam(it)
                 it.hasAnnotation<QueryParam>() -> mapQueryParam(it)
@@ -120,6 +129,17 @@ internal class RouteRunner(
         return ParameterResolver(parameter, false, false) { this }
     }
 
+    private fun mapBody(parameter: KParameter): ParameterResolver<*> {
+        check(!alreadyRegisteredHeadResolver) { "Head parameter resolver has already been registered!" }
+        val converter = checkNotNull(RouteRegistry.converters[parameter.type]) {
+            "Unable to convert parameter type ${parameter.type} without registered converter service!"
+        }
+        logRegisteredResolver("Body", parameter)
+        alreadyRegisteredHeadResolver = true
+        contentType = converter.contentType
+        return ParameterResolver(parameter) { with(converter) { convert() } }
+    }
+
     private fun mapHeader(parameter: KParameter): ParameterResolver<*> {
         val header = checkNotNull(parameter.findAnnotation<Header>()) { "Expected @Header was null!" }
         val headerKey = header.value
@@ -128,7 +148,7 @@ internal class RouteRunner(
         logRegisteredResolver("Header", parameter)
         return ParameterResolver(parameter, nullable) resolve@ {
             if(isContentType) {
-                return@resolve request.contentType
+                return@resolve request.contentType ?: API.DefaultContentType
             } else {
                 return@resolve request.header(headerKey)
             }
@@ -141,17 +161,7 @@ internal class RouteRunner(
         val paramType = checkNotNull(ParamType.from(parameter.type))
         logRegisteredResolver("Param", parameter)
         return ParameterResolver(parameter) resolve@ {
-            val paramValue = request.params[paramKey]
-            if(paramValue === null) {
-                return@resolve null
-            }
-
-            when(paramType) {
-                ParamType.STRING -> return@resolve paramValue
-                ParamType.INT -> return@resolve ignored(null) { paramValue.toInt() }
-                ParamType.LONG -> return@resolve ignored(null) { paramValue.toLong() }
-                ParamType.BOOLEAN -> return@resolve paramValue.toBoolean()
-            }
+            return@resolve paramType.convert(request.params[paramKey])
         }
     }
 
@@ -161,17 +171,7 @@ internal class RouteRunner(
         val queryParamType = checkNotNull(ParamType.from(parameter.type))
         logRegisteredResolver("QueryParam", parameter)
         return ParameterResolver(parameter) resolve@ {
-            val queryMap = request.queryMap[queryParamKey]
-            if(queryMap.value() === null) {
-                return@resolve null
-            }
-
-            when(queryParamType) {
-                ParamType.STRING -> return@resolve queryMap.value()
-                ParamType.INT -> return@resolve ignored(null) { queryMap.integerValue() }
-                ParamType.LONG -> return@resolve ignored(null) { queryMap.longValue() }
-                ParamType.BOOLEAN -> return@resolve queryMap.booleanValue()
-            }
+            return@resolve queryParamType.convert(request.queryMap[queryParamKey]?.value())
         }
     }
 
@@ -184,11 +184,14 @@ internal class RouteRunner(
 
     internal fun generate() {
         when(method) {
-            HttpMethod.get -> get(path, handle)
-            HttpMethod.post -> post(path, handle)
-            HttpMethod.delete -> delete(path, handle)
+            HttpMethod.get -> get(path, contentType, handle)
+            HttpMethod.post -> post(path, contentType, handle)
+            HttpMethod.delete -> delete(path, contentType, handle)
+            HttpMethod.put -> put(path, contentType, handle)
+            HttpMethod.patch -> patch(path, contentType, handle)
+            
 
-            else -> throw IllegalStateException("$method is not supported!")
+            else -> unsupported { "$method is not supported!" }
         }
     }
 }

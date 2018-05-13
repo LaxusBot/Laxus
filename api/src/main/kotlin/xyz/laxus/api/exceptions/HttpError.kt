@@ -13,8 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.annotation
+@file:Suppress("MemberVisibilityCanBePrivate", "CanBeParameter")
+package xyz.laxus.api.exceptions
 
-@Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class Path(val value: String)
+import me.kgustave.json.JSWriter
+import me.kgustave.json.obj
+import org.eclipse.jetty.http.HttpStatus
+
+open class HttpError(
+    val status: HttpStatus.Code,
+    message: String = status.message
+): RuntimeException(message) {
+    val code get() = status.code
+    open fun toJson(): String {
+        return JSWriter().obj {
+            key("status").value(code)
+            key("message").value(message)
+        }.toString()
+    }
+}

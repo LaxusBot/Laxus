@@ -13,21 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api
+package xyz.laxus.api.conversions
 
+import xyz.laxus.api.internal.context.RouteContext
 import xyz.laxus.api.util.ContentType
+import kotlin.reflect.full.starProjectedType
 
 /**
  * @author Kaidan Gustave
  */
-object API {
-    val DefaultContentType = ContentType.Application.Json.withCharset(Charsets.UTF_8)
+class StringBodyConverter: BodyConverter<String> {
+    override val contentType = ContentType.Any
+    override val kotlinType = String::class.starProjectedType
 
-    fun start() {
-        port(9090)
-    }
-
-    fun stop() {
-        service.stop()
-    }
+    override fun RouteContext.convert(): String? = request.body
 }

@@ -24,7 +24,7 @@ import javax.annotation.concurrent.Immutable
  * @author Kaidan Gustave
  */
 @Immutable
-class ContentType private constructor(
+open class ContentType private constructor(
     val mime: String, val extension: String,
     val params: Map<String, String> = mapOf(),
     val charset: Charset? = null
@@ -106,12 +106,10 @@ class ContentType private constructor(
         return clone(params = newParamMap, charset = newCharset)
     }
 
-    override fun equals(other: Any?): Boolean {
+    override fun equals(other: kotlin.Any?): Boolean {
         if(other !is ContentType) return false
 
-        // Don't check for charset equivalence because it's covered by the map check
-        return mime == other.mime && extension == other.extension &&
-               params.entries.all { it.value.equals(other.params[it.key], ignoreCase = true) }
+        return mime == other.mime && extension == other.extension
     }
 
     override fun hashCode(): Int = hashAll(mime, extension, params, charset)
@@ -120,6 +118,8 @@ class ContentType private constructor(
         return "$mime/$extension" + params.entries.joinToString(
             separator = ";", prefix = ";") { "${it.key}=${it.value}" }
     }
+
+    object Any: ContentType(mime = "*", extension = "*")
 
     object Application {
         val Gzip = ContentType("application", "gzip")

@@ -19,12 +19,16 @@ import spark.Request
 import spark.Response
 import spark.RouteImpl
 import xyz.laxus.api.internal.context.RouteContext
+import xyz.laxus.api.util.ContentType
 import xyz.laxus.util.concurrent.task
 
 /**
  * @author Kaidan Gustave
  */
-class SuspendedRoute(path: String, private val handle: RouteHandle): RouteImpl(path) {
+class SuspendedRoute(
+    path: String, acceptType: ContentType,
+    private val handle: RouteHandle
+): RouteImpl(path, "$acceptType") {
     override fun handle(request: Request, response: Response): Any? {
         val task = task {
             val context = RouteContext(request, response)

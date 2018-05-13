@@ -13,21 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api
+package xyz.laxus.api.conversions
 
+import xyz.laxus.api.internal.context.RouteContext
 import xyz.laxus.api.util.ContentType
+import kotlin.reflect.KType
 
 /**
  * @author Kaidan Gustave
  */
-object API {
-    val DefaultContentType = ContentType.Application.Json.withCharset(Charsets.UTF_8)
+interface BodyConverter<T> {
+    val contentType: ContentType
+    val kotlinType: KType
 
-    fun start() {
-        port(9090)
-    }
-
-    fun stop() {
-        service.stop()
-    }
+    fun RouteContext.convert(): T?
 }

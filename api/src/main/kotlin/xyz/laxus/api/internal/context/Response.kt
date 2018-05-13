@@ -19,27 +19,27 @@ package xyz.laxus.api.internal.context
 import kotlinx.html.HTML
 import kotlinx.html.HtmlTagMarker
 import me.kgustave.json.JSObject
+import org.eclipse.jetty.http.HttpStatus
 import xyz.laxus.api.util.ContentType
-import xyz.laxus.api.util.HttpStatusCode
 
 /**
  * @author Kaidan Gustave
  */
 @ContextDsl
 class Response(val context: RouteContext, private val base: spark.Response) {
-    var status: HttpStatusCode
+    var status: HttpStatus.Code
         get() = status()
         set(value) = status(value)
 
-    fun status(): HttpStatusCode {
-        return HttpStatusCode.codeOf(base.status())
+    fun status(): HttpStatus.Code {
+        return HttpStatus.getCode(base.status())
     }
 
     fun status(status: Int) {
         base.status(status)
     }
 
-    fun status(status: HttpStatusCode) {
+    fun status(status: HttpStatus.Code) {
         base.status(status.code)
     }
 
@@ -51,7 +51,7 @@ class Response(val context: RouteContext, private val base: spark.Response) {
         base.header(header, value)
     }
 
-    fun redirect(location: String, status: HttpStatusCode = status()) {
+    fun redirect(location: String, status: HttpStatus.Code = status()) {
         base.redirect(location, status.code)
     }
 

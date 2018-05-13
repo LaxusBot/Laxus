@@ -13,21 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.util
-
-import org.eclipse.jetty.http.HttpStatus
+package xyz.laxus.api.conversions
 
 /**
  * @author Kaidan Gustave
  */
-enum class HttpStatusCode(val code: Int) {
-    OK(HttpStatus.OK_200),
-    BAD_REQUEST(HttpStatus.BAD_REQUEST_400),
-    UNAUTHORIZED(HttpStatus.UNAUTHORIZED_401);
-
-    companion object {
-        fun codeOf(code: Int) = requireNotNull(values().find { it.code == code }) {
-            "Unable to find HttpStatusCode value with code: $code!"
-        }
-    }
+internal interface ParamConverter {
+    fun convert(given: Any?): Any?
 }

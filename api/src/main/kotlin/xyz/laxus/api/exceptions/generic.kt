@@ -13,21 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api
+package xyz.laxus.api.exceptions
 
-import xyz.laxus.api.util.ContentType
+import org.eclipse.jetty.http.HttpStatus
+import org.eclipse.jetty.http.HttpStatus.Code.*
 
-/**
- * @author Kaidan Gustave
- */
-object API {
-    val DefaultContentType = ContentType.Application.Json.withCharset(Charsets.UTF_8)
+fun internalServerError() = HttpError(INTERNAL_SERVER_ERROR)
 
-    fun start() {
-        port(9090)
-    }
+fun badRequest(message: String? = null) = createHttpErrorWithMessage(BAD_REQUEST, message)
 
-    fun stop() {
-        service.stop()
-    }
+fun unauthorized(message: String? = null) = createHttpErrorWithMessage(UNAUTHORIZED, message)
+
+private fun createHttpErrorWithMessage(code: HttpStatus.Code, message: String?): HttpError {
+    return message?.let { HttpError(code, message) } ?: HttpError(code)
 }
