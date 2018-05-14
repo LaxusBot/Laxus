@@ -52,3 +52,8 @@ internal fun patch(path: String, acceptType: ContentType, handle: RouteHandle) {
 internal fun put(path: String, acceptType: ContentType, handle: RouteHandle) {
     service.addRoute(HttpMethod.put, SuspendedRoute(path, acceptType, handle))
 }
+
+@ContextDsl
+internal fun head(path: String, acceptType: ContentType, handle: RouteHandle) {
+    service.addRoute(HttpMethod.head, SuspendedRoute(path, acceptType, handle))
+}

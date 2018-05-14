@@ -27,7 +27,7 @@ import kotlin.reflect.full.starProjectedType
  * @author Kaidan Gustave
  */
 class JSArrayBodyConverter: BodyConverter<JSArray> {
-    override val contentType = ContentType.Application.Json
+    override val contentType = ContentType.Application.Json.withCharset(Charsets.UTF_8)
     override val kotlinType = JSArray::class.starProjectedType
 
     override fun RouteContext.convert(): JSArray? {

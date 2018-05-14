@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 @file:Suppress("MemberVisibilityCanBePrivate", "CanBeParameter")
-package xyz.laxus.api.exceptions
+package xyz.laxus.api.exceptions.http
 
 import me.kgustave.json.JSWriter
 import me.kgustave.json.obj

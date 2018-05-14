@@ -21,12 +21,13 @@ import kotlin.annotation.AnnotationTarget.*
 import kotlin.reflect.KAnnotatedElement
 import kotlin.reflect.KClass
 
-/**
- * @author Kaidan Gustave
- */
 @Retention(RUNTIME)
 @Target(FUNCTION, CLASS, ANNOTATION_CLASS)
 annotation class ResponseHeader(val header: String, val value: String)
+
+@Retention(RUNTIME)
+@Target(FUNCTION, CLASS, ANNOTATION_CLASS)
+annotation class ResponseHeaders(vararg val headers: ResponseHeader)
 
 // FIXME When Annotations can have members/inner types, reallocate these functions to ResponseHeader.Companion
 internal val KAnnotatedElement.responseHeaderAnnotations: List<ResponseHeader> get() {
@@ -39,6 +40,7 @@ internal fun Annotation.responseHeaderAnnotation(
     previouslyChecked: MutableSet<KClass<out Annotation>> = mutableSetOf()
 ): List<ResponseHeader> {
     if(this is ResponseHeader) return listOf(this)
+    if(this is ResponseHeaders) return this.headers.toList()
     val klass = annotationClass
     if(klass in previouslyChecked) return emptyList()
     previouslyChecked += klass

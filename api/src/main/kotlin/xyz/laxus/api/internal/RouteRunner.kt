@@ -52,10 +52,15 @@ internal class RouteRunner(
     }
 
     private var alreadyRegisteredHeadResolver = false
-    private var contentType: ContentType = ContentType.Any
+    private var contentType = API.DefaultContentType
+        set(value) {
+            if(value != ContentType.Any)
+                field = value
+        }
     private val responseHeaders = headers.toMutableMap()
     private val paramResolvers: List<ParameterResolver<*>>
     private val handle: RouteHandle = {
+        response.header("Transfer-Encoding", null)
         responseHeaders.forEach { response.header(it.key, it.value) }
         val parameterValues = resolveParams().toMap()
         val value = if(function.isSuspend) {
@@ -64,7 +69,10 @@ internal class RouteRunner(
             function.callBy(parameterValues)
         }
 
-        if(value !== Unit && value !== null) send(value) else finish()
+        if(value !== Unit && value !== null) {
+            response.contentType(contentType)
+            send(value)
+        } else finish()
     }
 
     init {
@@ -189,7 +197,7 @@ internal class RouteRunner(
             HttpMethod.delete -> delete(path, contentType, handle)
             HttpMethod.put -> put(path, contentType, handle)
             HttpMethod.patch -> patch(path, contentType, handle)
-            
+            HttpMethod.head -> head(path, contentType, handle)
 
             else -> unsupported { "$method is not supported!" }
         }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.exceptions
+package xyz.laxus.api.exceptions.http
 
 import org.eclipse.jetty.http.HttpStatus
 import org.eclipse.jetty.http.HttpStatus.Code.*

@@ -31,24 +31,22 @@ class Response(val context: RouteContext, private val base: spark.Response) {
         get() = status()
         set(value) = status(value)
 
-    fun status(): HttpStatus.Code {
-        return HttpStatus.getCode(base.status())
-    }
+    fun status(): HttpStatus.Code = checkNotNull(HttpStatus.getCode(base.status()))
 
     fun status(status: Int) {
         base.status(status)
     }
 
     fun status(status: HttpStatus.Code) {
-        base.status(status.code)
+        status(status.code)
     }
 
-    fun contentType(value: ContentType) {
-        base.header("Content-Type", "$value")
+    fun header(header: String, value: String?) {
+        base.raw().setHeader(header, value)
     }
 
-    fun header(header: String, value: String) {
-        base.header(header, value)
+    fun contentType(value: ContentType?) {
+        header("Content-Type", value?.let { "$it" })
     }
 
     fun redirect(location: String, status: HttpStatus.Code = status()) {
