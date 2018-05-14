@@ -46,7 +46,7 @@ import xyz.laxus.entities.tagMethods
 import xyz.laxus.jda.listeners.SuspendedListener
 import xyz.laxus.jda.util.listeningTo
 import xyz.laxus.logging.LogLevel
-import xyz.laxus.logging.NormalFilter
+import xyz.laxus.logging.filters.NormalFilter
 import xyz.laxus.util.*
 import xyz.laxus.util.collections.CaseInsensitiveHashMap
 import xyz.laxus.util.collections.FixedSizeCache
