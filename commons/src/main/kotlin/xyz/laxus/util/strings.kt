@@ -27,3 +27,89 @@ package xyz.laxus.util
  * @return `false` if the receiver does not match the [regex].
  */
 infix fun String.doesNotMatch(regex: Regex): Boolean = !(this matches regex)
+
+/**
+ * Converts a [Text Glob](https://metacpan.org/pod/Text::Glob)
+ * pattern to a [RegExp][Regex] equivalent.
+ *
+ * @param glob The Text Glob to convert.
+ *
+ * @return A RegExp equivalent.
+ */
+fun regexpFromGlob(glob: String): String {
+    var g = glob
+    if(g.startsWith('*')) {
+        g = g.substring(1)
+    }
+    if(g.endsWith('*')) {
+        g = g.substring(0, g.length - 1)
+    }
+    return buildString(glob.length) {
+        var escaping = false
+        var level = 0
+        for(c in g) when(c) {
+            '*'  -> {
+                append(if(escaping) "\\*" else ".*")
+                escaping = false
+            }
+            '?'  -> {
+                append(if(escaping) "\\?" else ".")
+                escaping = false
+            }
+            '.', '(', ')',
+            '+', '|', '^',
+            '$', '@', '%' -> {
+                append('\\')
+                append(c)
+                escaping = false
+            }
+
+            '\\' -> {
+                if(escaping) {
+                    append("\\\\")
+                    escaping = false
+                } else {
+                    escaping = true
+                }
+            }
+
+            '{' -> {
+                if(escaping) {
+                    append("\\{")
+                } else {
+                    append('(')
+                    level++
+                }
+                escaping = false
+            }
+
+            '}' -> {
+                if(level > 0 && !escaping) {
+                    append(')')
+                    level--
+                } else if(escaping) {
+                    append("\\}")
+                } else {
+                    append("}")
+                }
+                escaping = false
+            }
+
+            ',' -> {
+                if(level > 0 && !escaping) {
+                    append('|')
+                } else if(escaping) {
+                    append("\\,")
+                } else {
+                    append(',')
+                }
+                escaping = false
+            }
+
+            else -> {
+                append(c)
+                escaping = false
+            }
+        }
+    }
+}

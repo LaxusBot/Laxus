@@ -13,18 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.logging
+package xyz.laxus.logging.filters
 
-import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.filter.Filter
 import ch.qos.logback.core.spi.FilterReply
 
-class NormalFilter: Filter<ILoggingEvent>() {
-    companion object {
-        var level = LogLevel.INFO
+/**
+ * @author Kaidan Gustave
+ */
+abstract class BooleanFilter<E>: Filter<E>() {
+    final override fun decide(event: E): FilterReply {
+        val decision = filter(event)
+        return when(decision) {
+            null -> FilterReply.NEUTRAL
+            true -> FilterReply.ACCEPT
+            false -> FilterReply.DENY
+        }
     }
 
-    override fun decide(event: ILoggingEvent): FilterReply {
-        return if(level.covers(LogLevel.byLevel(event.level))) FilterReply.ACCEPT else FilterReply.DENY
-    }
+    protected abstract fun filter(event: E): Boolean?
 }

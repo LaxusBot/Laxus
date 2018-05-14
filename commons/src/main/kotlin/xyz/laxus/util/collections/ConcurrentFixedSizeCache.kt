@@ -16,8 +16,6 @@
 @file:Suppress("UNCHECKED_CAST")
 package xyz.laxus.util.collections
 
-import java.util.function.BiConsumer
-
 /**
  * @author Kaidan Gustave
  */
@@ -33,11 +31,7 @@ class ConcurrentFixedSizeCache<K: Any, V: Any>(size: Int): MutableMap<K, V> {
     override val entries get() = map.entries
     override val keys get() = map.keys
     override val values get() = map.values
-    override val size get() = backingKeys.count { it !== null }
-
-    operator fun set(key: K, value: V) {
-        put(key, value)
-    }
+    override val size get() = map.size
 
     override fun clear() {
         map.clear()
@@ -48,28 +42,21 @@ class ConcurrentFixedSizeCache<K: Any, V: Any>(size: Int): MutableMap<K, V> {
     }
 
     override fun put(key: K, value: V): V? {
-        val v = if(backingKeys[currIndex] !== null) {
-            map.remove(backingKeys[currIndex])
-        } else map.put(key, value)
-
+        backingKeys[currIndex]?.let { map -= it }
         backingKeys[currIndex] = key
         currIndex = (currIndex + 1) % backingKeys.size
-        return v
+        return map.put(key, value)
     }
 
     override fun putAll(from: Map<out K, V>) = from.forEach { k, v -> put(k,v) }
 
     override fun remove(key: K): V? = map.remove(key)
 
-    override fun isEmpty(): Boolean = size == 0
+    override fun isEmpty(): Boolean = map.isEmpty()
 
     override fun get(key: K): V? = map[key]
-
-    override fun getOrDefault(key: K, defaultValue: V): V = map[key] ?: defaultValue
 
     override fun containsKey(key: K): Boolean = map.containsKey(key)
 
     override fun containsValue(value: V): Boolean = map.containsValue(value)
-
-    override fun forEach(action: BiConsumer<in K, in V>) = map.forEach(action)
 }
