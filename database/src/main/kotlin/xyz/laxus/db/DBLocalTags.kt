@@ -33,7 +33,7 @@ import xyz.laxus.db.sql.ResultSetType.*
     Column("owner_id", BIGINT, nullable = true),
     Column("guild_id", BIGINT, primary = true)
 )
-object DBLocalTags : Table() {
+object DBLocalTags: Table() {
     fun getTags(guildId: Long): List<LocalTag> {
         val list = ArrayList<LocalTag>()
         connection.prepare("SELECT * FROM local_tags WHERE guild_id = ?") { statement ->
@@ -51,6 +51,20 @@ object DBLocalTags : Table() {
         val list = ArrayList<LocalTag>()
         connection.prepare("SELECT * FROM local_tags WHERE owner_id = ? AND guild_id = ?") { statement ->
             statement[1] = userId
+            statement[2] = guildId
+            statement.executeQuery {
+                it.whileNext {
+                    list += LocalTagImpl(it)
+                }
+            }
+        }
+        return list
+    }
+
+    fun findTags(query: String, guildId: Long): List<LocalTag> {
+        val list = arrayListOf<LocalTag>()
+        connection.prepare("SELECT * FROM local_tags WHERE LOWER(name) ILIKE LOWER(?) AND guild_id = ?") { statement ->
+            statement[1] = "$query%"
             statement[2] = guildId
             statement.executeQuery {
                 it.whileNext {

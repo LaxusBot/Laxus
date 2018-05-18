@@ -29,10 +29,7 @@ import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.findMembers
 import xyz.laxus.jda.util.findUsers
 import xyz.laxus.util.*
-import xyz.laxus.util.db.createTag
-import xyz.laxus.util.db.getTagByName
-import xyz.laxus.util.db.isTag
-import xyz.laxus.util.db.tags
+import xyz.laxus.util.db.*
 
 /**
  * @author Kaidan Gustave
@@ -50,7 +47,8 @@ class TagCommand: Command(StandardGroup) {
         TagDeleteCommand(),
         TagEditCommand(),
         TagListCommand(),
-        TagOwnerCommand()
+        TagOwnerCommand(),
+        TagSearchCommand()
     )
 
     override suspend fun execute(ctx: CommandContext) {
@@ -94,7 +92,7 @@ class TagCommand: Command(StandardGroup) {
     }
 
     @MustHaveArguments
-    private inner class TagCreateCommand : Command(this@TagCommand) {
+    private inner class TagCreateCommand: Command(this@TagCommand) {
         override val name = "Create"
         override val arguments = "[Tag Name] [Tag Content]"
         override val help = "Creates a new local tag."
@@ -138,7 +136,7 @@ class TagCommand: Command(StandardGroup) {
     }
 
     @MustHaveArguments
-    private inner class TagCreateGlobalCommand : Command(this@TagCommand) {
+    private inner class TagCreateGlobalCommand: Command(this@TagCommand) {
         override val name = "CreateGlobal"
         override val arguments = "Creates a new global tag."
         override val help = "Creates a new global tag."
@@ -180,7 +178,7 @@ class TagCommand: Command(StandardGroup) {
     }
 
     @MustHaveArguments
-    private inner class TagDeleteCommand : Command(this@TagCommand) {
+    private inner class TagDeleteCommand: Command(this@TagCommand) {
         override val name = "Delete"
         override val arguments = "[Tag Name]"
         override val help = "Deletes a tag you own."
@@ -212,7 +210,7 @@ class TagCommand: Command(StandardGroup) {
     }
 
     @MustHaveArguments
-    private inner class TagEditCommand : Command(this@TagCommand) {
+    private inner class TagEditCommand: Command(this@TagCommand) {
         override val name = "Edit"
         override val arguments = "[Tag Name] [Tag Content]"
         override val help = "Creates a new local tag."
@@ -252,12 +250,17 @@ class TagCommand: Command(StandardGroup) {
     }
 
     @AutoCooldown
-    private inner class TagListCommand : Command(this@TagCommand) {
+    private inner class TagListCommand: Command(this@TagCommand) {
         override val name = "List"
         override val arguments = "<User>"
         override val help = "Gets a list of tags owned by a user."
         override val guildOnly = false
         override val cooldown = 10
+        override val botPermissions = arrayOf(
+            MESSAGE_EMBED_LINKS,
+            MESSAGE_MANAGE,
+            MESSAGE_ADD_REACTION
+        )
 
         private val builder = paginatorBuilder {
             waiter { Laxus.Waiter }
@@ -330,7 +333,7 @@ class TagCommand: Command(StandardGroup) {
     }
 
     @MustHaveArguments
-    private inner class TagOwnerCommand : Command(this@TagCommand) {
+    private inner class TagOwnerCommand: Command(this@TagCommand) {
         override val name = "Owner"
         override val arguments = "[Tag Name]"
         override val help = "Gets the owner of a tag by name."
@@ -364,6 +367,71 @@ class TagCommand: Command(StandardGroup) {
                           "is owned by ${owner.formattedName(true)}."
 
             ctx.replySuccess(message)
+            ctx.invokeCooldown()
+        }
+    }
+
+    @MustHaveArguments
+    private inner class TagSearchCommand: Command(this@TagCommand) {
+        override val name = "Search"
+        override val arguments = "[Query]"
+        override val help = "Searches for tags by name."
+        override val guildOnly = false
+        override val cooldown = 30
+        override val cooldownScope = CooldownScope.USER
+        override val botPermissions = arrayOf(
+            MESSAGE_EMBED_LINKS,
+            MESSAGE_MANAGE,
+            MESSAGE_ADD_REACTION
+        )
+
+        private val builder = paginatorBuilder {
+            waiter { Laxus.Waiter }
+            timeout { delay { 20 } }
+            showPageNumbers { true }
+            numberItems { true }
+            waitOnSinglePage { true }
+            itemsPerPage { 10 }
+            allowTextInput { true }
+        }
+
+        override suspend fun execute(ctx: CommandContext) {
+            val query = ctx.args
+            val tags = if(ctx.isGuild)
+                ctx.guild.findTags(query) + ctx.jda.findTags(query)
+            else ctx.jda.findTags(query)
+
+            if(tags.isEmpty()) return ctx.replyWarning {
+                "No tags found matching \"$query\"!"
+            }
+
+            val tagLabels = tags.map {
+                val owner = run {
+                    val ownerId = it.ownerId
+                    if(ownerId === null) return@run "Override"
+                    val user = ctx.takeIf { it.isGuild }?.guild?.getMemberById(ownerId)?.user ?:
+                               ctx.jda.getUserById(ownerId) ?:
+                               ignored(null) { ctx.jda.retrieveUserById(ownerId).await() }
+                    return@run user?.toString() ?: "ID: $ownerId"
+                }
+                return@map "${it.name} ($owner)"
+            }
+
+            val paginator = paginator(builder) {
+                text { _, _ -> "Tags matching **$query**" }
+                items { + tagLabels }
+                finalAction { message ->
+                    ctx.linkMessage(message)
+                    message.guild?.let {
+                        if(it.selfMember.hasPermission(message.textChannel, MESSAGE_MANAGE)) {
+                            message.clearReactions().queue()
+                        }
+                    }
+                }
+                user { ctx.author }
+            }
+
+            paginator.displayIn(ctx.channel)
             ctx.invokeCooldown()
         }
     }

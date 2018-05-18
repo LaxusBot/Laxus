@@ -398,6 +398,12 @@ class Paginator
         }
 
         @Menu.Dsl
+        inline fun allowTextInput(lazy: () -> Boolean): Paginator.Builder {
+            allowTextInput = lazy()
+            return this
+        }
+
+        @Menu.Dsl
         fun finalAction(block: FinalAction): Paginator.Builder {
             finalAction = block
             return this
