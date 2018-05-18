@@ -42,6 +42,10 @@ fun JDA.isTag(name: String): Boolean {
     return getTagByName(name) !== null // FIXME
 }
 
+fun JDA.findTags(query: String): List<Tag> {
+    return DBGlobalTags.findTags(query)
+}
+
 // Local
 
 val Guild.tags get() = DBLocalTags.getTags(idLong)
@@ -57,4 +61,8 @@ fun Guild.createTag(name: String, content: String, owner: Member) {
 
 fun Guild.isTag(name: String): Boolean {
     return getTagByName(name) !== null // FIXME
+}
+
+fun Guild.findTags(query: String): List<LocalTag> {
+    return DBLocalTags.findTags(query, idLong)
 }

@@ -58,6 +58,19 @@ object DBGlobalTags: Table() {
         return list
     }
 
+    fun findTags(query: String): List<Tag> {
+        val list = arrayListOf<Tag>()
+        connection.prepare("SELECT * FROM global_tags WHERE LOWER(name) ILIKE LOWER(?)") { statement ->
+            statement[1] = "$query%"
+            statement.executeQuery {
+                it.whileNext {
+                    list += GlobalTagImpl(it)
+                }
+            }
+        }
+        return list
+    }
+
     fun getTagByName(name: String): Tag? {
         connection.prepare("SELECT * FROM global_tags WHERE LOWER(name) = LOWER(?)") { statement ->
             statement[1] = name
