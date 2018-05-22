@@ -53,7 +53,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
                 val arguments = command.arguments
                 val experiment = command.experiment
                 val children = command.children.filter {
-                    it.group.check(ctx) && when {
+                    !it.unlisted && it.group.check(ctx) && when {
                         ctx.isPrivate -> it.defaultLevel.test(ctx) && !it.guildOnly
                         it.hasAdjustableLevel -> it.defaultLevel.test(ctx)
                         else -> (ctx.guild.getCommandLevel(it) ?: it.defaultLevel).test(ctx)
@@ -146,6 +146,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
     open val fullname: String get() = "${parent?.let { "${it.fullname} " } ?: ""}$name"
     open val defaultLevel: Command.Level get() = parent?.defaultLevel ?: group.defaultLevel
     open val isExperimental: Boolean get() = experiment !== null
+    open val unlisted get() = group.unlisted
 
     private val experiment: Experiment? by lazy { this::class.findAnnotation() ?: parent?.experiment }
     private val autoCooldown by lazy { this::class.findAnnotation<AutoCooldown>()?.mode ?: AutoCooldownMode.OFF }
@@ -183,7 +184,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
         if(!group.check(ctx))
             return
 
-        if(ctx.args.startsWith("help", true))
+        if(!unlisted && ctx.args.startsWith("help", true))
             return sendSubHelp(ctx, this)
 
         val level = ctx.level
@@ -351,6 +352,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
         abstract val defaultLevel: Level
         abstract val guildOnly: Boolean
         abstract val devOnly: Boolean
+        open val unlisted = false
         val commands = LinkedList<Command>()
 
         // Can be used as an arbitrary check for commands under group

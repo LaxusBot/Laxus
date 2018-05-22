@@ -35,6 +35,6 @@ class RestartCommand: Command(OwnerGroup) {
 
         // Await to prevent shutting down while replying
         ctx.sendWarning("Restarting...")
-        ctx.jda.shutdownNow()
+        Laxus.stop()
     }
 }
