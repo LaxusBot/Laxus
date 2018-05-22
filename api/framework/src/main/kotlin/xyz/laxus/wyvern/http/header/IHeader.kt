@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.wyvern.http.header
 
-include ':api', ':api:framework'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+/**
+ * @author Kaidan Gustave
+ */
+interface IHeader {
+    val header: String
+
+    fun headerValue(): String = toString()
+}

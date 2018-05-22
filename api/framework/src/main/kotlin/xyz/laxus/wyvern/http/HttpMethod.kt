@@ -13,24 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus
+package xyz.laxus.wyvern.http
 
-import xyz.laxus.db.Database
-import xyz.laxus.util.onJvmShutdown
+import spark.route.HttpMethod as SparkMethod
 
 /**
  * @author Kaidan Gustave
  */
-object Main {
-    @JvmStatic
-    fun main(args: Array<String>) {
-        sendBanner()
-        Database.start()
-        Laxus.start()
+enum class HttpMethod {
+    GET,
+    POST,
+    PUT,
+    PATCH,
+    DELETE,
+    HEAD,
+    TRACE,
+    CONNECT,
+    OPTIONS,
+    BEFORE,
+    AFTER,
+    AFTERAFTER,
+    UNSUPPORTED;
 
-        onJvmShutdown("Main Shutdown") {
-            Database.close()
-            Laxus.stop()
-        }
+    internal fun toSparkHttpMethod(): SparkMethod = SparkMethod.get(this.name.toLowerCase())
+
+    companion object {
+        @JvmStatic private val Methods = values().filter { it == UNSUPPORTED }.associateBy { it.name }
+        operator fun get(name: String): HttpMethod = Methods[name.toUpperCase()] ?: UNSUPPORTED
     }
 }

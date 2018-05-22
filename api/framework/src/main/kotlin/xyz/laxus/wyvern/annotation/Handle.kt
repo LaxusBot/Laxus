@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.wyvern.annotation
 
-include ':api', ':api:framework'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import xyz.laxus.wyvern.http.HttpMethod
+
+@Target(AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class Handle(
+    val method: HttpMethod,
+    val extension: String = ""
+)

@@ -4,7 +4,6 @@ buildscript {
         kotlin_json_version = '1.4.0'
         kotlinx_coroutines_version = '0.22.5'
         kotlinx_html_version = '0.6.9'
-        ktor_version = '0.9.2-alpha-2'
         shadow_version = '2.0.1'
         jda_version = '3.6.0_358'
         jda_utilities_version = '2.1.1'
@@ -15,6 +14,7 @@ buildscript {
         ok_http_version = '3.8.1'
         h2_version = '1.4.196'
         postgresql_version = '9.0-801.jdbc4'
+        spark_version = '2.7.2'
         slf4j_version = '1.7.25'
         logback_version = '1.2.3'
         jagtag_version = '0.5'
@@ -88,6 +88,9 @@ subprojects {
 
             // Configuration
             hocon = { "com.typesafe:config:$hocon_version" }
+
+            // Routing
+            spark = { "com.sparkjava:spark-core:$spark_version" }
 
             // Requests
             youtube = { "com.google.apis:google-api-services-youtube:$youtube_api_version" }

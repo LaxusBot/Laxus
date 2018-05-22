@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.wyvern.http.error
 
-include ':api', ':api:framework'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import org.eclipse.jetty.http.HttpStatus.Code.NOT_FOUND
+
+/**
+ * @author Kaidan Gustave
+ */
+class NotFoundError(message: String = NOT_FOUND.message): HttpError(NOT_FOUND, message)

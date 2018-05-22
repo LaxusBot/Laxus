@@ -13,10 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.wyvern.plugins
 
-include ':api', ':api:framework'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import com.typesafe.config.Config
+
+/**
+ * @author Kaidan Gustave
+ */
+interface WyvernPlugin {
+    fun start() {}
+
+    fun apply(config: Config)
+
+    fun stop() {}
+}

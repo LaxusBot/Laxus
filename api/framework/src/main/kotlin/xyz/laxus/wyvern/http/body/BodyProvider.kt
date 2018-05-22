@@ -13,10 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.wyvern.http.body
 
-include ':api', ':api:framework'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import xyz.laxus.wyvern.context.RouteContext
+import xyz.laxus.wyvern.http.header.ContentType
+import kotlin.reflect.KClass
+
+/**
+ * Helps an application provide specific body types
+ * as parameters for handlers.
+ *
+ * @author Kaidan Gustave
+ */
+interface BodyProvider<T> {
+    val contentType: ContentType
+    val kotlinTypes: List<KClass<*>>
+
+    fun RouteContext.convert(): T?
+}

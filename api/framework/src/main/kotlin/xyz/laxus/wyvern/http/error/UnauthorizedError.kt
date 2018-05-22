@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.wyvern.http.error
 
-include ':api', ':api:framework'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import org.eclipse.jetty.http.HttpStatus
+
+/**
+ * @author Kaidan Gustave
+ */
+class UnauthorizedError: HttpError(HttpStatus.Code.UNAUTHORIZED)

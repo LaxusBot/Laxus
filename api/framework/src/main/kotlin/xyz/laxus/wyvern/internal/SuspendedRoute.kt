@@ -13,24 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus
+package xyz.laxus.wyvern.internal
 
-import xyz.laxus.db.Database
-import xyz.laxus.util.onJvmShutdown
+import spark.Request
+import spark.Response
+import spark.RouteImpl
+import xyz.laxus.wyvern.context.RouteContext
+import xyz.laxus.wyvern.http.header.ContentType
+import xyz.laxus.util.concurrent.task
 
 /**
  * @author Kaidan Gustave
  */
-object Main {
-    @JvmStatic
-    fun main(args: Array<String>) {
-        sendBanner()
-        Database.start()
-        Laxus.start()
-
-        onJvmShutdown("Main Shutdown") {
-            Database.close()
-            Laxus.stop()
+internal class SuspendedRoute(
+    path: String,
+    private val handle: RouteHandle
+): RouteImpl(path) {
+    override fun handle(request: Request, response: Response): Any? {
+        val task = task {
+            val context = RouteContext(request, response, true)
+            context.handle()
+            context.finish()
+            return@task context.receive()
         }
+
+        return task.get()
     }
 }

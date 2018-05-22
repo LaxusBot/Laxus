@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.wyvern.annotation
 
-include ':api', ':api:framework'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import kotlin.annotation.AnnotationRetention.*
+import kotlin.annotation.AnnotationTarget.*
+
+@Retention(RUNTIME)
+@Target(FUNCTION, CLASS)
+@ResponseHeader(header = "Access-Control-Allow-Origin", value = "*")
+annotation class CORS

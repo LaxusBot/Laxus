@@ -13,10 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.wyvern.http.body
 
-include ':api', ':api:framework'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import xyz.laxus.wyvern.context.RouteContext
+import xyz.laxus.wyvern.http.header.ContentType
+
+/**
+ * @author Kaidan Gustave
+ */
+class StringBodyProvider: BodyProvider<String> {
+    override val contentType = ContentType.Any
+    override val kotlinTypes = listOf(String::class)
+
+    override fun RouteContext.convert(): String? = request.body
+}

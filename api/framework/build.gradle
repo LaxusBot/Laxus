@@ -13,10 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+dependencies {
+    // kotlin std
+    compile kotlinModule('stdlib')
+    compile kotlinModule('reflect')
+    compile kotlinModule('stdlib-jdk8')
+    compile kotlinModule('stdlib-jdk7')
 
-include ':api', ':api:framework'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+    // spark
+    compile spark()
+
+    compile hocon()
+
+    compile slf4j()
+
+    // json
+    compile kotlinJson()
+
+    // coroutines
+    compile kotlinxCoroutines('core')
+    compile kotlinxCoroutines('io')
+    compile kotlinxCoroutines('jdk8')
+
+    // html
+    compile kotlinxHtml('jvm')
+
+    compile project(':commons')
+
+    testCompile okHttp()
+}

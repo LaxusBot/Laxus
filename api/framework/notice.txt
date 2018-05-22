@@ -1,0 +1,6 @@
+This module is dedicated to a side project in progress known as "wyvern",
+which is a dynamic spring-like HTTP routing framework built upon Spark-Java,
+Kotlin-Coroutines, and several DSLs.
+
+Until this module is fully featured as a means of simplifying it's development,
+I've left the commons module of the project attached to it.

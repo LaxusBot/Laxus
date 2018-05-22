@@ -13,10 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.wyvern.http.error
 
-include ':api', ':api:framework'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import org.eclipse.jetty.http.HttpStatus.Code.BAD_REQUEST
+
+/**
+ * @author Kaidan Gustave
+ */
+class BadRequestError(message: String): HttpError(BAD_REQUEST, message) {
+    companion object {
+        inline operator fun invoke(message: () -> String): BadRequestError {
+            return BadRequestError(message())
+        }
+    }
+}

@@ -13,10 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.wyvern.http.error
 
-include ':api', ':api:framework'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import org.eclipse.jetty.http.HttpStatus.Code.INTERNAL_SERVER_ERROR
+
+/**
+ * @author Kaidan Gustave
+ */
+class InternalServerError(
+    message: String,
+    override val cause: Throwable
+): HttpError(INTERNAL_SERVER_ERROR, message) {
+    constructor(cause: Throwable): this(INTERNAL_SERVER_ERROR.message, cause)
+}

@@ -13,10 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+@file:Suppress("LiftReturnOrAssignment")
+package xyz.laxus.wyvern.internal
 
-include ':api', ':api:framework'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import spark.Request
+import spark.Response
+import spark.RouteImpl
+import xyz.laxus.wyvern.context.RouteContext
+import xyz.laxus.wyvern.http.header.ContentType
+
+/**
+ * @author Kaidan Gustave
+ */
+class NormalRoute(
+    path: String,
+    private val handle: RouteContext.() -> Any?
+): RouteImpl(path) {
+    override fun handle(request: Request, response: Response): Any? {
+        val context = RouteContext(request, response, false)
+        return context.handle()?.takeUnless { it === Unit }
+    }
+}
