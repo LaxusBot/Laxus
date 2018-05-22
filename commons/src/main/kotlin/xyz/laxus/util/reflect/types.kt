@@ -17,12 +17,9 @@
 package xyz.laxus.util.reflect
 
 import java.lang.reflect.Modifier
-import kotlin.coroutines.experimental.Continuation
 import kotlin.coroutines.experimental.suspendCoroutine
 import kotlin.reflect.*
-import kotlin.reflect.full.extensionReceiverParameter
-import kotlin.reflect.full.isSupertypeOf
-import kotlin.reflect.full.starProjectedType
+import kotlin.reflect.full.*
 import kotlin.reflect.jvm.javaMethod
 
 // KFunction
@@ -33,9 +30,7 @@ val KFunction<*>.isStatic get() = javaMethod?.let { Modifier.isStatic(it.modifie
 
 val KFunction<*>.suspendParameter: KParameter get() {
     require(isSuspend) { "Function is not suspendable!" }
-    val lastParam = parameters.last()
-    require(lastParam.isType<Continuation<*>>())
-    return lastParam
+    return valueParameters.last()
 }
 
 suspend fun KFunction<*>.callSuspended(vararg args: Any?): Any? {
@@ -53,7 +48,14 @@ suspend fun KFunction<*>.callBySuspended(args: Map<KParameter, Any?>): Any? {
     require(isSuspend) { "Function is not suspendable!" }
     return suspendCoroutine { cont ->
         try {
-            val allArgs = args + (parameters.last() to cont)
+            val allArgs = if(args is MutableMap<KParameter, Any?>) {
+                // Call to add the last parameter instead of creating a new map
+                args.also { it[this.suspendParameter] = cont }
+            } else args + (this.suspendParameter to cont)
+            allArgs.forEach { t, u ->
+                println("${t.name} = $u")
+            }
+
             cont.resume(callBy(allArgs))
         } catch(t: Throwable) {
             cont.resumeWithException(t)
