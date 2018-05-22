@@ -68,3 +68,5 @@ val ConfigValue.klass: KClass<*>? get() =  string?.let { loadClass(it) }
 inline fun <reified E: Enum<E>> ConfigValue.enum(): E? = string?.let {
     ignored(null) { E::class.valueOf(it) }
 }
+
+fun emptyConfig(): Config = ConfigFactory.empty()
