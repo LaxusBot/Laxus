@@ -112,7 +112,7 @@ object DBRoles: Table() {
 
     fun removeRole(guildId: Long, type: Type) {
         require(type.single, type::notSingle)
-        connection.prepare("SELECT role_id FROM guild_roles WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.prepare("SELECT * FROM guild_roles WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
