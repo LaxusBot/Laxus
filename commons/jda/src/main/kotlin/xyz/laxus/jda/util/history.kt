@@ -28,6 +28,7 @@ import net.dv8tion.jda.core.entities.MessageHistory
 import kotlin.coroutines.experimental.CoroutineContext
 
 private typealias HistoryCheck = suspend (List<Message>) -> Boolean
+private typealias MessageReceiver = ReceiveChannel<List<Message>>
 
 inline fun <reified C: MessageChannel> C.historyAt(messageId: Long) = getHistoryAround(messageId, 1)
 inline fun <reified C: MessageChannel> C.historyAt(message: Message) = getHistoryAround(message, 1)
@@ -79,28 +80,28 @@ fun MessageChannel.produceHistory(
     capacity: Int = 0,
     parent: Job? = null,
     block: suspend HistoryScope.() -> Unit
-): ReceiveChannel<List<Message>> = history.produceHistory(context, capacity, parent, block)
+): MessageReceiver = history.produceHistory(context, capacity, parent, block)
 
 fun MessageChannel.producePast(
     context: CoroutineContext = DefaultDispatcher,
     number: Int,
     retrieveLimit: Int = 100,
     breakIf: HistoryCheck = { false }
-): ReceiveChannel<List<Message>> = history.producePast(context, number, retrieveLimit, breakIf)
+): MessageReceiver = history.producePast(context, number, retrieveLimit, breakIf)
 
 fun MessageChannel.produceFuture(
     context: CoroutineContext = DefaultDispatcher,
     number: Int,
     retrieveLimit: Int = 100,
     breakIf: HistoryCheck = { false }
-): ReceiveChannel<List<Message>> = history.produceFuture(context, number, retrieveLimit, breakIf)
+): MessageReceiver = history.produceFuture(context, number, retrieveLimit, breakIf)
 
 fun MessageHistory.produceHistory(
     context: CoroutineContext = DefaultDispatcher,
     capacity: Int,
     parent: Job? = null,
     block: suspend HistoryScope.() -> Unit
-): ReceiveChannel<List<Message>> = produce(context, capacity, parent) {
+): MessageReceiver = produce(context, capacity, parent) {
     val scope = HistoryScopeImpl(this@produceHistory, this)
     scope.block()
 }
@@ -110,25 +111,41 @@ fun MessageHistory.producePast(
     number: Int,
     retrieveLimit: Int = 100,
     breakIf: HistoryCheck = { false }
-): ReceiveChannel<List<Message>> {
+): MessageReceiver {
     require(number > 0) { "Minimum of one message must be retrieved" }
     require(retrieveLimit in 1..100) { "Retrieve limit must be inbetween 1 and 100" }
+
     return produceHistory(context, capacity = number) {
+        // what is left
         var left = number
+
+        // while we are over the retrieve limit
         while(left > retrieveLimit) {
+            // retrieve past limit
             val retrieved = retrievePast(retrieveLimit)
+            // subtract the limit from what's left
             left -= retrieveLimit
+            // if our break condition is met by this retrieval
             if(breakIf(retrieved)) {
+                // do not collect any more after the loop
                 left = 0
+                // break
                 break
             }
+            // send the retrieved messages
             send(retrieved)
         }
 
+        // if we have any more to retrieve
         if(left in 1..retrieveLimit) {
-            sendPast(left)
+            // retrieve what is left
+            val retrieved = retrievePast(left)
+            // if it doesn't meet the break condition
+            if(!breakIf(retrieved)) {
+                // send it
+                send(retrieved)
+            }
         }
-        close()
     }
 
 }
@@ -138,24 +155,40 @@ fun MessageHistory.produceFuture(
     number: Int,
     retrieveLimit: Int = 100,
     breakIf: HistoryCheck = { false }
-): ReceiveChannel<List<Message>> {
+): MessageReceiver {
     require(number > 0) { "Minimum of one message must be retrieved" }
     require(retrieveLimit in 1..100) { "Retrieve limit must be inbetween 1 and 100" }
+
     return produceHistory(context, capacity = number) {
+        // what is left
         var left = number
+
+        // while we are over the retrieve limit
         while(left > retrieveLimit) {
+            // retrieve future limit
             val retrieved = retrieveFuture(retrieveLimit)
+            // subtract the limit from what's left
             left -= retrieveLimit
+            // if our break condition is met by this retrieval
             if(breakIf(retrieved)) {
+                // do not collect any more after the loop
                 left = 0
+                // break
                 break
             }
+            // send the retrieved messages
             send(retrieved)
         }
 
+        // if we have any more to retrieve
         if(left in 1..retrieveLimit) {
-            sendFuture(left)
+            // retrieve what is left
+            val retrieved = retrieveFuture(left)
+            // if it doesn't meet the break condition
+            if(!breakIf(retrieved)) {
+                // send it
+                send(retrieved)
+            }
         }
-        close()
     }
 }
