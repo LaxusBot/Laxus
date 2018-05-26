@@ -41,14 +41,14 @@ fun KEmbedBuilder.trackEmbed(guild: Guild, track: AudioTrack, next: AudioTrack?,
     } else {
         append('\u25B6')
     }
-    append(" __[`")
+    append(" [`")
     val pos = track.position
     val dur = track.duration
     val per = (((pos.toDouble() * 100) / dur.toDouble()) / 10).roundToInt()
     repeat(per) { append('\u2588') }
-    append('\u2B1C')
-    repeat(10 - min(per, 10)) { append('_') }
-    append("`](${Laxus.ServerInvite})__ `[${track.progression}]`")
+    append('\u2588')
+    repeat(10 - min(per, 10)) { append('\u2581') }
+    append("`]() `[${track.progression}]`")
     if(next !== null && per >= 8 && !paused) {
         footer {
             value { "Next up: ${next.info.title}" }

@@ -30,8 +30,6 @@ import xyz.laxus.listeners.DatabaseListener
 import xyz.laxus.util.*
 import xyz.laxus.util.collections.concurrentHashMap
 import xyz.laxus.util.reflect.packageOf
-import kotlin.reflect.full.createInstance
-import kotlin.reflect.full.isSubclassOf
 
 object Laxus {
     const val DevId = 211393686628597761L
@@ -93,28 +91,6 @@ object Laxus {
                 "'$klass' is not a subtype of Command.Group and therefore not a valid command group!"
             }
         } ?: emptyList()
-
-        commands?.list("unlisted")?.forEach unlisted@ {
-            val klass = it.klass ?: run {
-                Log.warn("Could not load command class: '${it.string}'")
-                return@unlisted
-            }
-
-            if(!klass.isSubclassOf(Command::class)) {
-                Log.warn("'$klass' is not a subtype of Command and therefore not a valid command!")
-                return@unlisted
-            }
-
-            val instance = try {
-                klass.createInstance() as Command
-            } catch(e: Exception) {
-                Log.warn("Failed to create command instance for command class: $'${it.string}'")
-                return@unlisted
-            }
-
-            // Add the unlisted command
-            instance.group.commands += instance
-        }
 
         val token = checkNotNull(config.string("token")) {
             "Could not find 'token' node for bot.conf!"
