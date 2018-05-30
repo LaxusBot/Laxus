@@ -13,16 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("LiftReturnOrAssignment")
-package xyz.laxus.wyvern.internal
+package xyz.laxus.wyvern.annotation
 
-import xyz.laxus.wyvern.API
-import xyz.laxus.wyvern.http.CallContext
+import java.lang.annotation.Inherited
+import kotlin.annotation.AnnotationRetention.RUNTIME
+import kotlin.annotation.AnnotationTarget.*
 
-/**
- * @author Kaidan Gustave
- */
-internal open class NormalRoute
-constructor(api: API, path: String, private val handle: CallContext.() -> Any?): APIRoute<Any?>(api, path) {
-    override fun handle(context: CallContext): Any? = context.handle()
-}
+@Inherited
+@Retention(RUNTIME)
+@Target(FUNCTION, CLASS, ANNOTATION_CLASS)
+annotation class ResponseHeaders(vararg val headers: ResponseHeader)

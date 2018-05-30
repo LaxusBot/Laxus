@@ -19,26 +19,25 @@ import me.kgustave.json.JSArray
 import me.kgustave.json.exceptions.JSSyntaxException
 import me.kgustave.json.readJSArray
 import xyz.laxus.util.reflect.loadClass
-import xyz.laxus.wyvern.API
-import xyz.laxus.wyvern.context.RouteContext
+import xyz.laxus.wyvern.http.CallContext
 import xyz.laxus.wyvern.http.error.badRequest
 import xyz.laxus.wyvern.http.header.ContentType
 
 /**
  * @author Kaidan Gustave
  */
-class JSArrayBodyProvider: BodyProvider<JSArray> {
+open class JSArrayBodyProvider: BodyProvider<JSArray> {
     override val contentType = ContentType.Application.Json
     override val kotlinTypes = listOfNotNull(
         loadClass("me.kgustave.json.internal.JSArrayImpl"), // load
         JSArray::class
     )
 
-    override fun RouteContext.convert(): JSArray? {
+    override fun CallContext.convert(): JSArray? {
         val requestContentType = request.contentType
         try {
             request.byteBody.inputStream().use {
-                it.reader(requestContentType.charset ?: API.DefaultCharset).use {
+                it.reader(requestContentType.charset ?: api.defaultCharset).use {
                     return it.readJSArray()
                 }
             }

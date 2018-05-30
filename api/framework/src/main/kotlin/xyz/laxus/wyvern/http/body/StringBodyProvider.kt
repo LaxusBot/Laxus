@@ -15,15 +15,15 @@
  */
 package xyz.laxus.wyvern.http.body
 
-import xyz.laxus.wyvern.context.RouteContext
+import xyz.laxus.wyvern.http.CallContext
 import xyz.laxus.wyvern.http.header.ContentType
 
 /**
  * @author Kaidan Gustave
  */
-class StringBodyProvider: BodyProvider<String> {
+open class StringBodyProvider: BodyProvider<String> {
     override val contentType = ContentType.Any
     override val kotlinTypes = listOf(String::class)
 
-    override fun RouteContext.convert(): String? = request.body
+    override fun CallContext.convert(): String? = request.body
 }

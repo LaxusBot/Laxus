@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.wyvern.context
+@file:Suppress("unused")
+package xyz.laxus.wyvern.http
 
-@DslMarker
-@Retention(AnnotationRetention.SOURCE)
-annotation class ContextDsl
+import kotlinx.html.HtmlTagMarker as HtmlDsl
+
+// Request
+
+inline fun <reified T: Any> Request.attribute(attribute: String): T? = attributeOf(attribute, T::class)

@@ -22,7 +22,7 @@ import java.nio.charset.Charset
 /**
  * @author Kaidan Gustave
  */
-open class ContentType private constructor(
+class ContentType private constructor(
     val mime: String, val extension: String,
     val params: Map<String, String> = mapOf(),
     val charset: Charset? = null
@@ -69,6 +69,8 @@ open class ContentType private constructor(
             params: Map<String, String> = this.params,
             charset: Charset? = this.charset
         ) = ContentType(mime, extension, params, charset)
+
+        val Any = ContentType(mime = "*", extension = "*")
     }
 
     override val header get() = HeaderKey
@@ -113,24 +115,22 @@ open class ContentType private constructor(
         return mime == other.mime && extension == other.extension
     }
 
-    override fun hashCode(): Int = hashAll(mime, extension, params, charset)
+    override fun hashCode(): Int = hashAll(mime, extension)
 
     override fun toString(): String {
         return "$mime/$extension" + params.entries.joinToString(
             separator = ";", prefix = ";") { "${it.key}=${it.value}" }
     }
 
-    object Any: ContentType(mime = "*", extension = "*")
-
     object Application {
         val Gzip = ContentType("application", "gzip")
         val Json = ContentType("application", "json")
-        val Zip = ContentType("application", "zip")
+        val Zip  = ContentType("application", "zip")
     }
 
     object Text {
         val Plain = ContentType("text", "plain")
-        val Css = ContentType("text", "css")
-        val Html = ContentType("text", "html")
+        val Css   = ContentType("text", "css")
+        val Html  = ContentType("text", "html")
     }
 }

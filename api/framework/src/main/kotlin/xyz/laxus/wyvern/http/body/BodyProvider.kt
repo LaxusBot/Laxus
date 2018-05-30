@@ -15,7 +15,8 @@
  */
 package xyz.laxus.wyvern.http.body
 
-import xyz.laxus.wyvern.context.RouteContext
+import xyz.laxus.wyvern.http.CallContext
+import xyz.laxus.wyvern.http.error.HttpError
 import xyz.laxus.wyvern.http.header.ContentType
 import kotlin.reflect.KClass
 
@@ -29,5 +30,7 @@ interface BodyProvider<T> {
     val contentType: ContentType
     val kotlinTypes: List<KClass<*>>
 
-    fun RouteContext.convert(): T?
+    fun CallContext.convert(): T?
+
+    fun convertError(error: HttpError): T? { return null }
 }

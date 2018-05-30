@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+apply plugin: 'kotlin-allopen'
+
 dependencies {
     // kotlin std
     compile kotlinModule('stdlib')
@@ -41,4 +43,8 @@ dependencies {
     compile project(':commons')
 
     testCompile okHttp()
+}
+
+allOpen {
+    annotation("xyz.laxus.wyvern.annotation.configuration.Configuration")
 }

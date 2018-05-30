@@ -16,7 +16,7 @@
 @file:Suppress("MemberVisibilityCanBePrivate")
 package xyz.laxus.wyvern.internal.params
 
-import xyz.laxus.wyvern.context.RouteContext
+import xyz.laxus.wyvern.http.CallContext
 import xyz.laxus.util.reflect.isNullable
 import kotlin.reflect.KParameter
 
@@ -27,20 +27,16 @@ internal class ParameterResolver<T>(
     val parameter: KParameter,
     val nullable: Boolean = parameter.isNullable,
     val optional: Boolean = parameter.isOptional,
-    private val handleNull: (RouteContext.() -> Nothing)? = null,
-    private val resolve: RouteContext.() -> T
+    private val handleNull: (CallContext.() -> Nothing)? = null,
+    private val resolve: CallContext.() -> T
 ) {
-    operator fun invoke(context: RouteContext): T {
+    operator fun invoke(context: CallContext): T {
         val resolved = resolve(context)
         if(resolved === null && !nullable && !optional) {
-            if(handleNull === null) {
-                throw IllegalStateException(
-                    "When resolving ${parameter.name} got a null value " +
-                    "(index: ${parameter.index}, type: ${parameter.type})"
-                )
-            } else {
-                handleNull.invoke(context)
-            }
+            checkNotNull(handleNull) {
+                "When resolving ${parameter.name} got a null value " +
+                "(index: ${parameter.index}, type: ${parameter.type})"
+            }.invoke(context)
         }
         return resolved
     }

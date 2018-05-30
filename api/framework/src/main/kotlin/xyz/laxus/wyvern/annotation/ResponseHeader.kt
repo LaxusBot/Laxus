@@ -15,38 +15,12 @@
  */
 package xyz.laxus.wyvern.annotation
 
-import xyz.laxus.util.collections.accumulate
 import java.lang.annotation.Inherited
-import kotlin.annotation.AnnotationRetention.*
+import kotlin.annotation.AnnotationRetention.RUNTIME
 import kotlin.annotation.AnnotationTarget.*
-import kotlin.reflect.KAnnotatedElement
-import kotlin.reflect.KClass
 
 @Inherited
 @Repeatable
 @Retention(RUNTIME)
 @Target(FUNCTION, CLASS, ANNOTATION_CLASS)
 annotation class ResponseHeader(val header: String, val value: String)
-
-@Inherited
-@Retention(RUNTIME)
-@Target(FUNCTION, CLASS, ANNOTATION_CLASS)
-annotation class ResponseHeaders(vararg val headers: ResponseHeader)
-
-// FIXME When Annotations can have members/inner types, reallocate these functions to ResponseHeader.Companion
-internal val KAnnotatedElement.responseHeaderAnnotations: List<ResponseHeader> get() {
-    return annotations.accumulate {
-        it.responseHeaderAnnotation()
-    }
-}
-
-internal fun Annotation.responseHeaderAnnotation(
-    previouslyChecked: MutableSet<KClass<out Annotation>> = mutableSetOf()
-): List<ResponseHeader> {
-    if(this is ResponseHeader) return listOf(this)
-    if(this is ResponseHeaders) return this.headers.toList()
-    val klass = annotationClass
-    if(klass in previouslyChecked) return emptyList()
-    previouslyChecked += klass
-    return klass.annotations.accumulate { it.responseHeaderAnnotation(previouslyChecked) }
-}

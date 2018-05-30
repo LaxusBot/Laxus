@@ -13,8 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.wyvern.internal
+package xyz.laxus.wyvern.http
 
-import xyz.laxus.wyvern.context.RouteContext
+import xyz.laxus.wyvern.API
 
-internal typealias RouteHandle = suspend RouteContext.() -> Unit
+/**
+ * @author Kaidan Gustave
+ */
+class CallContext internal constructor(
+    val api: API,
+    request: spark.Request,
+    response: spark.Response
+) {
+    val request = Request(this, request)
+    val response = Response(this, response)
+}

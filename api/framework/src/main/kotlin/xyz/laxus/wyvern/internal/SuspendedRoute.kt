@@ -15,26 +15,20 @@
  */
 package xyz.laxus.wyvern.internal
 
-import spark.Request
-import spark.Response
-import spark.RouteImpl
-import xyz.laxus.wyvern.context.RouteContext
-import xyz.laxus.wyvern.http.header.ContentType
 import xyz.laxus.util.concurrent.task
+import xyz.laxus.wyvern.API
+import xyz.laxus.wyvern.http.CallContext
 
 /**
  * @author Kaidan Gustave
  */
-internal class SuspendedRoute(
-    path: String,
-    private val handle: RouteHandle
-): RouteImpl(path) {
-    override fun handle(request: Request, response: Response): Any? {
-        val task = task {
-            val context = RouteContext(request, response, true)
-            context.handle()
-            context.finish()
-            return@task context.receive()
+internal open class SuspendedRoute(
+    api: API, path: String,
+    private val handle: suspend CallContext.() -> Any?
+): APIRoute<Any?>(api, path) {
+    override fun handle(context: CallContext): Any? {
+        val task = task { // TODO Add specific context support here
+            return@task context.handle()
         }
 
         return task.get()

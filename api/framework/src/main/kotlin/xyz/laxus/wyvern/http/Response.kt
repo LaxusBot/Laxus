@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 @file:Suppress("MemberVisibilityCanBePrivate")
-package xyz.laxus.wyvern.context
+package xyz.laxus.wyvern.http
 
 import org.eclipse.jetty.http.HttpStatus
 import xyz.laxus.wyvern.http.header.ContentType
@@ -22,8 +22,7 @@ import xyz.laxus.wyvern.http.header.ContentType
 /**
  * @author Kaidan Gustave
  */
-@ContextDsl
-class Response(val context: RouteContext, private val base: spark.Response) {
+class Response internal constructor(val context: CallContext, private val base: spark.Response) {
     var status: HttpStatus.Code
         get() = status()
         set(value) = status(value)

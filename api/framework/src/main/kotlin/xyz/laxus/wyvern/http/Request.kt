@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 @file:Suppress("unused", "MemberVisibilityCanBePrivate")
-package xyz.laxus.wyvern.context
+package xyz.laxus.wyvern.http
 
 import spark.QueryParamsMap
 import spark.Session
@@ -27,13 +27,13 @@ import kotlin.reflect.full.safeCast
 /**
  * @author Kaidan Gustave
  */
-@ContextDsl
-class Request(val context: RouteContext, private val base: spark.Request) {
+class Request internal constructor(val context: CallContext, private val base: spark.Request) {
+    val api: API get() = context.api
     val attributes: Set<String> get() = base.attributes()
     val body: String get() = base.body()
     val byteBody: ByteArray get() = base.bodyAsBytes()
     val contentLength: Int get() = base.contentLength()
-    val contentType: ContentType by lazy { base.contentType()?.let { ContentType.parse(it) } ?: API.DefaultContentType }
+    val contentType: ContentType by lazy { base.contentType()?.let { ContentType.parse(it) } ?: api.defaultContentType }
     val contextPath: String get() = base.contextPath()
     val cookies: Map<String, String> get() = base.cookies()
     val headers: Set<String> get() = base.headers()
@@ -84,13 +84,9 @@ class Request(val context: RouteContext, private val base: spark.Request) {
         return base.cookie(name)
     }
 
-    fun session(create: Boolean = false): Session {
-        return checkNotNull(base.session(create)) {
-            "Session returned was null!"
-        }
+    fun session(): Session {
+        return base.session(false)
     }
 
-    inline fun <reified T: Any> attribute(attribute: String): T? {
-        return attributeOf(attribute, T::class)
-    }
+    fun session(create: Boolean): Session = checkNotNull(base.session(create)) { "Session returned was null!" }
 }

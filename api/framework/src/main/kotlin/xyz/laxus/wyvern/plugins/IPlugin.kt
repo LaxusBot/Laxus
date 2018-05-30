@@ -15,15 +15,11 @@
  */
 package xyz.laxus.wyvern.plugins
 
-import com.typesafe.config.Config
-
 /**
  * @author Kaidan Gustave
  */
-interface WyvernPlugin {
+interface IPlugin {
     fun start() {}
-
-    fun apply(config: Config)
 
     fun stop() {}
 }
