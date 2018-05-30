@@ -230,6 +230,9 @@ infix fun <T> MutableList<T>.swap(indices: Pair<Int, Int>) {
 
 // Shortcuts
 
+fun <T> linkedListOf(vararg elements: T): LinkedList<T> = LinkedList(elements.toSet())
+fun <T> linkedListOf(): LinkedList<T> = LinkedList()
+
 fun <T> unmodifiableList(list: List<T>): List<T> = Collections.unmodifiableList(list)
 fun <T> unmodifiableList(vararg elements: T): List<T> = FixedSizeArrayList(*elements)
 fun <T> unmodifiableSet(set: Set<T>): Set<T> = Collections.unmodifiableSet(set)
@@ -417,4 +420,31 @@ private fun rangeCheck(size: Int, fromIndex: Int, toIndex: Int) {
         fromIndex < 0 -> throw IndexOutOfBoundsException("fromIndex ($fromIndex) is less than zero.")
         toIndex > size -> throw IndexOutOfBoundsException("toIndex ($toIndex) is greater than size ($size).")
     }
+}
+
+fun <K, V> singleMap(pair: Pair<K, V>): Map<K, V> = singleMap(pair.first, pair.second)
+fun <K, V> singleMap(key: K, value: V): Map<K, V> = SingleMap(key, value)
+
+private class SingleMap<K, V>(key: K, value: V): Map<K, V> {
+    private val entry = object : Map.Entry<K, V> {
+        override val key: K get() = key
+        override val value: V get() = value
+    }
+
+    override val entries = setOf(entry)
+    override val keys = setOf(entry.key)
+    override val values = setOf(entry.value)
+    override val size = 1
+
+    override fun isEmpty(): Boolean = false
+    override fun containsKey(key: K): Boolean = key == entry.key
+    override fun containsValue(value: V): Boolean = value == entry.value
+    override fun get(key: K): V? {
+        if(containsKey(key)) {
+            return entry.value
+        }
+        return null
+    }
+
+    override fun toString(): String = "(${entry.key}=${entry.value})"
 }
