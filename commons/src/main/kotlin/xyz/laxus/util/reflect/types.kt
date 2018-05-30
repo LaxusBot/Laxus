@@ -52,9 +52,6 @@ suspend fun KFunction<*>.callBySuspended(args: Map<KParameter, Any?>): Any? {
                 // Call to add the last parameter instead of creating a new map
                 args.also { it[this.suspendParameter] = cont }
             } else args + (this.suspendParameter to cont)
-            allArgs.forEach { t, u ->
-                println("${t.name} = $u")
-            }
 
             cont.resume(callBy(allArgs))
         } catch(t: Throwable) {

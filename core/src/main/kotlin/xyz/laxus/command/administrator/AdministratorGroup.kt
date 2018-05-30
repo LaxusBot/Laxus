@@ -27,6 +27,7 @@ object AdministratorGroup: Command.Group("Administrator") {
     override val guildOnly = true
 
     override fun init(config: Config) {
+        + AnnouncementCommand()
         + CustomCmdCommand()
         + IgnoreCommand()
         + LevelCommand()

@@ -101,7 +101,8 @@ class TagCommand: Command(StandardGroup) {
         override val cooldownScope = CooldownScope.USER_GUILD
 
         override suspend fun execute(ctx: CommandContext) {
-            val parts = ctx.args.split(commandArgs, 2)
+            val args = ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }
+            val parts = args.split(commandArgs, 2)
             val name = parts[0]
             val content = if(parts.size > 1) parts[1] else return ctx.missingArgs {
                 "You must specify a new tag name and it's content in the format `$arguments`."
@@ -145,7 +146,8 @@ class TagCommand: Command(StandardGroup) {
         override val cooldownScope = CooldownScope.USER
 
         override suspend fun execute(ctx: CommandContext) {
-            val parts = ctx.args.split(commandArgs, 2)
+            val args = ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }
+            val parts = args.split(commandArgs, 2)
             val name = parts[0]
             val content = if(parts.size > 1) parts[1] else return ctx.missingArgs {
                 "You must specify a new tag name and it's content in the format `$arguments`."
@@ -219,7 +221,8 @@ class TagCommand: Command(StandardGroup) {
         override val cooldownScope = CooldownScope.USER
 
         override suspend fun execute(ctx: CommandContext) {
-            val parts = ctx.args.split(commandArgs, 2)
+            val args = ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }
+            val parts = args.split(commandArgs, 2)
             val name = parts[0]
             val content = if(parts.size > 1) parts[1] else return ctx.missingArgs {
                 "You must specify an existing tag name and it's new content in the format `$arguments`."

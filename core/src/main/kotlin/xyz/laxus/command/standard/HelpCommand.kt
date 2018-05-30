@@ -38,13 +38,13 @@ class HelpCommand: Command(StandardGroup) {
             appendln("**Available Commands in ${if(ctx.isGuild) ctx.textChannel.asMention else "Direct Messages"}**")
 
             // For each group
-            ctx.bot.groups.filter { it.check(ctx) }.sorted().forEach g@ { g ->
+            ctx.bot.groups.filter { !it.unlisted && it.check(ctx) }.sorted().forEach g@ { g ->
                 // They can't use the command group so we don't display it here
                 if(!g.check(ctx))
                     return@g
 
                 // Which commands are even available?
-                val available = g.commands.filter { with(it) { ctx.level.test(ctx) } }
+                val available = g.commands.filter { !it.unlisted && with(it) { ctx.level.test(ctx) } }
 
                 // None, we skip this group
                 if(available.isEmpty())

@@ -74,10 +74,12 @@ object Laxus {
             "Could not find 'bot' node for bot.conf!"
         }
 
+        val commands = config.config("command")
+
         // Load Command.Groups via reflection
-        val groups = config.list("groups")?.mapNotNull groups@ {
+        val groups = commands?.list("groups")?.mapNotNull groups@ {
             val klass = it.klass ?: run {
-                Log.warn("Could not load command group class: '${it.string}")
+                Log.warn("Could not load command group class: '${it.string}'")
                 return@groups null
             }
 
@@ -136,7 +138,7 @@ object Laxus {
 
     fun stop() {
         if(::jda.isInitialized) {
-            JDA.shutdown()
+            JDA.shutdownNow()
         }
     }
 }

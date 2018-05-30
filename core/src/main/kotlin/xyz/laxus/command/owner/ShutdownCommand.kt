@@ -36,7 +36,7 @@ class ShutdownCommand: Command(OwnerGroup) {
 
         // Await to prevent shutting down while replying
         ctx.sendWarning("Shutting down...")
-        ctx.jda.shutdown()
+        Laxus.stop()
 
         exitProcess(1)
     }

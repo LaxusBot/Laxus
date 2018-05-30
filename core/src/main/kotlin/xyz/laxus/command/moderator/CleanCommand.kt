@@ -17,18 +17,15 @@ package xyz.laxus.command.moderator
 
 import net.dv8tion.jda.core.Permission
 import net.dv8tion.jda.core.entities.Message
-import xyz.laxus.Laxus
 import xyz.laxus.command.Command
-import xyz.laxus.command.MustHaveArguments
 import xyz.laxus.command.CommandContext
+import xyz.laxus.command.MustHaveArguments
 import xyz.laxus.jda.util.await
-import xyz.laxus.listeners.ModLog
 import xyz.laxus.jda.util.producePast
+import xyz.laxus.listeners.ModLog
 import xyz.laxus.util.discordID
 import xyz.laxus.util.reasonPattern
 import xyz.laxus.util.userMention
-import java.util.*
-import kotlin.coroutines.experimental.coroutineContext
 
 /**
  * @author Kaidan Gustave
@@ -37,8 +34,8 @@ import kotlin.coroutines.experimental.coroutineContext
 class CleanCommand: Command(ModeratorGroup) {
     private companion object {
         private const val MaxRetrievable = 100
-        private val numberPattern = Regex("(\\d{1,4})")
-        private val linkPattern = Regex("https?://\\S+")
+        private val numberPattern = Regex("\\d{1,4}")
+        private val linkPattern = Regex("https?://\\S+", RegexOption.IGNORE_CASE)
         private val quotePattern = Regex("\"(.*?)\"", RegexOption.DOT_MATCHES_ALL)
 
         private val Message.hasImage get() = attachments.any { it.isImage } || embeds.any {
@@ -49,90 +46,102 @@ class CleanCommand: Command(ModeratorGroup) {
     override val name = "Clean"
     override val aliases = arrayOf("Clear", "Prune")
     override val arguments = "[Flags]"
-    override val help = "Cleans messages from a channel."
+    override val help = "Cleans message from a channel."
     override val botPermissions = arrayOf(Permission.MESSAGE_MANAGE, Permission.MESSAGE_HISTORY)
 
     override suspend fun execute(ctx: CommandContext) {
         var args = ctx.args
 
-        // Reason
-        val reasonMatcher = reasonPattern.matchEntire(args)
-        val reason = reasonMatcher?.let {
-            val groups = reasonMatcher.groupValues
+        // reason
+        val reason = reasonPattern.matchEntire(args)?.let reason@ {
+            val groups = it.groupValues
             args = groups[1]
-            return@let groups[2]
+            return@reason groups[2]
         }
 
-        val quotes = HashSet<String>()
-        val ids = HashSet<Long>()
+        // quotes
+        val quotes = quotePattern.findAll(args).mapTo(hashSetOf()) { it.groupValues[1].trim().toLowerCase() }
+        args = args.replace(quotePattern, "").trim()
 
-        // Specific text
-        quotes += quotePattern.findAll(args).map { it.groupValues[1].trim().toLowerCase() }
-        args = quotePattern.replace(args, "").trim()
+        // number of messages (kinda)
+        //
+        // I am legally required to explain to my future self what exactly this means
+        //in order to protect myself from future harassment and self deprecation.
+        // The Regex "discordID" matches 1 or more digits, and in order to avoid
+        //the number of messages from being consumed by it before it's able to process.
+        // In order to correct this, I have to do the actual processing in two separate
+        //parts, the first part actually processes and potentially modifies the args
+        //and the second part identifies if the arguments are valid.
+        val numberMatcher = numberPattern.findAll(args)
+        var number = if(numberMatcher.any()) {
+            val n = numberMatcher.first().value.trim().toInt()
+            args = args.replaceFirst(numberPattern, "")
+            if(n in 2..200) n + 1 else return ctx.replyError {
+                "The number of messages to delete must be between 2 and 200!"
+            }
+        } else 0
 
-        // Mentions
-        ctx.message.mentionedUsers.forEach { ids.add(it.idLong) }
+        // ids
+        val ids = hashSetOf<Long>()
+
+        // mention IDs
+        ctx.message.mentionedUsers.mapTo(ids) { it.idLong }
         args = args.replace(userMention, "").trim()
 
-        // Raw ID's
-        val idsMatcher = discordID.findAll(args)
-        for(res in idsMatcher)
-            ids.add(res.groupValues[0].trim().toLong())
+        // raw IDs
+        discordID.findAll(args).mapTo(ids) { it.groupValues[0].trim().toLong() }
         args = args.replace(discordID, "").trim()
 
-        // Bots Flag
+        // bots
         val bots = args.contains("bots", true)
         if(bots) args = args.replace("bots", "", true).trim()
 
-        // Embeds Flag
+        // embeds
         val embeds = args.contains("embeds", true)
-        if(embeds) args = args.replace("embeds", "", true)
+        if(embeds) args = args.replace("embeds", "", true).trim()
 
-        // Links Flag
+        // links
         val links = args.contains("links", true)
-        if(links) args = args.replace("links", "", true)
+        if(links) args = args.replace("links", "", true).trim()
 
-        // Images Flag
+        // images
         val images = args.contains("images", true)
-        if(images) args = args.replace("images", "", true)
+        if(images) args = args.replace("images", "", true).trim()
 
-        // Files Flag
+        // files
         val files = args.contains("files", true)
-        if(files) args = args.replace("files", "", true)
+        if(files) args = args.replace("files", "", true).trim()
 
-        // Checks to clean all
+        // clean all?
         val cleanAll = quotes.isEmpty() && ids.isEmpty() && !bots && !embeds && !links && !images && !files
 
-        // Number of messages to delete
-        val numMatcher = numberPattern.findAll(args.trim())
-        val num = if(numMatcher.any()) {
-            val n = numMatcher.first().value.trim().toInt()
-            if(n < 2 || n > 1000) return ctx.invalidArgs {
-                "The number of messages to delete must be between 2 and 1000!"
-            } else n + 1
-        } else if(!cleanAll) 100 else return ctx.invalidArgs {
+        // number of messages (again)
+        number = if(number > 0) number else if(!cleanAll) 100 else return ctx.invalidArgs {
             "`${ctx.args}` is not a valid number of messages!"
         }
 
         val twoWeeksPrior = ctx.message.creationTime.minusWeeks(2).plusMinutes(1)
-        val messages = LinkedList<Message>()
         val channel = ctx.textChannel
-        val receiver = channel.producePast(coroutineContext, num, MaxRetrievable) {
-            if(it.isEmpty()) return@producePast true
-            return@producePast it.last().creationTime.isBefore(twoWeeksPrior)
+        val receiver = channel.producePast(ctx, number = number, retrieveLimit = MaxRetrievable) receiver@ {
+            // break if it is empty
+            if(it.isEmpty()) return@receiver true
+            // break if the pass retrieved any messages
+            //whose creation time is before two weeks prior
+            return@receiver it.any { it.creationTime.isBefore(twoWeeksPrior) }
         }
 
+        val messages = hashSetOf<Message>()
+
+        // while we are still receiving from the production
         while(!receiver.isClosedForReceive) {
             messages += receiver.receiveOrNull() ?: break
         }
 
         messages -= ctx.message // Remove call message
         var pastTwoWeeks = false
-
-        // Filter based on flags
-        val toDelete = LinkedList<Message>()
+        val toDelete = arrayListOf<Message>()
         for(message in messages) {
-            if(message.creationTime.isBefore(twoWeeksPrior)) {
+            if(!message.creationTime.isBefore(twoWeeksPrior)) {
                 toDelete += if(cleanAll) message else when {
                     message.author.idLong in ids                          -> message
                     bots && message.author.isBot                          -> message
@@ -151,28 +160,24 @@ class CleanCommand: Command(ModeratorGroup) {
 
         // If it's empty, either nothing fit the criteria or all of it was past 2 weeks
         if(toDelete.isEmpty()) return ctx.replyError("Found no messages to delete!")
-        if(pastTwoWeeks) return ctx.replyError("Messages older than 2 weeks cannot be deleted!")
-
-        val numDeleted = toDelete.size
-
-        try {
-            var i = 0
-            while(i < numDeleted) { // Delet this
-                if(i + MaxRetrievable > numDeleted) {
-                    if(i + 1 == numDeleted) toDelete[numDeleted - 1].delete().await()
-                    else channel.deleteMessages(toDelete.subList(i, numDeleted)).await()
-                } else channel.deleteMessages(toDelete.subList(i, i + MaxRetrievable)).await()
-
-                i += MaxRetrievable
-            }
-
-            ModLog.newClean(ctx.member, channel, numDeleted, reason)
-            ctx.replySuccess("Successfully cleaned $numDeleted messages!")
-        } catch(t: Throwable) {
-            Laxus.Log.error("An error occurred", t)
-            // If something happens, we want to make sure that we inform them because
-            // messages may have already been deleted.
-            ctx.replyError("An error occurred when deleting $numDeleted messages!")
+        if(pastTwoWeeks) return ctx.replyError {
+            "Messages older than 2 weeks cannot be deleted!"
         }
+
+        val numberToDelete = toDelete.size
+        for(i in 0 until numberToDelete step MaxRetrievable) {
+            val nextStep = i + MaxRetrievable
+            if(nextStep > numberToDelete) {
+                when(i + 1) {
+                    numberToDelete -> toDelete[numberToDelete - 1].delete().await()
+                    else -> channel.deleteMessages(toDelete.subList(i, numberToDelete)).await()
+                }
+            } else {
+                channel.deleteMessages(toDelete.subList(i, nextStep)).await()
+            }
+        }
+
+        ModLog.newClean(ctx.member, channel, numberToDelete, reason)
+        ctx.replySuccess("Successfully cleaned $numberToDelete messages!")
     }
 }

@@ -20,11 +20,9 @@ import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
 import xyz.laxus.db.DBGuilds
-import xyz.laxus.db.DBGuilds.Type.MUSIC
 import xyz.laxus.jda.menus.paginator
 import xyz.laxus.jda.menus.paginatorBuilder
 import xyz.laxus.util.commandArgs
-import xyz.laxus.util.db.isMusic
 import xyz.laxus.util.titleName
 
 /**
@@ -97,22 +95,12 @@ class GuildListCommand: Command(OwnerGroup) {
                 guildId = ctx.guild.idLong
             }
 
-            val guild = ctx.jda.getGuildById(guildId) ?: return ctx.replyError {
-                "Could not find a guild with ID: `$guildId`!"
+            if(DBGuilds.isGuild(guildId, type)) return ctx.replyError {
+                "`$guildId` is already listed for **${type.titleName}**!"
             }
+            DBGuilds.addGuild(guildId, type)
 
-            when(type) {
-                MUSIC -> {
-                    if(guild.isMusic) return ctx.replyError {
-                        "**${guild.name}** is already listed for **Music**!"
-                    }
-                    guild.isMusic = true
-                }
-
-                else -> return ctx.replyWarning("Type **${type.titleName}** is not yet supported!")
-            }
-
-            ctx.replySuccess("Successfully added **${guild.name}** as **${type.titleName}**!")
+            ctx.replySuccess("Successfully added `$guildId` as **${type.titleName}**!")
         }
     }
 
@@ -151,22 +139,12 @@ class GuildListCommand: Command(OwnerGroup) {
                 guildId = ctx.guild.idLong
             }
 
-            val guild = ctx.jda.getGuildById(guildId) ?: return ctx.replyError {
-                "Could not find a guild with ID: `$guildId`!"
+            if(!DBGuilds.isGuild(guildId, type)) return ctx.replyError {
+                "`$guildId` is not listed for **${type.titleName}**!"
             }
+            DBGuilds.removeGuild(guildId, type)
 
-            when(type) {
-                MUSIC -> {
-                    if(!guild.isMusic) return ctx.replyError {
-                        "**${guild.name}** is not listed for **Music**!"
-                    }
-                    guild.isMusic = false
-                }
-
-                else -> return ctx.replyWarning("Type **${type.titleName}** is not yet supported!")
-            }
-
-            ctx.replySuccess("Successfully removed **${guild.name}** as **${type.titleName}**!")
+            ctx.replySuccess("Successfully removed `$guildId` as **${type.titleName}**!")
         }
     }
 }

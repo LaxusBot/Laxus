@@ -55,7 +55,8 @@ class CustomCmdCommand: EmptyCommand(AdministratorGroup) {
         override val cooldownScope = CooldownScope.GUILD
 
         override suspend fun execute(ctx: CommandContext) {
-            val parts = ctx.args.split(commandArgs, 2)
+            val args = ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }
+            val parts = args.split(commandArgs, 2)
 
             when {
                 parts[0].length > Tag.MaxNameLength -> return ctx.replyError {
@@ -94,7 +95,8 @@ class CustomCmdCommand: EmptyCommand(AdministratorGroup) {
         override val cooldownScope = CooldownScope.USER_GUILD
 
         override suspend fun execute(ctx: CommandContext) {
-            val parts = ctx.args.split(commandArgs, 2)
+            val args = ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }
+            val parts = args.split(commandArgs, 2)
 
             when {
                 parts[0].length > NAME_MAX_LENGTH -> return ctx.replyError {
