@@ -55,7 +55,7 @@ class CustomCmdCommand: EmptyCommand(AdministratorGroup) {
         override val cooldownScope = CooldownScope.GUILD
 
         override suspend fun execute(ctx: CommandContext) {
-            val args = ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }
+            val args = (ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }).trim()
             val parts = args.split(commandArgs, 2)
 
             when {
@@ -95,7 +95,7 @@ class CustomCmdCommand: EmptyCommand(AdministratorGroup) {
         override val cooldownScope = CooldownScope.USER_GUILD
 
         override suspend fun execute(ctx: CommandContext) {
-            val args = ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }
+            val args = (ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }).trim()
             val parts = args.split(commandArgs, 2)
 
             when {

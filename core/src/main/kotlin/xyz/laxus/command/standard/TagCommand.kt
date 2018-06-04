@@ -101,7 +101,7 @@ class TagCommand: Command(StandardGroup) {
         override val cooldownScope = CooldownScope.USER_GUILD
 
         override suspend fun execute(ctx: CommandContext) {
-            val args = ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }
+            val args = (ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }).trim()
             val parts = args.split(commandArgs, 2)
             val name = parts[0]
             val content = if(parts.size > 1) parts[1] else return ctx.missingArgs {
@@ -139,14 +139,14 @@ class TagCommand: Command(StandardGroup) {
     @MustHaveArguments
     private inner class TagCreateGlobalCommand: Command(this@TagCommand) {
         override val name = "CreateGlobal"
-        override val arguments = "Creates a new global tag."
+        override val arguments = "[Tag Name] [Tag Content]"
         override val help = "Creates a new global tag."
         override val guildOnly = false
         override val cooldown = 120
         override val cooldownScope = CooldownScope.USER
 
         override suspend fun execute(ctx: CommandContext) {
-            val args = ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }
+            val args = (ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }).trim()
             val parts = args.split(commandArgs, 2)
             val name = parts[0]
             val content = if(parts.size > 1) parts[1] else return ctx.missingArgs {
@@ -221,7 +221,7 @@ class TagCommand: Command(StandardGroup) {
         override val cooldownScope = CooldownScope.USER
 
         override suspend fun execute(ctx: CommandContext) {
-            val args = ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }
+            val args = (ctx.args + ctx.message.attachments.joinToString("\n", "\n", "") { it.url }).trim()
             val parts = args.split(commandArgs, 2)
             val name = parts[0]
             val content = if(parts.size > 1) parts[1] else return ctx.missingArgs {
