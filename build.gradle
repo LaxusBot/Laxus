@@ -1,7 +1,7 @@
 buildscript {
     ext {
         kotlin_version = '1.2.41'
-        kotlin_json_version = '1.4.0'
+        kotlin_json_version = '1.5.0'
         kotlinx_coroutines_version = '0.22.5'
         kotlinx_html_version = '0.6.9'
         shadow_version = '2.0.1'

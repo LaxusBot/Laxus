@@ -13,11 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.wyvern.annotation
+package xyz.laxus.wyvern.websocket
 
-/**
- * @author Kaidan Gustave
- */
-@Target(AnnotationTarget.PROPERTY, AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class SubRoute
+annotation class WebSocketBinary

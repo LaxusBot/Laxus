@@ -13,11 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.wyvern.annotation
+package xyz.laxus.wyvern.websocket
+
+import org.eclipse.jetty.websocket.api.Session
 
 /**
  * @author Kaidan Gustave
  */
-@Target(AnnotationTarget.PROPERTY, AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class SubRoute
+interface IWebSocket {
+    fun onBinary(byteArray: ByteArray, offset: Int, len: Int) {}
+    fun onClose(status: Int, reason: String?) {}
+    fun onConnect(session: Session) {}
+    fun onError(cause: Throwable) {}
+    fun onText(message: String) {}
+}
