@@ -20,18 +20,27 @@ package xyz.laxus.util.collections
 import xyz.laxus.util.checkInBounds
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.collections.ArrayList
 
 // Collections
 inline fun <reified T, reified R> Array<out T>.accumulate(function: (T) -> Collection<R>): List<R> {
     return when {
         this.isEmpty() -> emptyList()
         this.size == 1 -> function(this[0]).toList()
+        else -> accumulateTo(arrayListOf(), function)
+    }
+}
+
+inline fun <reified T, reified R, reified C: MutableCollection<R>>
+    Array<out T>.accumulateTo(destination: C, function: (T) -> Collection<R>): C {
+    return when {
+        this.isEmpty() -> destination
+        this.size == 1 -> destination.also { it += function(this.first()) }
         else -> {
-            val list = ArrayList<R>()
             for(element in this) {
-                list += function(element)
+                destination += function(element)
             }
-            return list
+            return destination
         }
     }
 }
@@ -40,12 +49,20 @@ inline fun <reified T, reified R> Collection<T>.accumulate(function: (T) -> Coll
     return when {
         this.isEmpty() -> emptyList()
         this.size == 1 -> function(this.first()).toList()
+        else -> accumulateTo(arrayListOf(), function)
+    }
+}
+
+inline fun <reified T, reified R, reified C: MutableCollection<R>>
+    Collection<T>.accumulateTo(destination: C, function: (T) -> Collection<R>): C {
+    return when {
+        this.isEmpty() -> destination
+        this.size == 1 -> destination.also { it += function(this.first()) }
         else -> {
-            val list = ArrayList<R>()
             for(element in this) {
-                list += function(element)
+                destination += function(element)
             }
-            return list
+            return destination
         }
     }
 }

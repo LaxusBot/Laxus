@@ -15,10 +15,12 @@
  */
 package xyz.laxus.util.reflect
 
+import kotlin.annotation.AnnotationRetention.RUNTIME
 import kotlin.reflect.KAnnotatedElement
+import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotation
 
-/**
- * @author Kaidan Gustave
- */
+val KClass<out Annotation>.retention get() = findAnnotation<Retention>()?.value ?: RUNTIME
+val KClass<out Annotation>.targets get() = findAnnotation<Target>()?.allowedTargets ?: emptyArray()
+
 inline fun <reified A: Annotation> KAnnotatedElement.hasAnnotation() = findAnnotation<A>() !== null
