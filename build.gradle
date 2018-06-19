@@ -1,10 +1,9 @@
 buildscript {
     ext {
-        kotlin_version = '1.2.41'
-        kotlin_json_version = '1.4.0'
+        kotlin_version = '1.2.50'
+        kotlin_json_version = '1.6.0'
         kotlinx_coroutines_version = '0.22.5'
         kotlinx_html_version = '0.6.9'
-        ktor_version = '0.9.2-alpha-2'
         shadow_version = '2.0.1'
         jda_version = '3.6.0_358'
         jda_utilities_version = '2.1.1'
@@ -52,6 +51,11 @@ subprojects {
     sourceCompatibility = 9
     targetCompatibility = 9
 
+    // Create dependency shortcut for every subproject
+    rootProject.subprojects.forEach { subproject ->
+        project.ext."$subproject.name" = { project(":$subproject.name") }
+    }
+
     ext {
         repositories {
             jitpack = {
@@ -73,7 +77,7 @@ subprojects {
             kotlinxHtml = { String module = "jvm" -> kotlinxModule("html-$module", kotlinx_html_version) }
 
             // Kotlin Json
-            kotlinJson = { "me.kgustave:kotlin-json-core:$kotlin_json_version" }
+            kotlinJson = { String module = 'core' -> "me.kgustave:kotlin-json-$module:$kotlin_json_version" }
 
             // JDA
             jda = { "net.dv8tion:JDA:$jda_version" }
