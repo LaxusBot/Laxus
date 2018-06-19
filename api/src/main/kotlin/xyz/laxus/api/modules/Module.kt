@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.api.modules
 
-include ':api'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import io.ktor.application.Application
+
+/**
+ * @author Kaidan Gustave
+ */
+interface Module {
+    fun Application.install()
+}

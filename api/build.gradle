@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+repositories {
+    jitpack()
+}
+
 dependencies {
     // kotlin std
     compile kotlinModule('stdlib')
     compile kotlinModule('reflect')
     compile kotlinModule('stdlib-jdk8')
     compile kotlinModule('stdlib-jdk7')
-    compile "com.sparkjava:spark-core:2.7.2"
 
     compile jda()
     compile jdaUtilities('commons')
@@ -27,8 +30,17 @@ dependencies {
     compile slf4j()
     compile logback()
 
+    compile ktor('client-apache')
+    compile ktor('server-core')
+    compile ktor('server-netty')
+    compile ktor('auth')
+    compile ktor('locations')
+    compile ktor('html-builder')
+
     // json
     compile kotlinJson()
+    compile kotlinJson('reflect')
+    compile kotlinJson('ktor-server')
 
     // coroutines
     compile kotlinxCoroutines('core')

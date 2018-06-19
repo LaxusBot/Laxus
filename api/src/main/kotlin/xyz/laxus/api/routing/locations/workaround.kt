@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+@file:Suppress("Deprecation")
+package xyz.laxus.api.routing.locations
 
-include ':api'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import io.ktor.pipeline.ContextDsl
+import io.ktor.routing.Route
+import io.ktor.routing.Routing
+import io.ktor.locations.location as ktorLocation
+
+@ContextDsl inline fun <reified T: Any> Routing.location(noinline block: Route.() -> Unit) = ktorLocation<T>(block)
+@ContextDsl inline fun <reified T: Any> Route.location(noinline block: Route.() -> Unit) = ktorLocation<T>(block)

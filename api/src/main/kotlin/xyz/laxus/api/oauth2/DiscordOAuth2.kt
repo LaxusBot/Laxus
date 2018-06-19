@@ -13,10 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.api.oauth2
 
-include ':api'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import io.ktor.client.HttpClient
+import net.dv8tion.jda.core.entities.Guild
+
+/**
+ * @author Kaidan Gustave
+ */
+class DiscordOAuth2(private val client: HttpClient) {
+    companion object {
+        private const val RestVersion = 6
+        private const val BaseApiUrl = "https://discordapp.com/api/v$RestVersion"
+        private const val CurrentUser = "/users/@me"
+        private const val CurrentUserGuilds = "$CurrentUser/guilds"
+    }
+
+    suspend fun guilds(session: OAuth2Session): List<Guild> {
+        TODO("Implement")
+    }
+}

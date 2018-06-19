@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.api.oauth2
 
-include ':api'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+/**
+ * @author Kaidan Gustave
+ */
+data class ClientInfo(val name: String, val id: String, val secret: String)

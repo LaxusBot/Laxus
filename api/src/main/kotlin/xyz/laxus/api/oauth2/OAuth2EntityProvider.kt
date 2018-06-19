@@ -13,10 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.api.oauth2
 
-include ':api'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import net.dv8tion.jda.core.entities.Guild
+import net.dv8tion.jda.core.entities.User
+
+/**
+ * @author Kaidan Gustave
+ */
+interface OAuth2EntityProvider {
+    fun getGuild(id: Long): Guild?
+    fun getUser(id: Long): User?
+}

@@ -13,10 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+@file:Suppress("MemberVisibilityCanBePrivate", "CanBeParameter")
+package xyz.laxus.api.error
 
-include ':api'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import io.ktor.http.HttpStatusCode
+import me.kgustave.json.JSObject
+
+open class HttpError(status: HttpStatusCode, override val message: String = status.description): RuntimeException() {
+    val code = status.value
+
+    init {
+        require(code >= 400) {
+            "Status code doesn't represent a client or server error response type!"
+        }
+    }
+
+    internal open fun toJson() = JSObject {
+        "status" to code
+        "message" to message
+    }
+}

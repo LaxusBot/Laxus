@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.api.error
 
-include ':api'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import io.ktor.http.HttpStatusCode
+
+/**
+ * @author Kaidan Gustave
+ */
+class UnauthorizedError: HttpError(HttpStatusCode.Unauthorized)
