@@ -41,8 +41,10 @@ dependencies {
     compile kotlinxCoroutines('io')
     compile kotlinxCoroutines('jdk8')
 
-    // Kotlin Json
-    compile kotlinJson()
+    // Kotlin-JSON
+    compile kotlinJson('jdk8')
+    compile kotlinJson('reflect')
+    compile kotlinJson('ktor-client')
 
     // Kotlin Html
     compile kotlinxHtml('jvm')
@@ -50,7 +52,6 @@ dependencies {
     // JDA & Lavaplayer
     compile jda()
     compile jdaUtilities('commons')
-    //compile jdaUtilities('oauth2')
     compile lavaplayer()
 
     // Database
@@ -67,6 +68,11 @@ dependencies {
     compile okHttp()
     compile youtube()
     compile jsoup()
+
+    // Ktor
+    compile "me.kgustave:ktor-client-okhttp:0.2.0"
+    compile ktor('client-core')
+    compile ktor('client-json')
 
     // Misc
     compile jagtag()

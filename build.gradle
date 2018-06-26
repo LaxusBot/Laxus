@@ -1,10 +1,10 @@
 buildscript {
     ext {
         kotlin_version = '1.2.50'
-        kotlin_json_version = '1.6.0'
+        kotlin_json_version = '1.7.2'
         kotlinx_coroutines_version = '0.22.5'
         kotlinx_html_version = '0.6.9'
-        ktor_version = '0.9.3-alpha-3'
+        ktor_version = '0.9.3'
         shadow_version = '2.0.1'
         jda_version = '3.6.0_358'
         jda_utilities_version = '2.1.1'
@@ -78,7 +78,7 @@ subprojects {
             kotlinxHtml = { String module = "jvm" -> kotlinxModule("html-$module", kotlinx_html_version) }
 
             // Kotlin Json
-            kotlinJson = { String module = 'core' -> "me.kgustave:kotlin-json-$module:$kotlin_json_version" }
+            kotlinJson = { String module = 'jdk8' -> "me.kgustave:kotlin-json-$module:$kotlin_json_version" }
 
             // JDA
             jda = { "net.dv8tion:JDA:$jda_version" }
@@ -94,7 +94,7 @@ subprojects {
             // Configuration
             hocon = { "com.typesafe:config:$hocon_version" }
 
-            // Routing
+            // ktor
             ktor = { String module -> "io.ktor:ktor-$module:$ktor_version" }
 
             // Requests
@@ -126,8 +126,8 @@ subprojects {
     repositories {
         jcenter()
         mavenCentral()
-        maven { url = "https://dl.bintray.com/kaidangustave/maven" }
         maven { url = "https://dl.bintray.com/kotlin/ktor" }
+        maven { url = "https://dl.bintray.com/kaidangustave/maven" }
     }
 
     dependencies {

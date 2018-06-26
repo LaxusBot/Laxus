@@ -22,7 +22,6 @@ import net.dv8tion.jda.core.entities.Member
 import net.dv8tion.jda.core.entities.User
 import xyz.laxus.db.DBGlobalTags
 import xyz.laxus.db.DBLocalTags
-import xyz.laxus.db.entities.LocalTag
 import xyz.laxus.db.entities.Tag
 
 // Global
@@ -30,39 +29,17 @@ import xyz.laxus.db.entities.Tag
 val JDA.tags get() = DBGlobalTags.getTags()
 val User.tags get() = DBGlobalTags.getTags(idLong)
 
-fun JDA.getTagByName(name: String): Tag? {
-    return DBGlobalTags.getTagByName(name)
-}
-
-fun JDA.createTag(name: String, content: String, owner: User) {
-    DBGlobalTags.createTag(name, content, owner.idLong)
-}
-
-fun JDA.isTag(name: String): Boolean {
-    return getTagByName(name) !== null // FIXME
-}
-
-fun JDA.findTags(query: String): List<Tag> {
-    return DBGlobalTags.findTags(query)
-}
+fun JDA.getTagByName(name: String): Tag? = DBGlobalTags.getTagByName(name)
+fun JDA.createTag(name: String, content: String, owner: User) = DBGlobalTags.createTag(name, content, owner.idLong)
+fun JDA.isTag(name: String): Boolean = DBGlobalTags.isTag(name)
+fun JDA.findTags(query: String): List<Tag> = DBGlobalTags.findTags(query)
 
 // Local
 
 val Guild.tags get() = DBLocalTags.getTags(idLong)
 val Member.tags get() = DBLocalTags.getTags(user.idLong, guild.idLong)
 
-fun Guild.getTagByName(name: String): LocalTag? {
-    return DBLocalTags.getTagByName(name, idLong)
-}
-
-fun Guild.createTag(name: String, content: String, owner: Member) {
-    DBLocalTags.createTag(name, content, owner.user.idLong, idLong)
-}
-
-fun Guild.isTag(name: String): Boolean {
-    return getTagByName(name) !== null // FIXME
-}
-
-fun Guild.findTags(query: String): List<LocalTag> {
-    return DBLocalTags.findTags(query, idLong)
-}
+fun Guild.getTagByName(name: String): Tag? = DBLocalTags.getTagByName(name, idLong)
+fun Guild.createTag(name: String, content: String, owner: Member) = DBLocalTags.createTag(name, content, owner.user.idLong, idLong)
+fun Guild.isTag(name: String): Boolean = DBLocalTags.isTag(name, idLong)
+fun Guild.findTags(query: String): List<Tag> = DBLocalTags.findTags(query, idLong)
