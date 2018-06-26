@@ -16,8 +16,7 @@
 @file:Suppress("unused")
 package xyz.laxus.db
 
-import xyz.laxus.db.entities.LocalTag
-import xyz.laxus.db.entities.impl.LocalTagImpl
+import xyz.laxus.db.entities.Tag
 import xyz.laxus.db.schema.*
 import xyz.laxus.db.sql.*
 import xyz.laxus.db.sql.ResultSetConcur.*
@@ -34,54 +33,62 @@ import xyz.laxus.db.sql.ResultSetType.*
     Column("guild_id", BIGINT, primary = true)
 )
 object DBLocalTags: Table() {
-    fun getTags(guildId: Long): List<LocalTag> {
-        val list = ArrayList<LocalTag>()
+    fun isTag(name: String, guildId: Long): Boolean {
+        return connection.prepare("SELECT * FROM local_tags WHERE LOWER(name) = LOWER(?) AND guild_id = ?") { statement ->
+            statement[1] = name
+            statement[2] = guildId
+            statement.executeQuery { it.next() }
+        }
+    }
+
+    fun getTags(guildId: Long): List<Tag> {
+        val list = ArrayList<Tag>()
         connection.prepare("SELECT * FROM local_tags WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 it.whileNext {
-                    list += LocalTagImpl(it)
+                    list += Tag.local(it)
                 }
             }
         }
         return list
     }
 
-    fun getTags(userId: Long, guildId: Long): List<LocalTag> {
-        val list = ArrayList<LocalTag>()
+    fun getTags(userId: Long, guildId: Long): List<Tag> {
+        val list = ArrayList<Tag>()
         connection.prepare("SELECT * FROM local_tags WHERE owner_id = ? AND guild_id = ?") { statement ->
             statement[1] = userId
             statement[2] = guildId
             statement.executeQuery {
                 it.whileNext {
-                    list += LocalTagImpl(it)
+                    list += Tag.local(it)
                 }
             }
         }
         return list
     }
 
-    fun findTags(query: String, guildId: Long): List<LocalTag> {
-        val list = arrayListOf<LocalTag>()
+    fun findTags(query: String, guildId: Long): List<Tag> {
+        val list = arrayListOf<Tag>()
         connection.prepare("SELECT * FROM local_tags WHERE LOWER(name) ILIKE LOWER(?) AND guild_id = ?") { statement ->
             statement[1] = "$query%"
             statement[2] = guildId
             statement.executeQuery {
                 it.whileNext {
-                    list += LocalTagImpl(it)
+                    list += Tag.local(it)
                 }
             }
         }
         return list
     }
 
-    fun getTagByName(name: String, guildId: Long): LocalTag? {
+    fun getTagByName(name: String, guildId: Long): Tag? {
         connection.prepare("SELECT * FROM local_tags WHERE LOWER(name) = LOWER(?) AND guild_id = ?") { statement ->
             statement[1] = name
             statement[2] = guildId
             statement.executeQuery {
                 if(it.next()) {
-                    return LocalTagImpl(it)
+                    return Tag.local(it)
                 }
             }
         }
@@ -106,7 +113,7 @@ object DBLocalTags: Table() {
         }
     }
 
-    fun updateTag(tag: LocalTag) {
+    fun updateTag(tag: Tag) {
         require(tag.name.length <= 50) { "Tag name length exceeds maximum of 50 characters!" }
         require(tag.content.length <= 1900) { "Tag content length exceeds maximum of 50 characters!" }
 
@@ -121,7 +128,7 @@ object DBLocalTags: Table() {
         }
     }
 
-    fun deleteTag(tag: LocalTag) {
+    fun deleteTag(tag: Tag) {
         connection.prepare("SELECT * FROM local_tags WHERE LOWER(name) = LOWER(?) AND guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
             statement[1] = tag.name
             statement[2] = tag.guildId
@@ -131,7 +138,7 @@ object DBLocalTags: Table() {
         }
     }
 
-    fun overrideTag(tag: LocalTag) {
+    fun overrideTag(tag: Tag) {
         require(tag.ownerId === null) { "Cannot override a local tag with non-null ownerId!" }
 
         connection.prepare("SELECT * FROM local_tags WHERE LOWER(name) = LOWER(?) AND guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
@@ -140,6 +147,11 @@ object DBLocalTags: Table() {
             statement.executeQuery {
                 if(it.next()) it.update {
                     it["owner_id"] = tag.ownerId
+                } else it.insert {
+                    it["name"] = tag.name
+                    it["content"] = tag.content
+                    it["owner_id"] = tag.ownerId
+                    it["guild_id"] = tag.guildId
                 }
             }
         }

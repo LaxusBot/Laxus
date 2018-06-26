@@ -17,7 +17,6 @@
 package xyz.laxus.db
 
 import xyz.laxus.db.entities.Tag
-import xyz.laxus.db.entities.impl.GlobalTagImpl
 import xyz.laxus.db.schema.*
 import xyz.laxus.db.sql.*
 import xyz.laxus.db.sql.ResultSetConcur.*
@@ -33,12 +32,19 @@ import xyz.laxus.db.sql.ResultSetType.*
     Column("owner_id", BIGINT, nullable = true)
 )
 object DBGlobalTags: Table() {
+    fun isTag(name: String): Boolean {
+        return connection.prepare("SELECT * FROM global_tags WHERE LOWER(name) = LOWER(?)") { statement ->
+            statement[1] = name
+            statement.executeQuery { it.next() }
+        }
+    }
+
     fun getTags(): List<Tag> {
         val list = ArrayList<Tag>()
         connection.prepare("SELECT * FROM global_tags") { statement ->
             statement.executeQuery {
                 it.whileNext {
-                    list += GlobalTagImpl(it)
+                    list += Tag.global(it)
                 }
             }
         }
@@ -51,7 +57,7 @@ object DBGlobalTags: Table() {
             statement[1] = userId
             statement.executeQuery {
                 it.whileNext {
-                    list += GlobalTagImpl(it)
+                    list += Tag.global(it)
                 }
             }
         }
@@ -64,7 +70,7 @@ object DBGlobalTags: Table() {
             statement[1] = "$query%"
             statement.executeQuery {
                 it.whileNext {
-                    list += GlobalTagImpl(it)
+                    list += Tag.global(it)
                 }
             }
         }
@@ -76,7 +82,7 @@ object DBGlobalTags: Table() {
             statement[1] = name
             statement.executeQuery {
                 if(it.next()) {
-                    return GlobalTagImpl(it)
+                    return Tag.global(it)
                 }
             }
         }
@@ -130,6 +136,11 @@ object DBGlobalTags: Table() {
             statement.executeQuery {
                 if(it.next()) it.update {
                     it["owner_id"] = tag.ownerId
+                } else it.insert {
+                    it["name"] = tag.name
+                    it["content"] = tag.content
+                    it["owner_id"] = tag.ownerId
+                    it["guild_id"] = tag.guildId
                 }
             }
         }

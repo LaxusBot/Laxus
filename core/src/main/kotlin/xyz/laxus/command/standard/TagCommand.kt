@@ -47,6 +47,8 @@ class TagCommand: Command(StandardGroup) {
         TagDeleteCommand(),
         TagEditCommand(),
         TagListCommand(),
+        TagOverrideCommand(),
+        TagRemoveCommand(),
         TagOwnerCommand(),
         TagSearchCommand()
     )
@@ -78,9 +80,8 @@ class TagCommand: Command(StandardGroup) {
             ctx.guild.getTagByName(name) ?: ctx.jda.getTagByName(name)
         } else ctx.jda.getTagByName(name) // Get global scope tag
 
-        if(tag === null) {
-            return ctx.replyError("The tag \"$name\" does not exist or could not be found.")
-        }
+        if(tag === null) return ctx.replyError("The tag \"$name\" does not exist or could not be found.")
+        if(tag.isOverride()) return ctx.replyWarning ("This tag has been overriden!")
 
         val output = try {
             parser.parse(tag.content)
@@ -121,14 +122,12 @@ class TagCommand: Command(StandardGroup) {
                 return ctx.replyError("A global tag named $name already exists!")
             }
 
-            val guild = ctx.guild
-
-            if(guild.isTag(name)) {
+            if(ctx.guild.isTag(name)) {
                 // The tag already exists
                 return ctx.replyError("A local tag named $name already exists on this guild!")
             }
 
-            guild.createTag(name, content, ctx.member)
+            ctx.guild.createTag(name, content, ctx.member)
 
             ctx.replySuccess("Successfully created local tag \"$name\"!")
 
@@ -336,6 +335,30 @@ class TagCommand: Command(StandardGroup) {
     }
 
     @MustHaveArguments
+    private inner class TagOverrideCommand: Command(this@TagCommand) {
+        override val name = "Override"
+        override val arguments = "[Tag Name] <Override Content>"
+        override val help = "Overrides a tag for the server by name."
+        override val guildOnly = true
+        override val defaultLevel = Level.MODERATOR
+
+        override suspend fun execute(ctx: CommandContext) {
+            val parts = ctx.args.split(commandArgs, 2)
+            val name = parts[0]
+            val content = parts.getOrNull(1) ?: "${Laxus.Warning} This tag has been overriden!"
+            val tag = ctx.guild.getTagByName(name) ?: ctx.jda.getTagByName(name)
+            if(tag === null) return ctx.replyError {
+                "Unable to find tag named \"$name\"."
+            }
+            if(content.length > Tag.MaxContentLength) return ctx.replyError {
+                "Tag content must be no greater than ${Tag.MaxContentLength} characters long."
+            }
+            tag.override(ctx.guild.idLong)
+            ctx.replySuccess("Successfully override tag \"${tag.name}\"")
+        }
+    }
+
+    @MustHaveArguments
     private inner class TagOwnerCommand: Command(this@TagCommand) {
         override val name = "Owner"
         override val arguments = "[Tag Name]"
@@ -356,7 +379,7 @@ class TagCommand: Command(StandardGroup) {
 
             // This is due to an override either by the server or by me
             if(ownerId === null) {
-                val message = "The ${if(tag.isGlobal) "global" else "local"} tag \"${tag.name}\" has no owner."
+                val message = "The ${if(tag.isGlobal()) "global" else "local"} tag \"${tag.name}\" has no owner."
                 return ctx.replySuccess(message)
             }
 
@@ -366,11 +389,35 @@ class TagCommand: Command(StandardGroup) {
                 return ctx.replyError("Unable to retrieve the owner of tag \"${tag.name}\"!")
             }
 
-            val message = "The ${if(tag.isGlobal) "global" else "local"} tag \"${tag.name}\" " +
+            val message = "The ${if(tag.isGlobal()) "global" else "local"} tag \"${tag.name}\" " +
                           "is owned by ${owner.formattedName(true)}."
 
             ctx.replySuccess(message)
             ctx.invokeCooldown()
+        }
+    }
+
+    @MustHaveArguments
+    private inner class TagRemoveCommand: Command(this@TagCommand) {
+        override val name = "Remove"
+        override val arguments = "[Tag Name] <Override Content>"
+        override val help = "Removes a tag globally by name."
+        override val guildOnly = false
+        override val defaultLevel = Level.SHENGAERO
+
+        override suspend fun execute(ctx: CommandContext) {
+            val parts = ctx.args.split(commandArgs, 2)
+            val name = parts[0]
+            val content = parts.getOrNull(1) ?: "${Laxus.Warning} This tag has been overriden!"
+            val tag = ctx.jda.getTagByName(name)
+            if(tag === null) return ctx.replyError {
+                "Unable to find tag named \"$name\"."
+            }
+            if(content.length > Tag.MaxContentLength) return ctx.replyError {
+                "Tag content must be no greater than ${Tag.MaxContentLength} characters long."
+            }
+            tag.delete()
+            ctx.replySuccess("Successfully override tag \"${tag.name}\"")
         }
     }
 
@@ -400,9 +447,7 @@ class TagCommand: Command(StandardGroup) {
 
         override suspend fun execute(ctx: CommandContext) {
             val query = ctx.args
-            val tags = if(ctx.isGuild)
-                ctx.guild.findTags(query) + ctx.jda.findTags(query)
-            else ctx.jda.findTags(query)
+            val tags = if(ctx.isGuild) ctx.guild.findTags(query) + ctx.jda.findTags(query) else ctx.jda.findTags(query)
 
             if(tags.isEmpty()) return ctx.replyWarning {
                 "No tags found matching \"$query\"!"

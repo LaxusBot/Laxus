@@ -27,11 +27,20 @@ dependencies {
     compileOnly kotlinModule('reflect')
     compileOnly kotlinModule("script-runtime")
     compileOnly kotlinModule("script-util")
-    compileOnly kotlinJson()
     runtimeOnly kotlinModule("compiler-embeddable")
+
+    // Kotlin-JSON
+    compileOnly kotlinJson('jdk8')
+    compileOnly kotlinJson('reflect')
+    compileOnly kotlinJson('ktor-client')
 
     // Kotlin Coroutines
     compileOnly kotlinxCoroutines('core')
+
+    // Ktor
+    compileOnly "me.kgustave:ktor-client-okhttp:0.2.0"
+    compileOnly ktor('client-core')
+    compileOnly ktor('client-json')
 
     // Database
     compileOnly h2()

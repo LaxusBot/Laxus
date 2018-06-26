@@ -18,13 +18,24 @@ package xyz.laxus
 
 import com.jagrosh.jagtag.JagTag
 import com.jagrosh.jagtag.Parser
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.config
+import io.ktor.client.features.json.JsonFeature
+import io.ktor.client.request.HttpRequestPipeline
+import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.response.HttpResponse
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.http.withCharset
 import kotlinx.coroutines.experimental.*
 import me.kgustave.json.JSObject
-import me.kgustave.json.readJSObject
+import me.kgustave.json.ktor.client.JSKtorSerializer
+import me.kgustave.ktor.client.okhttp.OkHttp
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.OnlineStatus
 import net.dv8tion.jda.core.Permission.MESSAGE_MANAGE
-import net.dv8tion.jda.core.entities.ChannelType.*
+import net.dv8tion.jda.core.entities.ChannelType.TEXT
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Message
 import net.dv8tion.jda.core.events.Event
@@ -35,9 +46,8 @@ import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.core.events.message.MessageReceivedEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageDeleteEvent
-import net.dv8tion.jda.core.requests.Requester.MEDIA_TYPE_JSON
-import okhttp3.*
 import org.slf4j.Logger
+import org.slf4j.event.Level
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.CommandMap
@@ -47,19 +57,19 @@ import xyz.laxus.jda.listeners.SuspendedListener
 import xyz.laxus.jda.util.listeningTo
 import xyz.laxus.logging.LogLevel
 import xyz.laxus.logging.filters.NormalFilter
-import xyz.laxus.util.*
 import xyz.laxus.util.collections.CaseInsensitiveHashMap
 import xyz.laxus.util.collections.FixedSizeCache
 import xyz.laxus.util.collections.concurrentHashMap
-import xyz.laxus.util.collections.sumByLong
+import xyz.laxus.util.commandArgs
+import xyz.laxus.util.createLogger
 import xyz.laxus.util.db.*
+import xyz.laxus.util.ktor.*
 import java.io.IOException
 import java.time.OffsetDateTime
 import java.time.OffsetDateTime.now
 import java.time.temporal.ChronoUnit.SECONDS
 import java.util.concurrent.TimeUnit.HOURS
-import kotlin.collections.ArrayList
-import kotlin.collections.HashSet
+import kotlin.collections.set
 import kotlin.coroutines.experimental.coroutineContext
 
 class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
@@ -72,15 +82,46 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
     private val dBotsListKey = builder.dBotsListKey
 
     private val cycleContext = newSingleThreadContext("Cycle Context")
-    private val botsListContext = newSingleThreadContext("BotsList Context")
+    private val botsListContext = newSingleThreadContext("BotLists Context")
 
     val test = builder.test
     val prefix = if(test) Laxus.TestPrefix else Laxus.Prefix
-    val httpClient: OkHttpClient = Laxus.HttpClientBuilder.build()
     val startTime: OffsetDateTime = now()
-    val groups: List<Command.Group> = builder.groups.sorted()
+    val groups = builder.groups.sorted()
     val commands: Map<String, Command> = CommandMap(*groups.toTypedArray())
     val parser: Parser = JagTag.newDefaultBuilder().addMethods(tagMethods).build()
+    val httpClient = HttpClient(OkHttp.config { okClientBuilder = Laxus.HttpClientBuilder }) {
+        authorizationHeaders {
+            resolver(host = "bots.discord.pw", authorization = dBotsKey)
+            resolver(host = "discordbots.org", authorization = dBotsListKey)
+        }
+
+        logging {
+            name("BotLists")
+            send {
+                level = Level.INFO
+                mode = ClientCallLogging.Mode.SIMPLE
+            }
+            receive {
+                level = Level.DEBUG
+                mode = ClientCallLogging.Mode.DETAILED
+            }
+            error {
+                level = Level.ERROR
+                mode = ClientCallLogging.Mode.SIMPLE
+            }
+        }
+
+        install(JsonFeature) {
+            serializer = JSKtorSerializer(charset = Charsets.UTF_8)
+        }
+
+        install("DefaultContentType") {
+            requestPipeline.intercept(HttpRequestPipeline.Before) {
+                context.contentType(ContentType.Application.Json.withCharset(Charsets.UTF_8))
+            }
+        }
+    }
 
     val messageCacheSize get() = callCache.size
 
@@ -299,46 +340,46 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
             }
         }
 
-        val requestBody = RequestBody.create(MEDIA_TYPE_JSON, body.toJsonString(0))
-
         dBotsKey?.let {
             // Run this as a child job
-            launch(botsListContext) {
-                try {
-                    val url = "https://bots.discord.pw/api/bots/${jda.selfUser.id}/stats"
-                    // Send POST request to bots.discord.pw
-                    httpClient.newRequest {
-                        post(requestBody).url(url)
-                        this["Authorization"] = dBotsKey
-                        this["Content-Type"] = "application/json"
-                    }.await().close()
-                    Log.debug("Sent to Discord Bots: POST - '$url'")
-                } catch(e: IOException) {
+            val job = launch(botsListContext, start = CoroutineStart.LAZY) {
+                // Send POST request to bots.discord.pw
+                httpClient.post<HttpResponse>(
+                    url = "https://bots.discord.pw/api/bots/${jda.selfUser.id}/stats"
+                ) { this.body = body }.close()
+            }
+
+            job.invokeOnCompletion { e ->
+                if(e is IOException) {
                     Log.error("Failed to send information to bots.discord.pw", e)
-                } catch(e: CancellationException) {
+                }
+                if(e is CancellationException) {
                     Log.debug("Request to discordbots.org was cancelled: ${e.message}")
                 }
             }
+
+            job.start()
         }
 
         dBotsListKey?.let {
             // Run this as a child job
-            launch(botsListContext) {
-                try {
-                    val url = "https://discordbots.org/api/bots/${jda.selfUser.id}/stats"
-                    // Send POST request to discordbots.org
-                    httpClient.newRequest {
-                        post(requestBody).url(url)
-                        this["Authorization"] = dBotsListKey
-                        this["Content-Type"] = "application/json"
-                    }.await().close()
-                    Log.debug("Sent to Discord Bots List: POST - '$url'")
-                } catch(e: IOException) {
-                    Log.error("Failed to send information to discordbots.org", e)
-                } catch(e: CancellationException) {
+            val job = launch(botsListContext) {
+                // Send POST request to discordbots.org
+                httpClient.post<HttpResponse>(
+                    url = "https://discordbots.org/api/bots/${jda.selfUser.id}/stats"
+                ) { this.body = body }.close()
+            }
+
+            job.invokeOnCompletion { e ->
+                if(e is IOException) {
+                    Log.error("Failed to send information to bots.discord.pw", e)
+                }
+                if(e is CancellationException) {
                     Log.debug("Request to discordbots.org was cancelled: ${e.message}")
                 }
             }
+
+            job.start()
         }
 
         // If we're not sharded there's no reason to send a GET request
@@ -349,23 +390,10 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
 
         try {
             // Send GET request to bots.discord.pw
-            val url = "https://bots.discord.pw/api/bots/${jda.selfUser.id}/stats"
-            httpClient.newRequest {
-                get().url(url)
-                this["Authorization"] = dBotsKey
-                this["Content-Type"] = "application/json"
-            }.await().use { response ->
-                response.body()?.charStream()?.use { charStream ->
-                    val json = charStream.readJSObject()
-                    Log.debug("Received JSON from bots.discord.pw:\n${json.toJsonString(2)}")
-                    this.totalGuilds = json.array("stats").mapNotNull objects@ {
-                        val obj = it as? JSObject
-                        return@objects obj?.takeIf { "server_count" in obj && !obj.isNull("server_count") }
-                    }.sumByLong { it.int("server_count").toLong() }
-                    Log.debug("Got from Discord Bots: GET - '$url'\n" +
-                              json.toJsonString(2))
-                }
-            }
+            val json = httpClient.get<JSObject>("https://bots.discord.pw/api/bots/${jda.selfUser.id}/stats")
+            this.totalGuilds = json.array("stats").asSequence()
+                .mapNotNull { it as? JSObject }
+                .map { it.optLong("server_count") ?: 0L }.sum()
         } catch (t: Throwable) {
             Log.error("Failed to retrieve bot shard information from bots.discord.pw", t)
         }

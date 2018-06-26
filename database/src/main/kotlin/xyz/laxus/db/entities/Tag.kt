@@ -15,21 +15,48 @@
  */
 package xyz.laxus.db.entities
 
-/**
- * @author Kaidan Gustave
- */
-interface Tag {
+import xyz.laxus.db.DBGlobalTags
+import xyz.laxus.db.DBLocalTags
+import xyz.laxus.db.sql.getNullLong
+import java.sql.ResultSet
+
+data class Tag(val name: String, val content: String, val ownerId: Long?, val guildId: Long? = null) {
+    fun isGlobal() = guildId === null
+
+    fun isOverride() = ownerId === null
+
+    fun edit(newContent: String) {
+        DBLocalTags.updateTag(this.copy(content = newContent))
+    }
+
+    fun delete() {
+        DBLocalTags.deleteTag(this)
+    }
+
+    fun override(guildId: Long? = null) {
+        val override = this.copy(ownerId = null, guildId = guildId)
+        if(override.guildId === null) {
+            DBGlobalTags.overrideTag(override)
+        } else {
+            DBLocalTags.overrideTag(override)
+        }
+    }
+
     companion object {
         const val MaxNameLength = 50
         const val MaxContentLength = 1900
+
+        internal fun local(results: ResultSet) = Tag(
+            name = results.getString("name"),
+            content = results.getString("content"),
+            ownerId = results.getNullLong("owner_id"),
+            guildId = results.getLong("guild_id")
+        )
+
+        internal fun global(results: ResultSet) = Tag(
+            name = results.getString("name"),
+            content = results.getString("content"),
+            ownerId = results.getNullLong("owner_id")
+        )
     }
-
-    val name: String
-    val content: String
-    val ownerId: Long?
-    val isGlobal: Boolean
-
-    fun edit(newContent: String)
-    fun delete()
-    fun override()
 }
