@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.modules
+package xyz.laxus.api
 
 import io.ktor.application.Application
 

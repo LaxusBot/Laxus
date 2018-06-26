@@ -13,29 +13,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.modules
+package xyz.laxus.api.oauth2
 
 import io.ktor.application.Application
-import io.ktor.application.call
-import io.ktor.application.install
-import io.ktor.auth.Authentication
-import io.ktor.config.ApplicationConfig
+import io.ktor.auth.authentication
+import io.ktor.auth.oauth
+import io.ktor.client.HttpClient
 import io.ktor.features.origin
 import io.ktor.http.Cookie
 import io.ktor.http.CookieEncoding
-import xyz.laxus.api.oauth2.ClientInfo
-import xyz.laxus.api.oauth2.DashboardAuthenticator
-import xyz.laxus.api.oauth2.OAuth2Session
+import me.kgustave.ktor.client.okhttp.OkHttp
+import xyz.laxus.api.Module
 import java.time.OffsetDateTime
 
 object OAuth2: Module {
-    private lateinit var discord: DashboardAuthenticator
+    private val httpClient = HttpClient(OkHttp)
 
     override fun Application.install() {
         val config = environment.config.config("ktor.auth")
-        discord = DashboardAuthenticator(client(config.config("discord")))
-        install(Authentication) {
-            register(discord)
+        val client = ClientInfo.from(config.config("discord"))
+        val settings = OAuth2Settings(
+            name = client.name,
+            clientId = client.id,
+            clientSecret = client.secret,
+            defaultScopes = client.defaultScopes,
+            requestMethod = client.method,
+            authorizeUrl = "https://discordapp.com/api/oauth2/authorize",
+            accessTokenUrl = "https://discordapp.com/api/oauth2/token"
+        )
+
+        authentication {
+            oauth(client.name) {
+                this.client = httpClient
+                this.providerLookup = { settings }
+                this.urlProvider = { request.origin.uri }
+            }
         }
     }
 
@@ -60,12 +72,4 @@ object OAuth2: Module {
         )
         return setOf(accessCookie, refreshCookie)
     }
-
-    private fun client(config: ApplicationConfig): ClientInfo = ClientInfo(
-        name = config.property("name").getString(),
-        id = config.property("client.id").getString(),
-        secret = config.property("client.secret").getString()
-    )
-
-    private fun Authentication.Configuration.register(manager: DashboardAuthenticator) = manager.run { install() }
 }

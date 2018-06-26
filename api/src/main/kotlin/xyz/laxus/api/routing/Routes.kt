@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:JvmName("Routing")
-
-package xyz.laxus.api.modules
+package xyz.laxus.api.routing
 
 import io.ktor.application.Application
 import io.ktor.application.ApplicationCall
@@ -23,23 +21,43 @@ import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.auth.authenticate
 import io.ktor.auth.authentication
+import io.ktor.client.HttpClient
+import io.ktor.client.features.json.JsonFeature
 import io.ktor.features.*
 import io.ktor.http.ContentType
-import io.ktor.http.CookieEncoding
 import io.ktor.http.HttpMethod
 import io.ktor.locations.Locations
-import io.ktor.pipeline.PipelineContext
 import io.ktor.response.respond
+import io.ktor.response.respondRedirect
 import io.ktor.routing.Routing
 import io.ktor.routing.get
 import io.ktor.routing.route
+import me.kgustave.json.JSObject
+import me.kgustave.json.ktor.client.JSKtorSerializer
 import me.kgustave.json.ktor.server.JSContentConverter
+import me.kgustave.json.reflect.JSDeserializer
+import me.kgustave.json.reflect.JSSerializer
+import me.kgustave.json.toJSArray
+import me.kgustave.ktor.client.okhttp.OkHttp
 import org.slf4j.event.Level
+import xyz.laxus.api.Module
 import xyz.laxus.api.error.HttpError
 import xyz.laxus.api.error.InternalServerError
+import xyz.laxus.api.error.badRequest
+import xyz.laxus.api.oauth2.DiscordOAuth2
+import xyz.laxus.api.oauth2.OAuth2
 import xyz.laxus.api.oauth2.OAuth2Session
 
-object Routing: Module {
+object Routes: Module {
+    private val deserializer = JSDeserializer()
+    private val serializer = JSSerializer()
+    private val httpClient = HttpClient(OkHttp) {
+        install(JsonFeature) {
+            serializer = JSKtorSerializer(Routes.serializer, Routes.deserializer, Charsets.UTF_8)
+        }
+    }
+    private val discordOAuth = DiscordOAuth2(httpClient)
+
     override fun Application.install() {
         install(CallLogging) {
             level = Level.DEBUG
@@ -48,7 +66,7 @@ object Routing: Module {
         install(Locations)
 
         install(ContentNegotiation) {
-            register(ContentType.Application.Json, JSContentConverter(charset = Charsets.UTF_8))
+            register(ContentType.Application.Json, JSContentConverter(deserializer, serializer, Charsets.UTF_8))
         }
 
         install(Compression, Compression.Configuration::default)
@@ -74,18 +92,29 @@ object Routing: Module {
         install(Routing) {
             route("/dashboard") {
                 authenticate(authKey) {
-                    get("/auth") { handleDashboardAuth() }
+                    get("/auth") {
+                        val session = call.oAuth2Session ?: throw badRequest("Could not complete OAuth2 flow!")
+                        OAuth2.cookies(session, call.request.origin.host).forEach { call.response.cookies.append(it) }
+                    }
+                    get("/user") {
+                        val session = call.oAuth2Session ?: return@get call.redirectToAuth()
+                        val user = discordOAuth.user(session)
+
+                    }
+                    get("/guilds") {
+                        val session = call.oAuth2Session ?: return@get call.redirectToAuth()
+                        val guilds = discordOAuth.guilds(session).asSequence().map {
+                            JSObject {
+                                "name" to it.name
+                                "id" to it.idLong
+                            }
+                        }.toJSArray()
+                    }
                 }
             }
         }
     }
 
-    private fun PipelineContext<Unit, ApplicationCall>.handleDashboardAuth() {
-        val session = call.authentication.principal<OAuth2Session>() ?: TODO("Handle null auth")
-        call.request.cookies["access_token", CookieEncoding.BASE64_ENCODING]?.let {}
-        OAuth2.cookies(session, call.request.origin.host).forEach {
-            val cookies = call.response.cookies
-            cookies.append(it)
-        }
-    }
+    private val ApplicationCall.oAuth2Session get() = authentication.principal<OAuth2Session>()
+    private suspend fun ApplicationCall.redirectToAuth() = respondRedirect(url = "/dashboard/auth")
 }

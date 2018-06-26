@@ -16,5 +16,7 @@
 package xyz.laxus.api.oauth2
 
 import io.ktor.auth.OAuthAccessTokenResponse
+import io.ktor.auth.OAuthServerSettings
 
 typealias OAuth2Session = OAuthAccessTokenResponse.OAuth2
+typealias OAuth2Settings = OAuthServerSettings.OAuth2ServerSettings

@@ -15,7 +15,26 @@
  */
 package xyz.laxus.api.oauth2
 
+import io.ktor.config.ApplicationConfig
+import io.ktor.http.HttpMethod
+
 /**
  * @author Kaidan Gustave
  */
-data class ClientInfo(val name: String, val id: String, val secret: String)
+data class ClientInfo(
+    val name: String,
+    val id: String,
+    val secret: String,
+    val method: HttpMethod,
+    val defaultScopes: List<String>
+) {
+    companion object {
+        fun from(config: ApplicationConfig) = ClientInfo(
+            name = config.property("name").getString(),
+            id = config.property("client.id").getString(),
+            secret = config.property("client.secret").getString(),
+            method = config.propertyOrNull("http.method")?.getString()?.let { HttpMethod.parse(it) } ?: HttpMethod.Put,
+            defaultScopes = config.property("default.scopes").getList()
+        )
+    }
+}

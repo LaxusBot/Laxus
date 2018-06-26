@@ -15,6 +15,7 @@
  */
 repositories {
     jitpack()
+    maven { url = "https://dl.bintray.com/kaidangustave/maven" }
 }
 
 dependencies {
@@ -30,17 +31,19 @@ dependencies {
     compile slf4j()
     compile logback()
 
-    compile ktor('client-apache')
+    compile "me.kgustave:ktor-client-okhttp:0.2.0"
     compile ktor('server-core')
     compile ktor('server-netty')
     compile ktor('auth')
     compile ktor('locations')
     compile ktor('html-builder')
+    compile ktor('client-json')
 
     // json
     compile kotlinJson()
     compile kotlinJson('reflect')
     compile kotlinJson('ktor-server')
+    compile kotlinJson('ktor-client')
 
     // coroutines
     compile kotlinxCoroutines('core')
