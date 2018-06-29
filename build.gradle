@@ -1,3 +1,5 @@
+import org.gradle.plugins.ide.idea.model.IdeaLanguageLevel
+
 buildscript {
     ext {
         kotlin_version = '1.2.50'
@@ -35,27 +37,30 @@ buildscript {
     }
 }
 
-def ver = [major: 0, minor: 6, revision: 0]
+def ver = [major: 0, minor: 7, revision: 0]
 
-allprojects {
-    group = 'xyz.laxus'
-    version = ver.values().join('.')
-
-    ext.ver = ver
+static void createChildExtension(Project target, Project child, String ancestorName = "") {
+    if(target == child) return
+    def name = ancestorName.isEmpty() ? child.name : ancestorName + child.name.capitalize()
+    target.ext."$name" = { child }
+    child.childProjects.values().each {
+        createChildExtension(target, it, name)
+    }
 }
 
-subprojects {
+allprojects {
     apply plugin: 'java'
     apply plugin: 'idea'
     apply plugin: 'kotlin'
 
-    sourceCompatibility = 9
-    targetCompatibility = 9
+    group = 'xyz.laxus'
+    version = ver.values().join('.')
+
+    sourceCompatibility = 8
+    targetCompatibility = 8
 
     // Create dependency shortcut for every subproject
-    rootProject.subprojects.forEach { subproject ->
-        project.ext."$subproject.name" = { project(":$subproject.name") }
-    }
+    rootProject.childProjects.values().each { createChildExtension(project, it) }
 
     ext {
         repositories {
@@ -71,7 +76,7 @@ subprojects {
             kotlinModule = { String module -> "org.jetbrains.kotlin:kotlin-$module:$kotlin_version" }
             kotlinxModule = { String module, String version -> "org.jetbrains.kotlinx:kotlinx-$module:$version" }
 
-            // Kotlin Coroutines
+            // Kotlinx Coroutines
             kotlinxCoroutines = { String module -> kotlinxModule("coroutines-$module", kotlinx_coroutines_version) }
 
             // Kotlin Html
@@ -95,7 +100,12 @@ subprojects {
             hocon = { "com.typesafe:config:$hocon_version" }
 
             // ktor
-            ktor = { String module -> "io.ktor:ktor-$module:$ktor_version" }
+            ktor = { String module ->
+                switch(module) {
+                    case "client-okhttp": return "me.kgustave:ktor-$module:0.2.0"
+                    default: "io.ktor:ktor-$module:$ktor_version"
+                }
+            }
 
             // Requests
             youtube = { "com.google.apis:google-api-services-youtube:$youtube_api_version" }
@@ -161,11 +171,14 @@ subprojects {
         }
     }
 
+    def autoModuleName = "laxus${project == rootProject ? '.app' : project.path.replace('-', '.').replace(':', '.')}"
+
     jar {
         manifest {
             attributes 'Manifest-Version': "${ver.major}.${ver.minor}",
                        'Implementation-Version': "$version",
-                       'Automatic-Module-Name': "laxus${project.path.replace('-', '.').replace(':', '.')}"
+                       'Kotlin-Version': kotlin_version,
+                       'Automatic-Module-Name': autoModuleName
         }
     }
 
@@ -185,8 +198,102 @@ subprojects {
 
         build.mustRunAfter clean
     }
+
+    idea {
+        module {
+            jdkName = sourceCompatibility.isJava8Compatible() ? '1.8' : '9'
+            setLanguageLevel(new IdeaLanguageLevel(jdkName))
+        }
+    }
+}
+
+apply plugin: 'application'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+mainClassName = 'xyz.laxus.Main'
+
+repositories {
+    jitpack()
+}
+
+dependencies {
+    // Kotlin
+    compile kotlinModule('stdlib-jdk8')
+    compile kotlinModule('stdlib-jdk7')
+    compile kotlinModule('reflect')
+    compile kotlinModule("script-runtime")
+    compile kotlinModule("script-util")
+    runtime kotlinModule("compiler-embeddable")
+
+    // Kotlin Coroutines
+    compile kotlinxCoroutines('core')
+
+    // Kotlin-JSON
+    compile kotlinJson('jdk8')
+    compile kotlinJson('reflect')
+    compile kotlinJson('ktor-client')
+
+    // JDA & Lavaplayer
+    compile jda()
+    compile jdaUtilities('commons')
+    compile lavaplayer()
+
+    // Database
+    compile postgres()
+
+    // Configuration
+    compile hocon()
+
+    // Logging
+    compile slf4j()
+    compile logback()
+
+    // Requests
+    compile okHttp()
+    compile youtube()
+    compile jsoup()
+
+    // Ktor
+    compile ktor('client-okhttp')
+    compile ktor('client-core')
+    compile ktor('client-json')
+
+    // Misc
+    compile jagtag()
+
+    // Projects
+    compile commons()
+    compile commonsJda()
+    compile database()
+    compile core()
+    compile coreMusic()
+}
+
+shadowJar {
+    baseName = 'laxus'
+    version = ''
+    classifier = ''
+
+    manifest {
+        attributes 'Manifest-Version': "${ver.major}.${ver.minor}",
+                   'Main-Class': mainClassName
+    }
+}
+
+build {
+    dependsOn classes
+    dependsOn shadowJar
+
+    shadowJar.mustRunAfter classes
 }
 
 wrapper {
     gradleVersion = '4.6'
+}
+
+idea {
+    project {
+        jdkName = sourceCompatibility.isJava8Compatible() ? '1.8' : '9'
+        setLanguageLevel(new IdeaLanguageLevel(jdkName))
+    }
 }

@@ -29,5 +29,5 @@ dependencies {
     compileOnly kotlinxCoroutines('core')
 
     // Projects
-    compileOnly project(':commons')
+    compileOnly commons()
 }

@@ -15,8 +15,33 @@
  */
 rootProject.name = 'Laxus'
 
-include ':api', ':api:route-handlers'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+void module(Map settings) {
+    def name = settings.name as String
+
+    include name
+    def project = project(name)
+
+    // Change project directory
+    if(settings.directory != null)
+        project.projectDir = file(settings.directory)
+
+    if(settings.children != null) {
+        def children = settings.children
+        if(children instanceof Map) {
+            //noinspection GroovyAssignabilityCheck
+            children.name = name + children.name
+            module(children)
+        } else if(children instanceof List<Map>) {
+            children.each {
+                //noinspection GroovyAssignabilityCheck
+                it.name = name + it.name
+                module(it)
+            }
+        }
+    }
+}
+
+module name: ':api', children: [name: ':route-handlers']
+module name: ':commons', children: [name: ':jda']
+module name: ':core', children: [name: ':music']
+module name: ':database'

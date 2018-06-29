@@ -27,8 +27,8 @@ dependencies {
     compileOnly slf4j()
 
     // Projects
-    compileOnly project(":core")
-    compileOnly project(":database")
-    compileOnly project(':commons')
-    compileOnly project(':commons:jda')
+    compileOnly commons()
+    compileOnly commonsJda()
+    compileOnly core()
+    compileOnly database()
 }
