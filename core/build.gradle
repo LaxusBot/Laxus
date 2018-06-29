@@ -57,7 +57,7 @@ dependencies {
     compileOnly youtube()
 
     // Projects
-    compileOnly project(':commons')
-    compileOnly project(':commons:jda')
-    compileOnly project(':database')
+    compileOnly commons()
+    compileOnly commonsJda()
+    compileOnly database()
 }
