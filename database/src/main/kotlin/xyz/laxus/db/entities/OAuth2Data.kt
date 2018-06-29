@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.db.entities
 
-include ':api', ':api:route-handlers'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+/**
+ * @author Kaidan Gustave
+ */
+class OAuth2Data(val accessToken: String, val refreshToken: String, val tokenType: String, val expiration: Long)

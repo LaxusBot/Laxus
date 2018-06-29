@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.api.handlers.internal.routing.params
 
-include ':api', ':api:route-handlers'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import io.ktor.application.ApplicationCall
+
+/**
+ * @author Kaidan Gustave
+ */
+internal class RouteInstanceResolver(private val value: Any): RouteParamResolver<Any> {
+    override suspend fun resolve(value: ApplicationCall) = this.value
+}

@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("Deprecation")
-package xyz.laxus.api.routing.locations
+package xyz.laxus.api.handlers.internal.reflect
 
-import io.ktor.pipeline.ContextDsl
-import io.ktor.routing.Route
-import io.ktor.routing.Routing
-import io.ktor.locations.location as ktorLocation
+import kotlin.annotation.AnnotationRetention.*
+import kotlin.annotation.AnnotationTarget.*
 
-@ContextDsl inline fun <reified T: Any> Routing.location(noinline block: Route.() -> Unit) = ktorLocation<T>(block)
-@ContextDsl inline fun <reified T: Any> Route.location(noinline block: Route.() -> Unit) = ktorLocation<T>(block)
+@Retention(RUNTIME)
+@Target(ANNOTATION_CLASS)
+internal annotation class ParamMapped

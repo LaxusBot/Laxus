@@ -53,6 +53,7 @@ dependencies {
     // html
     compile kotlinxHtml('jvm')
 
+    compile project(':api:route-handlers')
     compile project(':commons')
     compile project(':commons:jda')
     compile project(':core')

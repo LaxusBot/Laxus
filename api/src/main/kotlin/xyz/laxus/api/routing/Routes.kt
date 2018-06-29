@@ -16,37 +16,30 @@
 package xyz.laxus.api.routing
 
 import io.ktor.application.Application
-import io.ktor.application.ApplicationCall
 import io.ktor.application.call
 import io.ktor.application.install
-import io.ktor.auth.authenticate
-import io.ktor.auth.authentication
 import io.ktor.client.HttpClient
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.features.*
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import io.ktor.http.withCharset
 import io.ktor.locations.Locations
 import io.ktor.response.respond
-import io.ktor.response.respondRedirect
-import io.ktor.routing.Routing
-import io.ktor.routing.get
-import io.ktor.routing.route
-import me.kgustave.json.JSObject
 import me.kgustave.json.ktor.client.JSKtorSerializer
 import me.kgustave.json.ktor.server.JSContentConverter
 import me.kgustave.json.reflect.JSDeserializer
 import me.kgustave.json.reflect.JSSerializer
-import me.kgustave.json.toJSArray
 import me.kgustave.ktor.client.okhttp.OkHttp
 import org.slf4j.event.Level
 import xyz.laxus.api.Module
 import xyz.laxus.api.error.HttpError
 import xyz.laxus.api.error.InternalServerError
 import xyz.laxus.api.error.badRequest
-import xyz.laxus.api.oauth2.DiscordOAuth2
-import xyz.laxus.api.oauth2.OAuth2
-import xyz.laxus.api.oauth2.OAuth2Session
+import xyz.laxus.api.error.unauthorized
+import xyz.laxus.api.handlers.routeHandlers
+import java.nio.charset.Charset
 
 object Routes: Module {
     private val deserializer = JSDeserializer()
@@ -56,7 +49,6 @@ object Routes: Module {
             serializer = JSKtorSerializer(Routes.serializer, Routes.deserializer, Charsets.UTF_8)
         }
     }
-    private val discordOAuth = DiscordOAuth2(httpClient)
 
     override fun Application.install() {
         install(CallLogging) {
@@ -66,10 +58,17 @@ object Routes: Module {
         install(Locations)
 
         install(ContentNegotiation) {
-            register(ContentType.Application.Json, JSContentConverter(deserializer, serializer, Charsets.UTF_8))
+            Charset.availableCharsets().values.forEach {
+                register(ContentType.Application.Json.withCharset(it),
+                    JSContentConverter(deserializer, serializer, it))
+            }
         }
 
-        install(Compression, Compression.Configuration::default)
+        install(Compression) {
+            gzip()
+            deflate()
+            identity()
+        }
 
         install(CORS) {
             anyHost()
@@ -81,40 +80,29 @@ object Routes: Module {
         }
 
         install(StatusPages) {
-            exception<Throwable> {
-                val http = it as? HttpError ?: InternalServerError(it)
-                val json = http.toJson()
-                call.respond(json)
+            exception<HttpError> { exception ->
+                call.respond(exception.status, exception.toJson())
+            }
+
+            exception<Throwable> { exception ->
+                val http = exception as? HttpError ?: InternalServerError(exception)
+                call.respond(http.status, http.toJson())
             }
         }
 
-        val authKey = environment.config.property("ktor.auth.discord.name").getString()
-        install(Routing) {
-            route("/dashboard") {
-                authenticate(authKey) {
-                    get("/auth") {
-                        val session = call.oAuth2Session ?: throw badRequest("Could not complete OAuth2 flow!")
-                        OAuth2.cookies(session, call.request.origin.host).forEach { call.response.cookies.append(it) }
-                    }
-                    get("/user") {
-                        val session = call.oAuth2Session ?: return@get call.redirectToAuth()
-                        val user = discordOAuth.user(session)
-
-                    }
-                    get("/guilds") {
-                        val session = call.oAuth2Session ?: return@get call.redirectToAuth()
-                        val guilds = discordOAuth.guilds(session).asSequence().map {
-                            JSObject {
-                                "name" to it.name
-                                "id" to it.idLong
-                            }
-                        }.toJSArray()
+        routeHandlers {
+            register(Dashboard(httpClient))
+            handleMissing {
+                body { throw badRequest("Request body is missing") }
+                param { throw badRequest("Missing route param!") }
+                queryParam { throw badRequest("Missing query param!") }
+                header { header ->
+                    throw when(header) {
+                        HttpHeaders.Authorization -> unauthorized()
+                        else -> badRequest("Missing header value '$header'")
                     }
                 }
             }
         }
     }
-
-    private val ApplicationCall.oAuth2Session get() = authentication.principal<OAuth2Session>()
-    private suspend fun ApplicationCall.redirectToAuth() = respondRedirect(url = "/dashboard/auth")
 }

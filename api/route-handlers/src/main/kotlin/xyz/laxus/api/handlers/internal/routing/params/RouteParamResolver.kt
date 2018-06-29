@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.api.handlers.internal.routing.params
 
-include ':api', ':api:route-handlers'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import io.ktor.application.ApplicationCall
+import xyz.laxus.api.handlers.internal.ParamResolver
+
+internal typealias RouteParamResolver<T> = ParamResolver<ApplicationCall, T>

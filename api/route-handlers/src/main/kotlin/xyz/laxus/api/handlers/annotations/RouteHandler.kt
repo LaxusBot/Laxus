@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.api.handlers.annotations
 
-include ':api', ':api:route-handlers'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import kotlin.annotation.AnnotationRetention.RUNTIME
+import kotlin.annotation.AnnotationTarget.CLASS
+
+@Target(CLASS)
+@Retention(RUNTIME)
+annotation class RouteHandler(val path: String)

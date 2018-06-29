@@ -13,10 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.api.data
 
-include ':api', ':api:route-handlers'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+import me.kgustave.json.reflect.JSSerializable
+import me.kgustave.json.reflect.JSValue
+
+@JSSerializable data class UserInfo(
+    @JSValue val id: Long,
+    @JSValue val name: String,
+    @JSValue val discriminator: Int,
+    @JSValue val avatar: String,
+    @JSValue val tags: List<TagInfo>
+)

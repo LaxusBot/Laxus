@@ -16,60 +16,117 @@
 package xyz.laxus.api.oauth2
 
 import io.ktor.application.Application
+import io.ktor.application.ApplicationCall
+import io.ktor.application.call
+import io.ktor.application.install
+import io.ktor.auth.AuthenticationPipeline
 import io.ktor.auth.authentication
 import io.ktor.auth.oauth
 import io.ktor.client.HttpClient
 import io.ktor.features.origin
 import io.ktor.http.Cookie
-import io.ktor.http.CookieEncoding
+import io.ktor.http.CookieEncoding.BASE64_ENCODING
+import io.ktor.sessions.*
 import me.kgustave.ktor.client.okhttp.OkHttp
 import xyz.laxus.api.Module
+import xyz.laxus.db.DBOAuth2Session
+import xyz.laxus.db.entities.OAuth2Data
 import java.time.OffsetDateTime
 
 object OAuth2: Module {
     private val httpClient = HttpClient(OkHttp)
 
+    private const val sessionCookieName = "discord_access_token"
+
     override fun Application.install() {
         val config = environment.config.config("ktor.auth")
-        val client = ClientInfo.from(config.config("discord"))
+        val info = ClientInfo.from(config.config("discord"))
         val settings = OAuth2Settings(
-            name = client.name,
-            clientId = client.id,
-            clientSecret = client.secret,
-            defaultScopes = client.defaultScopes,
-            requestMethod = client.method,
+            name = info.name,
+            clientId = info.id,
+            clientSecret = info.secret,
+            defaultScopes = info.defaultScopes,
+            requestMethod = info.method,
             authorizeUrl = "https://discordapp.com/api/oauth2/authorize",
             accessTokenUrl = "https://discordapp.com/api/oauth2/token"
         )
 
+        install(Sessions) {
+            register(SessionProvider("oauth2", OAuth2Session::class, Transport(), Tracker()))
+        }
+
         authentication {
-            oauth(client.name) {
-                this.client = httpClient
-                this.providerLookup = { settings }
-                this.urlProvider = { request.origin.uri }
+            oauth(info.name) {
+                client = httpClient
+                providerLookup = { settings }
+                urlProvider = { request.origin.run { "$scheme://$host:$port$uri" } }
+                skipWhen { it.sessions.get<OAuth2Session>() !== null }
+                pipeline.intercept(AuthenticationPipeline.RequestAuthentication) {
+                    val principle = it.principal
+                    if(principle is OAuth2Session) {
+                        if(call.sessions.get<OAuth2Session>() === null) {
+                            call.sessions.set("oauth2", principle)
+                        }
+                    }
+                }
             }
         }
     }
 
-    fun cookies(session: OAuth2Session, domain: String): Set<Cookie> {
-        // we expire the token 30 seconds early as a safe measure
-        val expires = OffsetDateTime.now().plusSeconds(session.expiresIn - 30)
-        val accessCookie = Cookie(
-            name = "access_token",
-            value = session.accessToken,
-            encoding = CookieEncoding.BASE64_ENCODING,
-            expires = expires,
-            domain = domain,
-            secure = true
-        )
-        val refreshCookie = Cookie(
-            name = "refresh_token",
-            value = session.refreshToken!!,
-            encoding = CookieEncoding.BASE64_ENCODING,
-            expires = expires,
-            domain = domain,
-            secure = true
-        )
-        return setOf(accessCookie, refreshCookie)
+    private fun ApplicationCall.discordAccessToken(): String? {
+        return request.cookies[sessionCookieName, BASE64_ENCODING]
     }
+
+    private class Tracker: SessionTracker {
+        override suspend fun clear(call: ApplicationCall) {
+            val accessToken = call.discordAccessToken() ?: return
+            remove(accessToken)
+        }
+
+        override suspend fun load(call: ApplicationCall, transport: String?): Any? {
+            val id = transport ?: call.discordAccessToken() ?: return null
+            return retrieve(id)
+        }
+
+        override suspend fun store(call: ApplicationCall, value: Any): String {
+            val session = (value as OAuth2Session)
+            store(session)
+            return session.accessToken
+        }
+
+        override fun validate(value: Any) {
+            require(value is OAuth2Session) { "Cannot track session of type: ${value::class}" }
+        }
+    }
+
+    private class Transport: SessionTransport {
+        override fun clear(call: ApplicationCall) {
+            call.response.cookies.appendExpired(sessionCookieName, call.request.origin.host)
+        }
+
+        override fun receive(call: ApplicationCall): String? {
+            return call.discordAccessToken()
+        }
+
+        override fun send(call: ApplicationCall, value: String) {
+            val session = retrieve(value) ?: return
+            call.response.cookies.append(Cookie(
+                name = sessionCookieName,
+                value = value,
+                encoding = BASE64_ENCODING,
+                expires = OffsetDateTime.now().plusSeconds(session.expiresIn),
+                domain = call.request.origin.host,
+                secure = true
+            ))
+        }
+    }
+
+    // Private functions
+
+    private fun retrieve(accessToken: String) = DBOAuth2Session.retrieve(accessToken)?.toSession()
+    private fun remove(accessToken: String) = DBOAuth2Session.remove(accessToken)
+    private fun store(session: OAuth2Session) = DBOAuth2Session.store(session.toData())
+
+    private fun OAuth2Data.toSession() = OAuth2Session(accessToken, tokenType, expiration, refreshToken)
+    private fun OAuth2Session.toData() = OAuth2Data(accessToken, refreshToken!!, tokenType, expiresIn)
 }

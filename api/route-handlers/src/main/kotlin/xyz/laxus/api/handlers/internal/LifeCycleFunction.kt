@@ -13,24 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("MemberVisibilityCanBePrivate", "CanBeParameter")
-package xyz.laxus.api.error
+package xyz.laxus.api.handlers.internal
 
-import io.ktor.http.HttpStatusCode
-import me.kgustave.json.JSObject
+import io.ktor.application.Application
+import kotlin.reflect.KFunction
+import kotlin.reflect.full.instanceParameter
 
-open class HttpError(status: HttpStatusCode, override val message: String = status.description): RuntimeException() {
-    val code = status.value
-    val status get() = HttpStatusCode.fromValue(code)
-
+data class LifeCycleFunction(private val instance: Any, private val function: KFunction<*>) {
     init {
-        require(code >= 400) {
-            "Status code doesn't represent a client or server error response type!"
+        require((function.parameters - function.instanceParameter).isEmpty()) {
+            "Cannot call life-cycle function with parameters!"
         }
     }
 
-    internal open fun toJson() = JSObject {
-        "status" to code
-        "message" to message
+    @Suppress("UNUSED_PARAMETER") fun run(application: Application) {
+        function.call(instance)
     }
 }

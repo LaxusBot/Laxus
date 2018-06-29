@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
+package xyz.laxus.api.handlers.internal
 
-include ':api', ':api:route-handlers'
-include ':app'
-include ':commons', ':commons:jda'
-include ':core', ':core:music'
-include ':database'
+/**
+ * @author Kaidan Gustave
+ */
+internal interface ParamResolver<I, O> {
+    suspend fun resolve(value: I): O
+}
