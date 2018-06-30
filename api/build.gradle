@@ -35,6 +35,7 @@ dependencies {
     compile ktor('server-core')
     compile ktor('server-netty')
     compile ktor('auth')
+    compile ktor('metrics')
     compile ktor('locations')
     compile ktor('html-builder')
     compile ktor('client-json')

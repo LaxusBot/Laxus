@@ -13,21 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.api.handlers.internal
+package xyz.laxus.api.handlers.annotations
 
-import io.ktor.application.Application
-import kotlin.reflect.KFunction
-import kotlin.reflect.full.instanceParameter
+import kotlin.annotation.AnnotationRetention.RUNTIME
+import kotlin.annotation.AnnotationTarget.*
 
-data class LifeCycleFunction(private val instance: Any, private val function: KFunction<*>) {
-    init {
-        require((function.parameters - function.instanceParameter).isEmpty()) {
-            "Cannot call life-cycle function with parameters!"
-        }
-    }
+@Retention(RUNTIME)
+@Target(CONSTRUCTOR, CLASS)
+annotation class Configuration(val root: String = "")
 
-    @Suppress("UNUSED_PARAMETER") fun run(application: Application) {
-        // TODO Apply application to lifecycle
-        function.call(instance)
-    }
-}
+@Retention(RUNTIME)
+@Target(VALUE_PARAMETER)
+annotation class Property(val path: String = "")
