@@ -56,6 +56,7 @@ object Routes: Module {
         }
 
         install(Locations)
+        install(AutoHeadResponse)
 
         install(ContentNegotiation) {
             Charset.availableCharsets().values.forEach {

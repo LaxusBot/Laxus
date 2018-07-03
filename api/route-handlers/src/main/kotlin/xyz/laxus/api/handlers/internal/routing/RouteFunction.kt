@@ -52,14 +52,16 @@ internal class RouteFunction(
     val method: HttpMethod,
     val function: KFunction<*>,
     val path: String,
-    authenticated: Authenticated?
+    authenticated: Authenticated?,
+    rateLimited: RateLimited?
 ) {
     private companion object {
         private val Log = createLogger(RouteFunction::class)
         private val ListType = List::class.createType(listOf(KTypeProjection.STAR), false)
     }
 
-    val authenticated: Authenticated? = authenticated ?: function.findAnnotation()
+    val authenticated: Authenticated? = function.findAnnotation() ?: authenticated
+    val rateLimited: RateLimited? = function.findAnnotation() ?: rateLimited
 
     val code: HttpStatusCode? = function.findAnnotation<Code>()?.let { HttpStatusCode.fromValue(it.value) }
 
@@ -257,5 +259,9 @@ internal class RouteFunction(
             map[parameter] = value
         }
         return map
+    }
+
+    override fun toString(): String {
+        return super.toString()
     }
 }

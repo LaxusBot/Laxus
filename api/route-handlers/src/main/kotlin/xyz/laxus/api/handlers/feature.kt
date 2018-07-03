@@ -38,6 +38,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.*
 import xyz.laxus.api.handlers.annotations.Configuration
+import xyz.laxus.api.ratelimits.rateLimit
 
 sealed class RouteHandlersConfigurable(internal val application: Application) {
     internal val config get() = application.environment.config
@@ -98,9 +99,15 @@ private constructor(configuration: RouteHandlersConfig): RouteHandlersConfigurab
 
     @RouteHandlers.Dsl override fun register(handler: Any) = registerWithRoute(handler, handler::class)
 
-    private fun registerWithRoute(handler: Any, klazz: KClass<*>,
-                                  route: RouteHandler = validateClass(klazz),
-                                  ancestors: List<RouteHandler> = emptyList()) {
+    private fun registerWithRoute(
+        handler: Any,
+        klazz: KClass<*>,
+        route: RouteHandler = validateClass(klazz),
+        ancestors: List<RouteHandler> = emptyList(),
+        rateLimited: RateLimited? = klazz.findAnnotation(),
+        handlerInfo: MutableList<RouteHandlerInfo> = mutableListOf(),
+        firstPass: Boolean = true
+    ) {
         require(route !in ancestors) { "Detected recursive route resolution!" }
 
         val prefix = ancestors.joinToString("/", prefix = "/") { it.path.removePrefix("/") }
@@ -110,6 +117,8 @@ private constructor(configuration: RouteHandlersConfig): RouteHandlersConfigurab
             val methodAnnotation = checkNotNull(entry.key.annotationClass.findAnnotation() ?: entry.key as? Method)
             val method = HttpMethod.parse(methodAnnotation.value)
             val annotationClass = entry.key.annotationClass
+
+            application.log.debug("Registering handle: $klazz - ${method.value}: ${entry.value.name}")
 
             val pathExtension = annotationClass.findAnnotation<PathExtension>()?.let {
                 val annotationMethods = annotationClass.java.methods.filter {
@@ -121,37 +130,36 @@ private constructor(configuration: RouteHandlersConfig): RouteHandlersConfigurab
             }
 
             val path = pathExtension?.invoke(entry.key) as String? ?: ""
-            return@mapTo RouteFunction(this, handler, method, entry.value, path, authenticated)
+            return@mapTo RouteFunction(this, handler, method, entry.value, path, authenticated, rateLimited)
         }
 
-        val lifecycle = RouteLifecycle(handler, klazz)
-        val info = RouteHandlerInfo(prefix + route.path, lifecycle, handles)
-
-        handlerInfo += info
+        handlerInfo += RouteHandlerInfo(prefix + route.path, RouteLifecycle(handler, klazz), handles)
 
         findSubRoutes(klazz, handler).forEach {
             val subKlazz = it::class
             val subRoute = checkNotNull(subKlazz.findAnnotation<RouteHandler>()) {
-                "$subKlazz is not annotated with @Route!"
+                "$subKlazz is not annotated with @RouteHandler!"
             }
             registerWithRoute(
                 handler = it,
                 klazz = subKlazz,
                 route = subRoute,
-                ancestors = ancestors + route
+                ancestors = ancestors + route,
+                rateLimited = subKlazz.findAnnotation(),
+                handlerInfo = handlerInfo,
+                firstPass = false
             )
         }
 
-        application.routing {
-            info.handles.forEach { handle ->
-                val auth = handle.authenticated
-                if(auth === null) {
-                    createRoute(info, handle)
-                } else {
-                    requireNotNull(application.featureOrNull(Authentication)) {
-                        "Authentication is not installed!"
+        if(firstPass) {
+            application.routing {
+                handlerInfo.forEach { info ->
+                    info.handles.forEach { handle ->
+                        val limit = handle.rateLimited
+                        val target = if(limit !== null) rateLimit(limit.limit, limit.reset, limit.unit) {} else this
+                        application.log.debug("Registering $handle")
+                        target.createAuthenticatedRoute(info, handle)
                     }
-                    authenticate(auth.name) { createRoute(info, handle) }
                 }
             }
         }
@@ -203,15 +211,28 @@ private constructor(configuration: RouteHandlersConfig): RouteHandlersConfigurab
             return routeHandlers
         }
 
+        @JvmStatic private fun Route.createAuthenticatedRoute(info: RouteHandlerInfo, handle: RouteFunction) {
+            val auth = handle.authenticated
+            if(auth === null) {
+                createRoute(info, handle)
+            } else {
+                requireNotNull(application.featureOrNull(Authentication)) {
+                    "Authentication is not installed!"
+                }
+                authenticate(auth.name) { createRoute(info, handle) }
+            }
+        }
+
         @JvmStatic private fun Route.createRoute(info: RouteHandlerInfo, handle: RouteFunction) {
+            val handlePath = info.path.removeSuffix("/") + "/" + handle.path.removePrefix("/")
             when(handle.method) {
-                HttpMethod.Get -> get(info.path + handle.path, handle.func)
-                HttpMethod.Put -> put(info.path + handle.path, handle.func)
-                HttpMethod.Post -> post(info.path + handle.path, handle.func)
-                HttpMethod.Patch -> patch(info.path + handle.path, handle.func)
-                HttpMethod.Delete -> delete(info.path + handle.path, handle.func)
-                HttpMethod.Options -> options(info.path + handle.path, handle.func)
-                HttpMethod.Head -> head(info.path + handle.path, handle.func)
+                HttpMethod.Get -> get(handlePath, handle.func)
+                HttpMethod.Put -> put(handlePath, handle.func)
+                HttpMethod.Post -> post(handlePath, handle.func)
+                HttpMethod.Patch -> patch(handlePath, handle.func)
+                HttpMethod.Delete -> delete(handlePath, handle.func)
+                HttpMethod.Options -> options(handlePath, handle.func)
+                HttpMethod.Head -> head(handlePath, handle.func)
                 else -> throw IllegalArgumentException("Cannot accept route: ${handle.method} - ${info.path}")
             }
         }

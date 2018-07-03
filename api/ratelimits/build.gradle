@@ -20,12 +20,6 @@ dependencies {
     compileOnly kotlinModule('stdlib-jdk8')
     compileOnly kotlinModule('stdlib-jdk7')
 
-    // kotlin json
-    compileOnly kotlinJson()
-    compileOnly kotlinJson('reflect')
-    compileOnly kotlinJson('ktor-server')
-    compileOnly kotlinJson('ktor-client')
-
     // coroutines
     compileOnly kotlinxCoroutines('core')
     compileOnly kotlinxCoroutines('io')
@@ -33,13 +27,10 @@ dependencies {
 
     // ktor
     compileOnly ktor('server-core')
-    compileOnly ktor('websockets')
-    compileOnly ktor('auth')
-    compileOnly ktor('locations')
 
     // modules
     compileOnly commons()
-    compileOnly apiRatelimits()
 
     testCompile ktor('server-netty')
+    testCompile ktor('server-test-host')
 }

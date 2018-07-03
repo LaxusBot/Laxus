@@ -41,7 +41,7 @@ void module(Map settings) {
     }
 }
 
-module name: ':api', children: [name: ':route-handlers']
+module name: ':api', children: [[name: ':route-handlers'], [name: ':ratelimits']]
 module name: ':commons', children: [name: ':jda']
 module name: ':core', children: [name: ':music']
 module name: ':database'
