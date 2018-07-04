@@ -24,6 +24,7 @@ import xyz.laxus.util.*
 import xyz.laxus.util.reflect.loadClass
 import java.sql.Connection
 import java.sql.DriverManager
+import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.findAnnotation
 
 /**
@@ -66,15 +67,15 @@ object Database: AutoCloseable {
         tablesList.forEach {
             val path = "${it.unwrapped()}"
             val klazz = checkNotNull(loadClass(path)) {
-                "Could not find class '$it' specified in database.conf!"
+                "Could not find class '$path' specified in database.conf!"
             }
 
             val tableName = checkNotNull(klazz.findAnnotation<TableName>()?.value) {
-                "$it didn't have a @TableName annotation!"
+                "$klazz didn't have a @TableName annotation!"
             }
 
-            val objInst = checkNotNull(klazz.objectInstance as? Table) {
-                "$it was not an object or didn't extend Table!"
+            val objInst = checkNotNull((klazz.objectInstance ?: klazz.createInstance()) as? Table) {
+                "$klazz didn't extend Table!"
             }
 
             val columns = klazz.findAnnotation<Columns>()?.value ?: emptyArray()

@@ -18,6 +18,7 @@ package xyz.laxus.db.sql
 
 import xyz.laxus.db.schema.SQLArray
 import xyz.laxus.db.schema.SQLTime
+import xyz.laxus.db.schema.SQLTimestamp
 import java.sql.ResultSet
 
 inline fun <reified R: ResultSet> R.whileNext(block: (R) -> Unit) {
@@ -114,6 +115,14 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: SQLTime?
         updateNull(column)
     } else {
         updateTime(column, value)
+    }
+}
+
+inline operator fun <reified R: ResultSet> R.set(column: String, value: SQLTimestamp?) {
+    if(value === null) {
+        updateNull(column)
+    } else {
+        updateTimestamp(column, value)
     }
 }
 

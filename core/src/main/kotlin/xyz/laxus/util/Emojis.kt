@@ -31,6 +31,7 @@ object Emojis {
     // Unicode Emojis
     const val GlobeWithMeridians = "\uD83C\uDF10"
     const val Cake               = "\uD83C\uDF70"
+    const val AlarmClock = "\u23F0"
 
     // Holder for flag emojis.
     // The first is the actual emoji.
