@@ -80,6 +80,7 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
     private val callCache = FixedSizeCache<Long, MutableSet<Message>>(builder.callCacheSize)
     private val dBotsKey = builder.dBotsKey
     private val dBotsListKey = builder.dBotsListKey
+    private val reminders by lazy { ReminderManager(Laxus.JDA) }
 
     private val cycleContext = newSingleThreadContext("Cycle Context")
     private val botsListContext = newSingleThreadContext("BotLists Context")
@@ -165,6 +166,10 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
         if(splitQuery.isEmpty())
             return null
         return commands[splitQuery[0]]?.findChild(if(splitQuery.size > 1) splitQuery[1] else "")
+    }
+
+    suspend fun updateReminderContext() {
+        reminders.update()
     }
 
     override suspend fun onEvent(event: Event) {
@@ -261,15 +266,16 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
             launch(cycleContext) {
                 while(isActive) {
                     cleanCooldowns()
-                    try {
-                        delay(1, HOURS)
-                    } catch(e: CancellationException) {
-                        Bot.Log.debug("Cycle context encountered a cancellation: ${e.message}")
-                        break
-                    }
+                    delay(1, HOURS)
+                }
+            }.invokeOnCompletion {
+                if(it is CancellationException) {
+                    Log.debug("Cycle context encountered a cancellation: ${it.message}")
                 }
             }
         }
+
+        updateReminderContext()
 
         updateStats(event.jda)
     }
@@ -329,6 +335,7 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
         cycleContext.close()
         botsListContext.cancel(cancellation)
         botsListContext.close()
+        reminders.close(cancellation)
     }
 
     private suspend fun updateStats(jda: JDA) {

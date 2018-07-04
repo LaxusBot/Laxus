@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-dependencies {
-    // JDA
-    compileOnly jda()
-    compileOnly jdaUtilities('commons')
+package xyz.laxus.util.db
 
-    // Kotlin
-    compileOnly kotlinModule('reflect')
+import net.dv8tion.jda.core.entities.User
+import xyz.laxus.db.DBAFKUsers
 
-    // Kotlin Coroutines
-    compileOnly kotlinxCoroutines('core')
-
-    // Projects
-    compileOnly commons()
-}
+var User.afkMessage: String?
+    get() = DBAFKUsers.getAFKMessage(idLong)
+    set(value) {
+        if(value === null) {
+            DBAFKUsers.removeAFK(idLong)
+        } else {
+            DBAFKUsers.setAFK(idLong, value)
+        }
+    }

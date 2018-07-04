@@ -20,6 +20,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo
 import net.dv8tion.jda.core.entities.*
 import xyz.laxus.jda.util.filterMassMentions
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import kotlin.math.roundToLong
 
@@ -56,6 +57,7 @@ inline fun <reified C: CharSequence> underline(csq: C): String = "__${csq}__"
 inline fun <reified C: CharSequence> code(csq: C): String = "`$csq`"
 
 val OffsetDateTime.readableFormat get() = "${dayOfWeek.titleName}, ${month.titleName} $dayOfMonth, $year"
+val LocalDateTime.readableFormat get() = "${dayOfWeek.titleName}, ${month.titleName} $dayOfMonth, $year"
 
 val AudioTrack.trackTime get() = formatTrackTime(duration)
 val AudioTrack.progression get() = "${formatTrackTime(position)}/$trackTime"

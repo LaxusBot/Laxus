@@ -29,6 +29,7 @@ object StandardGroup : Command.Group("Standard") {
 
     override fun init(config: Config) {
         + AboutCommand()
+        + AFKCommand()
         + AvatarCommand()
         + ColorMeCommand()
         + EmoteCommand()
@@ -40,6 +41,7 @@ object StandardGroup : Command.Group("Standard") {
         + InviteInfoCommand()
         + PingCommand()
         + QuoteCommand()
+        + ReminderCommand()
         + RoleMeCommand()
         + ServerCommand()
         + TagCommand()
