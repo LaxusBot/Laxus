@@ -18,7 +18,6 @@ package xyz.laxus.listeners
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Role
-import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.channel.category.CategoryCreateEvent
@@ -29,8 +28,6 @@ import net.dv8tion.jda.core.events.guild.GuildJoinEvent
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent
-import net.dv8tion.jda.core.events.message.MessageReceivedEvent
-import net.dv8tion.jda.core.events.message.MessageUpdateEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.core.events.role.RoleDeleteEvent
 import net.dv8tion.jda.core.events.user.UserTypingEvent
@@ -66,9 +63,7 @@ object DatabaseListener: EventListener {
             is GuildLeaveEvent -> onGuildLeave(event)
             is GuildMemberJoinEvent -> onGuildMemberJoin(event)
             is GuildMemberLeaveEvent -> onGuildMemberLeave(event)
-            is UserTypingEvent -> onUserEndAFK(event.user)
-            is MessageReceivedEvent -> { onUserEndAFK(event.author) }
-            is MessageUpdateEvent -> onUserEndAFK(event.author)
+            is UserTypingEvent -> onUserTyping(event)
             is GuildMessageReceivedEvent -> onGuildMessageReceived(event)
         }
     }
@@ -206,12 +201,13 @@ object DatabaseListener: EventListener {
         }
     }
 
-    private fun onUserEndAFK(user: User) {
-        if(user.isBot) return
-        if(user.afkMessage !== null) {
-            user.afkMessage = null
-            user.openPrivateChannel()
-                .queue({ it.sendMessage("${Laxus.Success} Your AFK status has been removed!").queue({}, {}) }, {})
+    private fun onUserTyping(event: UserTypingEvent) {
+        if(event.user.isBot) return
+        if(event.user.afkMessage !== null) {
+            event.user.afkMessage = null
+            event.user.openPrivateChannel().queue({
+                it.sendMessage("${Laxus.Success} Your AFK status has been removed!").queue({}, {})
+            }, {})
         }
     }
 
