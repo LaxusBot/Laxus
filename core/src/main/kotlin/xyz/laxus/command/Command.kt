@@ -30,7 +30,6 @@ import xyz.laxus.util.db.ignoredRoles
 import xyz.laxus.util.db.isIgnored
 import xyz.laxus.util.db.isMod
 import xyz.laxus.util.ignored
-import xyz.laxus.util.modifyIf
 import xyz.laxus.util.titleName
 import java.util.*
 import kotlin.reflect.full.findAnnotation
@@ -82,9 +81,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
 
                 if(experiment !== null) {
                     append("\n**Experimental:** ")
-                    appendln(experiment.info.modifyIf(String::isEmpty) {
-                        "This command is experimental." // TODO add info regarding experimental commands
-                    })
+                    appendln(experiment.info.takeIf(String::isEmpty) ?: "This command is experimental.")
                 }
 
                 if(children.isNotEmpty()) {

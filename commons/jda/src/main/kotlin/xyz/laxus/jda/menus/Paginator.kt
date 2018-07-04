@@ -30,6 +30,7 @@ import xyz.laxus.util.collections.unmodifiableList
 import xyz.laxus.util.functional.AddRemoveBlock
 import xyz.laxus.util.ignored
 import java.awt.Color
+import java.time.temporal.TemporalAccessor
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
@@ -52,6 +53,8 @@ class Paginator
 
     private val color: PageFunction<Color?> = builder.colorFun
     private val text: PageFunction<String?> = builder.textFun
+    private val footer: PageFunction<String?> = builder.footerFun
+    private val time: PageFunction<TemporalAccessor?> = builder.timeFun
     private val items: List<String> = unmodifiableList(builder.items)
     private val columns: Int = builder.columns
     private val itemsPerPage: Int = builder.itemsPerPage
@@ -296,6 +299,8 @@ class Paginator
     class Builder: Menu.Builder<Paginator.Builder, Paginator>() {
         var colorFun: PageFunction<Color?> = { _, _ -> null }
         var textFun: PageFunction<String?> = { _, _ -> null }
+        var footerFun: PageFunction<String?> = { _, _ -> null }
+        var timeFun: PageFunction<TemporalAccessor?> = { _, _ -> null }
         val items: MutableList<String> = ArrayList()
         var columns: Int = 1
             set(value) {
@@ -394,6 +399,18 @@ class Paginator
         @Menu.Dsl
         inline fun color(crossinline lazy: PageFunction<Color?>): Paginator.Builder {
             colorFun = { p, t -> lazy(p, t) }
+            return this
+        }
+
+        @Menu.Dsl
+        inline fun footer(crossinline lazy: PageFunction<String?>): Paginator.Builder {
+            footerFun = { p, t -> lazy(p, t) }
+            return this
+        }
+
+        @Menu.Dsl
+        inline fun time(crossinline lazy: PageFunction<TemporalAccessor?>): Paginator.Builder {
+            timeFun = { p, t -> lazy(p, t) }
             return this
         }
 

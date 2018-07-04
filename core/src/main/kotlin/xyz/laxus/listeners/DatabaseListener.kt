@@ -18,6 +18,7 @@ package xyz.laxus.listeners
 import net.dv8tion.jda.core.JDA
 import net.dv8tion.jda.core.entities.Guild
 import net.dv8tion.jda.core.entities.Role
+import net.dv8tion.jda.core.entities.User
 import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.channel.category.CategoryCreateEvent
@@ -28,15 +29,25 @@ import net.dv8tion.jda.core.events.guild.GuildJoinEvent
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent
+import net.dv8tion.jda.core.events.message.MessageReceivedEvent
+import net.dv8tion.jda.core.events.message.MessageUpdateEvent
+import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.core.events.role.RoleDeleteEvent
+import net.dv8tion.jda.core.events.user.UserTypingEvent
 import net.dv8tion.jda.core.hooks.EventListener
+import xyz.laxus.Bot
+import xyz.laxus.Laxus
 import xyz.laxus.db.DBGuildStore
 import xyz.laxus.entities.starboard.hasStarboard
 import xyz.laxus.entities.starboard.removeStarboard
 import xyz.laxus.entities.starboard.starboardSettings
 import xyz.laxus.jda.util.muteRole
 import xyz.laxus.jda.util.refreshMutedRole
+import xyz.laxus.util.Emojis
 import xyz.laxus.util.db.*
+import xyz.laxus.util.formattedName
+import xyz.laxus.util.modifyIf
+import xyz.laxus.util.warn
 import java.time.OffsetDateTime
 
 /**
@@ -55,6 +66,10 @@ object DatabaseListener: EventListener {
             is GuildLeaveEvent -> onGuildLeave(event)
             is GuildMemberJoinEvent -> onGuildMemberJoin(event)
             is GuildMemberLeaveEvent -> onGuildMemberLeave(event)
+            is UserTypingEvent -> onUserEndAFK(event.user)
+            is MessageReceivedEvent -> { onUserEndAFK(event.author) }
+            is MessageUpdateEvent -> onUserEndAFK(event.author)
+            is GuildMessageReceivedEvent -> onGuildMessageReceived(event)
         }
     }
 
@@ -188,6 +203,56 @@ object DatabaseListener: EventListener {
             val roles = member.rolePersist
             event.guild.controller.addRolesToMember(member, roles).queue()
             member.unregisterRolePersist()
+        }
+    }
+
+    private fun onUserEndAFK(user: User) {
+        if(user.isBot) return
+        if(user.afkMessage !== null) {
+            user.afkMessage = null
+            user.openPrivateChannel()
+                .queue({ it.sendMessage("${Laxus.Success} Your AFK status has been removed!").queue({}, {}) }, {})
+        }
+    }
+
+    private fun onGuildMessageReceived(event: GuildMessageReceivedEvent) {
+        if(event.author.isBot) return // no bots
+        val mentionedAfks = event.message.mentionedUsers.asSequence()
+            .mapNotNull { user ->
+                user.afkMessage?.let {
+                    user to it.modifyIf(String::isBlank) { "${user.name} is AFK" }
+                }
+            }
+            .toMap()
+
+        if(mentionedAfks.isEmpty()) return
+
+        val response = if(mentionedAfks.size == 1) mentionedAfks.entries.first().let {
+            "${Emojis.ZZZ} ${it.key.formattedName(true)} is AFK:\n\u25AB ${it.value}"
+        } else {
+            val trimLength = 500 / mentionedAfks.size
+            mentionedAfks.entries.joinToString(
+                separator = "\n",
+                prefix = "${Emojis.ZZZ} Some users you mentioned are AFK:\n",
+                limit = 3,
+                truncated = "\nAnd ${mentionedAfks.size - 3} other users..."
+            ) { (user, message) ->
+                val trimmed = message.modifyIf({ it.length > trimLength + 3 }) {
+                    it.substring(0, trimLength) + "..."
+                }
+                return@joinToString "\u25AB ${user.formattedName(true)}: $trimmed"
+            }
+        }
+
+        if(event.channel.canTalk()) {
+            event.channel.sendMessage(response).queue({}, {
+                Bot.Log.warn {
+                    "Encountered an error while sending AFK response:\n" +
+                    "Author: ${event.author.name} (ID: ${event.author.idLong})\n" +
+                    "Guild: ${event.guild.name} (ID: ${event.guild.idLong})\n" +
+                    "Channel: #${event.channel.name} (ID: ${event.channel.idLong})"
+                }
+            })
         }
     }
 
