@@ -56,7 +56,8 @@ def ver = [major: 0, minor: 8, revision: 0]
 
 static void createChildExtension(Project target, Project child, String ancestorName = "") {
     if(target == child) return
-    def name = ancestorName.isEmpty() ? child.name : ancestorName + child.name.capitalize()
+    def childName = child.name.split('-').collect { it.capitalize() }.join('').uncapitalize()
+    def name = ancestorName.isEmpty() ? childName : ancestorName + childName.capitalize()
     target.ext."$name" = { child }
     child.childProjects.values().each {
         createChildExtension(target, it, name)

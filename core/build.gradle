@@ -60,8 +60,8 @@ dependencies {
     compileOnly commonsJda()
     compileOnly database()
 
-    compileOnly project(':auto-listener')
-    kapt project(':auto-listener')
+    compileOnly autoListener()
+    kapt autoListener()
 }
 
 allOpen {
