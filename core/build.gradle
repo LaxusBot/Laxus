@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+apply plugin: 'kotlin-kapt'
+apply plugin: 'kotlin-allopen'
+
 dependencies {
     // JDA & Lavaplayer
     compileOnly jda()
@@ -56,4 +59,11 @@ dependencies {
     compileOnly commons()
     compileOnly commonsJda()
     compileOnly database()
+
+    compileOnly project(':auto-listener')
+    kapt project(':auto-listener')
+}
+
+allOpen {
+    annotation('xyz.laxus.auto.listener.AutoListener')
 }

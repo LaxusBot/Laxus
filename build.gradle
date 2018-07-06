@@ -146,6 +146,7 @@ allprojects {
         maven { url = 'https://dl.bintray.com/kotlin/ktor' }
         maven { url = 'https://dl.bintray.com/kaidangustave/maven' }
         maven { url = 'https://jitpack.io/' }
+        maven { url = 'https://oss.sonatype.org/content/repositories/snapshots' }
     }
 
     dependencies {

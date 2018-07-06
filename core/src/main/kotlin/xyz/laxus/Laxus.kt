@@ -26,7 +26,7 @@ import xyz.laxus.entities.starboard.StarboardManager
 import xyz.laxus.jda.ContextEventManager
 import xyz.laxus.jda.listeners.EventWaiter
 import xyz.laxus.jda.util.*
-import xyz.laxus.listeners.DatabaseListener
+import xyz.laxus.listeners.*
 import xyz.laxus.util.*
 import xyz.laxus.util.collections.concurrentHashMap
 import xyz.laxus.util.reflect.packageOf
@@ -125,7 +125,9 @@ object Laxus {
             listener { Waiter }
             listener { Bot }
             listener { StarboardManager }
-            listener { DatabaseListener }
+            listener { createChannelLinksListener() }
+            listener { createRolesListener() }
+            listener { createDatabaseListener() }
 
             contextMap { concurrentHashMap() }
 

@@ -54,7 +54,8 @@ Laxus uses several libraries in it's source code:
 - **[JagTag](https://github.com/jagrosh/JagTag)** - Simplistic interpreted text parsing library.
 - **[JSoup](https://github.com/jhy/jsoup)** - Java HTML Parser
 - **[YouTube API](https://developers.google.com/api-client-library/java/apis/youtube/v3)** - YouTube API service provided by Google.
-- **[OkHttp](https://github.com/square/okhttp)** - Easy to use Http client.
+- **[Ktor](http://ktor.io/index.html)** - Framework for quickly creating connected applications in Kotlin with minimal effort.
+- **[Kotlin JSON](https://github.com/Shengaero/kotlin-json)** - JavaScript Object Notation library for Kotlin.
 
 Additionally, Laxus uses some resources you should be familiar with if you want to make PR's:
 

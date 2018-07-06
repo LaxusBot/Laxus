@@ -44,3 +44,4 @@ void module(Map settings) {
 module name: ':commons', children: [name: ':jda']
 module name: ':core', children: [name: ':music']
 module name: ':database'
+module name: ':auto-listener', directory: 'util/auto-listener'
