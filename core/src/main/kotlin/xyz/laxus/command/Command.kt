@@ -25,10 +25,7 @@ import xyz.laxus.command.Command.CooldownScope.*
 import xyz.laxus.jda.util.await
 import xyz.laxus.jda.util.isAdmin
 import xyz.laxus.util.commandArgs
-import xyz.laxus.util.db.getCommandLevel
-import xyz.laxus.util.db.ignoredRoles
-import xyz.laxus.util.db.isIgnored
-import xyz.laxus.util.db.isMod
+import xyz.laxus.util.db.*
 import xyz.laxus.util.ignored
 import xyz.laxus.util.titleName
 import java.util.*
@@ -145,8 +142,12 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
     open val isExperimental: Boolean get() = experiment !== null
     open val unlisted get() = group.unlisted
 
-    private val experiment: Experiment? by lazy { this::class.findAnnotation() ?: parent?.experiment }
-    private val autoCooldown by lazy { this::class.findAnnotation<AutoCooldown>()?.mode ?: AutoCooldownMode.OFF }
+    val experiment: ExperimentalCommand? by lazy { this::class.findAnnotation() ?: parent?.experiment }
+
+    private val autoCooldown by lazy {
+        this::class.findAnnotation<AutoCooldown>()?.mode ?: AutoCooldownMode.OFF
+    }
+
     private val noArgumentError by lazy {
         val annotation = this::class.findAnnotation<MustHaveArguments>() ?: return@lazy null
         val error = annotation.error
@@ -162,7 +163,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
             val parts = ctx.args.split(commandArgs, 2)
             children.forEach {
                 if(it.isForCommand(parts[0])) {
-                    ctx.reassignArgs(if(parts.size > 1) parts[1] else "")
+                    ctx.reassignArgs(parts.getOrNull(1) ?: "")
                     return it.run(ctx)
                 }
             }
@@ -170,10 +171,6 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
 
         if(devOnly && !ctx.isDev)
             return
-
-        if(isExperimental) {
-            // TODO Manage Experiment Beta Permission
-        }
 
         if(guildOnly && !ctx.isGuild)
             return
@@ -189,6 +186,20 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
         if(!level.guildOnly || ctx.isGuild) {
             if(!level.test(ctx))
                 return
+        }
+
+        experiment?.let { experiment ->
+            val accessLevel = when {
+                ctx.isGuild -> ctx.guild.experimentAccessLevel ?: ctx.author.experimentAccessLevel
+                else -> ctx.author.experimentAccessLevel
+            }
+
+            if(!experiment.level.canBeAccessedWith(accessLevel)) return ctx.reply {
+                "**${experiment.info}**\n" +
+                "This command is only available with **${experiment.level.titleName}** access!\n" +
+                "If you want to learn more about experimental features and how you can access them, " +
+                "join my support server:\n\n<${Laxus.ServerInvite}>"
+            }
         }
 
         if(ctx.isGuild) {

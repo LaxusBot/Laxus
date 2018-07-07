@@ -16,14 +16,14 @@
 package xyz.laxus.command.standard
 
 import net.dv8tion.jda.core.entities.Message
-import xyz.laxus.command.Experiment
+import xyz.laxus.command.ExperimentalCommand
 import xyz.laxus.util.formattedName
 import xyz.laxus.util.readableFormat
 
 /**
  * @author Kaidan Gustave
  */
-@Experiment
+@ExperimentalCommand
 class LogCommand {
     companion object {
         fun formatMessageForLogFile(message: Message): String = buildString {

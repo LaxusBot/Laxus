@@ -26,7 +26,7 @@ import xyz.laxus.util.noMatch
 /**
  * @author Kaidan Gustave
  */
-@Experiment("Ignoring is an experimental feature.")
+@ExperimentalCommand("Ignoring is an experimental feature.")
 class IgnoreCommand: EmptyCommand(AdministratorGroup) {
     override val name = "Ignore"
     override val help = "Ignores a channel, user, or role from using the bot."

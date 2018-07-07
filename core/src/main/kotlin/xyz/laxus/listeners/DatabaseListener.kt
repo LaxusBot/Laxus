@@ -16,17 +16,14 @@
 package xyz.laxus.listeners
 
 import net.dv8tion.jda.core.JDA
-import net.dv8tion.jda.core.events.Event
 import net.dv8tion.jda.core.events.ReadyEvent
 import net.dv8tion.jda.core.events.channel.text.TextChannelDeleteEvent
-import net.dv8tion.jda.core.events.channel.voice.VoiceChannelDeleteEvent
 import net.dv8tion.jda.core.events.guild.GuildJoinEvent
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberJoinEvent
 import net.dv8tion.jda.core.events.guild.member.GuildMemberLeaveEvent
 import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent
 import net.dv8tion.jda.core.events.user.UserTypingEvent
-import net.dv8tion.jda.core.hooks.EventListener
 import xyz.laxus.Bot
 import xyz.laxus.Laxus
 import xyz.laxus.auto.listener.AutoListener
@@ -104,15 +101,6 @@ class DatabaseListener {
             if(guild.hasStarboard) {
                 guild.removeStarboard()
             }
-        }
-
-        channel.links.forEach { it.unlinkTo(channel) }
-    }
-
-    fun onVoiceChannelDelete(event: VoiceChannelDeleteEvent) {
-        val channel = event.channel
-        channel.linkedChannel?.let {
-            channel.unlinkTo(it)
         }
     }
 

@@ -31,6 +31,7 @@ object StandardGroup : Command.Group("Standard") {
         + AboutCommand()
         + AFKCommand()
         + AvatarCommand()
+        + ChannelCommand()
         + ColorMeCommand()
         + EmoteCommand()
         + GoogleCommand()

@@ -60,7 +60,7 @@ dependencies {
     compileOnly commonsJda()
     compileOnly database()
 
-    compileOnly autoListener()
+    compile autoListener()
     kapt autoListener()
 }
 
