@@ -13,22 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-dependencies {
-    compile kotlinxCoroutines('core')
+package xyz.laxus.db.entities
 
-    // JDA & Lavaplayer
-    compile jda()
-    compile lavaplayer()
+import java.sql.ResultSet
 
-    // Configuration
-    compile hocon()
-
-    // Logging
-    compile slf4j()
-
-    // Projects
-    compile commons()
-    compile commonsJda()
-    compile core()
-    compile database()
+data class ChannelLink(val guildId: Long, val textChannelId: Long, val voiceChannelId: Long) {
+    constructor(results: ResultSet): this(
+        results.getLong("guild_id"),
+        results.getLong("text_channel_id"),
+        results.getLong("voice_channel_id")
+    )
 }

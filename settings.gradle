@@ -45,3 +45,4 @@ module name: ':api', children: [[name: ':route-handlers'], [name: ':ratelimits']
 module name: ':commons', children: [name: ':jda']
 module name: ':core', children: [name: ':music']
 module name: ':database'
+module name: ':auto-listener', directory: 'util/auto-listener'

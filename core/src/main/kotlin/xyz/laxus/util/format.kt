@@ -30,6 +30,7 @@ fun List<User>.multipleUsers(argument: String): String = listOut("user", argumen
 fun List<Member>.multipleMembers(argument: String): String = listOut("member", argument) { it.user.formattedName(true) }
 fun List<TextChannel>.multipleTextChannels(argument: String): String = listOut("text channel", argument) { it.asMention }
 fun List<VoiceChannel>.multipleVoiceChannels(argument: String): String = listOut("voice channel", argument) { it.name }
+fun List<Category>.multipleCategories(argument: String): String = listOut("categories", argument) { it.name }
 fun List<Role>.multipleRoles(argument: String): String = listOut("role", argument) { it.name }
 
 inline fun <reified T> List<T>.listOut(kind: String, argument: String, conversion: (T) -> String): String = buildString {

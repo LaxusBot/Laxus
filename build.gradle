@@ -52,11 +52,12 @@ buildscript {
     }
 }
 
-def ver = [major: 0, minor: 8, revision: 0]
+def ver = [major: 0, minor: 8, revision: 1]
 
 static void createChildExtension(Project target, Project child, String ancestorName = "") {
     if(target == child) return
-    def name = ancestorName.isEmpty() ? child.name : ancestorName + child.name.capitalize()
+    def childName = child.name.split('-').collect { it.capitalize() }.join('').uncapitalize()
+    def name = ancestorName.isEmpty() ? childName : ancestorName + childName.capitalize()
     target.ext."$name" = { child }
     child.childProjects.values().each {
         createChildExtension(target, it, name)
@@ -146,6 +147,7 @@ allprojects {
         maven { url = 'https://dl.bintray.com/kotlin/ktor' }
         maven { url = 'https://dl.bintray.com/kaidangustave/maven' }
         maven { url = 'https://jitpack.io/' }
+        maven { url = 'https://oss.sonatype.org/content/repositories/snapshots' }
     }
 
     dependencies {
@@ -211,6 +213,10 @@ allprojects {
         module {
             jdkName = sourceCompatibility.isJava8Compatible() ? '1.8' : '9'
             setLanguageLevel(new IdeaLanguageLevel(jdkName))
+
+            if(project.plugins.hasPlugin('kotlin-kapt')) {
+                generatedSourceDirs += file("$project.buildDir/generated/source/kapt/")
+            }
         }
     }
 }

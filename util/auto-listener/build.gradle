@@ -14,21 +14,7 @@
  * limitations under the License.
  */
 dependencies {
-    compile kotlinxCoroutines('core')
-
-    // JDA & Lavaplayer
+    compile kotlinModule('reflect')
     compile jda()
-    compile lavaplayer()
-
-    // Configuration
-    compile hocon()
-
-    // Logging
-    compile slf4j()
-
-    // Projects
-    compile commons()
-    compile commonsJda()
-    compile core()
-    compile database()
+    compile 'com.squareup:kotlinpoet:0.8.0-SNAPSHOT'
 }

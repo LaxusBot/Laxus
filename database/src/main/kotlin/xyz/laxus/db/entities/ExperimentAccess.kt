@@ -13,22 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-dependencies {
-    compile kotlinxCoroutines('core')
+package xyz.laxus.db.entities
 
-    // JDA & Lavaplayer
-    compile jda()
-    compile lavaplayer()
+data class ExperimentAccess
+constructor(val id: Long, val level: ExperimentAccess.Level, val type: ExperimentAccess.Type) {
+    enum class Level {
+        ALPHA, CLOSED_BETA, OPEN_BETA;
 
-    // Configuration
-    compile hocon()
-
-    // Logging
-    compile slf4j()
-
-    // Projects
-    compile commons()
-    compile commonsJda()
-    compile core()
-    compile database()
+        fun canBeAccessedWith(other: Level?): Boolean {
+            if(this == OPEN_BETA) return true
+            if(other === null) return false
+            return this <= other
+        }
+    }
+    enum class Type { USER, GUILD }
 }
