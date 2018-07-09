@@ -25,7 +25,7 @@ import io.ktor.response.ApplicationResponse
 // All of these are made to be resolved simply as to allow the user ease
 //of access for handlers like the following:
 //
-// @RouteHandler("/hello")
+// @RoutePath("/hello")
 // class MyHandler {
 //     private val id = AtomicLong(0)
 //

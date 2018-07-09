@@ -46,7 +46,7 @@ import kotlin.reflect.KTypeProjection
 import kotlin.reflect.full.*
 import kotlin.reflect.jvm.jvmErasure
 
-internal class RouteFunction(
+internal class PathFunction(
     val feature: RouteHandlers,
     val instance: Any,
     val method: HttpMethod,
@@ -56,7 +56,7 @@ internal class RouteFunction(
     rateLimited: RateLimited?
 ) {
     private companion object {
-        private val Log = createLogger(RouteFunction::class)
+        private val Log = createLogger(PathFunction::class)
         private val ListType = List::class.createType(listOf(KTypeProjection.STAR), false)
     }
 

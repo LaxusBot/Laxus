@@ -24,7 +24,7 @@ import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.full.memberExtensionFunctions
 import kotlin.reflect.full.memberFunctions
 
-internal data class RouteLifecycle(private val handler: Any, private val klass: KClass<*>) {
+internal data class PathLifeCycle(private val handler: Any, private val klass: KClass<*>) {
     internal val initializers: Set<LifeCycleFunction>
     internal val destroyers: Set<LifeCycleFunction>
 

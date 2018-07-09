@@ -18,27 +18,48 @@
 package xyz.laxus.api.handlers
 
 import io.ktor.application.*
-import io.ktor.auth.Authentication
 import io.ktor.auth.authenticate
 import io.ktor.config.ApplicationConfig
 import io.ktor.http.HttpMethod
-import io.ktor.routing.*
+import io.ktor.routing.Route
+import io.ktor.routing.method
+import io.ktor.routing.route
+import io.ktor.routing.routing
 import io.ktor.util.AttributeKey
 import xyz.laxus.api.handlers.annotations.*
 import xyz.laxus.api.handlers.internal.ConfiguredConstructorFunction
 import xyz.laxus.api.handlers.internal.getClassList
 import xyz.laxus.api.handlers.internal.reflect.isAccessibleViaReflection
 import xyz.laxus.api.handlers.internal.reflect.runInvocationSafe
-import xyz.laxus.api.handlers.internal.routing.RouteFunction
-import xyz.laxus.api.handlers.internal.routing.RouteHandlerInfo
-import xyz.laxus.api.handlers.internal.routing.RouteLifecycle
+import xyz.laxus.api.handlers.internal.routing.PathFunction
+import xyz.laxus.api.handlers.internal.routing.PathHandlerInfo
+import xyz.laxus.api.handlers.internal.routing.PathLifeCycle
+import xyz.laxus.api.ratelimits.rateLimit
 import xyz.laxus.util.reflect.hasAnnotation
 import java.lang.reflect.Modifier.isStatic
+import kotlin.collections.Collection
+import kotlin.collections.List
+import kotlin.collections.Map
+import kotlin.collections.MutableList
+import kotlin.collections.all
+import kotlin.collections.asSequence
+import kotlin.collections.emptyList
+import kotlin.collections.filter
+import kotlin.collections.find
+import kotlin.collections.firstOrNull
+import kotlin.collections.forEach
+import kotlin.collections.joinToString
+import kotlin.collections.mapTo
+import kotlin.collections.mutableListOf
+import kotlin.collections.mutableMapOf
+import kotlin.collections.plus
+import kotlin.collections.plusAssign
+import kotlin.collections.set
+import kotlin.collections.singleOrNull
+import kotlin.collections.toMap
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.*
-import xyz.laxus.api.handlers.annotations.Configuration
-import xyz.laxus.api.ratelimits.rateLimit
 
 sealed class RouteHandlersConfigurable(internal val application: Application) {
     internal val config get() = application.environment.config
@@ -88,7 +109,7 @@ sealed class RouteHandlersConfigurable(internal val application: Application) {
 
 class RouteHandlers
 private constructor(configuration: RouteHandlersConfig): RouteHandlersConfigurable(configuration.application) {
-    private val handlerInfo = mutableListOf<RouteHandlerInfo>()
+    private val lifecycles = mutableListOf<PathLifeCycle>()
 
     internal val handleMissingBody = configuration.handleMissing.body
     internal val handleMissingHeader = configuration.handleMissing.header
@@ -102,10 +123,10 @@ private constructor(configuration: RouteHandlersConfig): RouteHandlersConfigurab
     private fun registerWithRoute(
         handler: Any,
         klazz: KClass<*>,
-        route: RouteHandler = validateClass(klazz),
-        ancestors: List<RouteHandler> = emptyList(),
+        route: RoutePath = validateClass(klazz),
+        ancestors: List<RoutePath> = emptyList(),
         rateLimited: RateLimited? = klazz.findAnnotation(),
-        handlerInfo: MutableList<RouteHandlerInfo> = mutableListOf(),
+        handlerInfo: MutableList<PathHandlerInfo> = mutableListOf(),
         firstPass: Boolean = true
     ) {
         require(route !in ancestors) { "Detected recursive route resolution!" }
@@ -130,15 +151,17 @@ private constructor(configuration: RouteHandlersConfig): RouteHandlersConfigurab
             }
 
             val path = pathExtension?.invoke(entry.key) as String? ?: ""
-            return@mapTo RouteFunction(this, handler, method, entry.value, path, authenticated, rateLimited)
+            return@mapTo PathFunction(this, handler, method, entry.value, path, authenticated, rateLimited)
         }
 
-        handlerInfo += RouteHandlerInfo(prefix + route.path, RouteLifecycle(handler, klazz), handles)
+        val info = PathHandlerInfo(prefix + route.path, PathLifeCycle(handler, klazz), handles)
+        handlerInfo += info
+        lifecycles += info.lifecycle
 
         findSubRoutes(klazz, handler).forEach {
             val subKlazz = it::class
-            val subRoute = checkNotNull(subKlazz.findAnnotation<RouteHandler>()) {
-                "$subKlazz is not annotated with @RouteHandler!"
+            val subRoute = checkNotNull(subKlazz.findAnnotation<RoutePath>()) {
+                "$subKlazz is not annotated with @RoutePath!"
             }
             registerWithRoute(
                 handler = it,
@@ -151,15 +174,13 @@ private constructor(configuration: RouteHandlersConfig): RouteHandlersConfigurab
             )
         }
 
-        if(firstPass) {
-            application.routing {
-                handlerInfo.forEach { info ->
-                    info.handles.forEach { handle ->
-                        val limit = handle.rateLimited
-                        val target = if(limit !== null) rateLimit(limit.limit, limit.reset, limit.unit) {} else this
-                        application.log.debug("Registering $handle")
-                        target.createAuthenticatedRoute(info, handle)
-                    }
+        if(firstPass) application.routing {
+            handlerInfo.forEach { info ->
+                info.functions.forEach { function ->
+                    val path = "${info.path.removeSuffix("/")}/${function.path.removePrefix("/").removeSuffix("/")}"
+                    val target = wrap(route(path) {}, function)
+                    application.log.debug("Registering $function")
+                    target.createRoute(info, function)
                 }
             }
         }
@@ -172,14 +193,14 @@ private constructor(configuration: RouteHandlersConfig): RouteHandlersConfigurab
 
         // member properties
         for(prop in klazz.memberProperties) {
-            if(prop.isAccessibleViaReflection && prop.hasAnnotation<SubRoute>()) {
+            if(prop.isAccessibleViaReflection && prop.hasAnnotation<SubPath>()) {
                 subRoutes += runInvocationSafe { prop.call(handler) } ?: continue
             }
         }
 
         // nested classes
         for(subKlass in klazz.nestedClasses) {
-            if(subKlass.hasAnnotation<SubRoute>() || subKlass.hasAnnotation<RouteHandler>()) {
+            if(subKlass.hasAnnotation<SubPath>() || subKlass.hasAnnotation<RoutePath>()) {
                 require(subKlass.isAccessibleViaReflection) { "Cannot access annotated nested class $subKlass!" }
                 subRoutes += locateAndConstructInstance(subKlass, config, handler)
             }
@@ -197,55 +218,33 @@ private constructor(configuration: RouteHandlersConfig): RouteHandlersConfigurab
             // monitor for lifecycle events
 
             pipeline.environment.monitor.subscribe(ApplicationStarting) { application ->
-                routeHandlers.handlerInfo.forEach { info ->
-                    info.lifecycle.initializers.forEach { it.run(application) }
+                routeHandlers.lifecycles.forEach { info ->
+                    info.initializers.forEach { it.run(application) }
                 }
             }
 
             pipeline.environment.monitor.subscribe(ApplicationStopping) { application ->
-                routeHandlers.handlerInfo.forEach { info ->
-                    info.lifecycle.destroyers.forEach { it.run(application) }
+                routeHandlers.lifecycles.forEach { info ->
+                    info.destroyers.forEach { it.run(application) }
                 }
             }
 
             return routeHandlers
         }
 
-        @JvmStatic private fun Route.createAuthenticatedRoute(info: RouteHandlerInfo, handle: RouteFunction) {
-            val auth = handle.authenticated
-            if(auth === null) {
-                createRoute(info, handle)
-            } else {
-                requireNotNull(application.featureOrNull(Authentication)) {
-                    "Authentication is not installed!"
-                }
-                authenticate(auth.name) { createRoute(info, handle) }
-            }
+        private fun Route.createRoute(info: PathHandlerInfo, function: PathFunction) {
+            method(function.method) { handle(function.func) }
         }
 
-        @JvmStatic private fun Route.createRoute(info: RouteHandlerInfo, handle: RouteFunction) {
-            val handlePath = info.path.removeSuffix("/") + "/" + handle.path.removePrefix("/")
-            when(handle.method) {
-                HttpMethod.Get -> get(handlePath, handle.func)
-                HttpMethod.Put -> put(handlePath, handle.func)
-                HttpMethod.Post -> post(handlePath, handle.func)
-                HttpMethod.Patch -> patch(handlePath, handle.func)
-                HttpMethod.Delete -> delete(handlePath, handle.func)
-                HttpMethod.Options -> options(handlePath, handle.func)
-                HttpMethod.Head -> head(handlePath, handle.func)
-                else -> throw IllegalArgumentException("Cannot accept route: ${handle.method} - ${info.path}")
-            }
-        }
-
-        @JvmStatic private fun validateClass(klass: KClass<*>, sub: RouteHandler? = null): RouteHandler {
+        private fun validateClass(klass: KClass<*>, sub: RoutePath? = null): RoutePath {
             require(!klass.isAbstract) { "Cannot process abstract class type: $klass" }
             require(!klass.isInner) { "Cannot process inner class type: $klass" }
             return sub ?: requireNotNull(klass.findAnnotation()) {
-                "Could not find @RouteHandler on class: $klass"
+                "Could not find @RoutePath on class: $klass"
             }
         }
 
-        @JvmStatic private fun Collection<KFunction<*>>.filterInvalid(): Map<Annotation, KFunction<*>> {
+        private fun Collection<KFunction<*>>.filterInvalid(): Map<Annotation, KFunction<*>> {
             return this.asSequence().filter { f ->
                 !f.isInline && f.typeParameters.isEmpty() &&
                 !f.isExternal && f.isAccessibleViaReflection
@@ -314,6 +313,17 @@ class MissingConfig internal constructor() {
             throw IllegalArgumentException("Missing $identifier")
         }
     }
+}
+
+private fun wrap(route: Route, handle: PathFunction): Route {
+    var target = route
+    handle.authenticated?.let {
+        target = target.authenticate(it.name) {}
+    }
+    handle.rateLimited?.let {
+        target = target.rateLimit(it.limit, it.reset, it.unit) {}
+    }
+    return target
 }
 
 @RouteHandlers.Dsl inline fun <reified T> RouteHandlersConfigurable.register() = register(T::class)

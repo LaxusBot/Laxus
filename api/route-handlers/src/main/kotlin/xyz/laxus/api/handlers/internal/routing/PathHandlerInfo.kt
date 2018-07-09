@@ -15,8 +15,8 @@
  */
 package xyz.laxus.api.handlers.internal.routing
 
-internal data class RouteHandlerInfo(
+internal data class PathHandlerInfo(
     internal val path: String,
-    internal val lifecycle: RouteLifecycle,
-    internal val handles: List<RouteFunction>
+    internal val lifecycle: PathLifeCycle,
+    internal val functions: List<PathFunction>
 )

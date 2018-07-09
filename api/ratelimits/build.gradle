@@ -32,5 +32,6 @@ dependencies {
     compileOnly commons()
 
     testCompile ktor('server-netty')
+    testCompile ktor('gson')
     testCompile ktor('server-test-host')
 }

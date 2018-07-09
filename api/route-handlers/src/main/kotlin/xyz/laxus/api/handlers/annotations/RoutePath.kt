@@ -20,4 +20,4 @@ import kotlin.annotation.AnnotationTarget.CLASS
 
 @Target(CLASS)
 @Retention(RUNTIME)
-annotation class RouteHandler(val path: String)
+annotation class RoutePath(val path: String)

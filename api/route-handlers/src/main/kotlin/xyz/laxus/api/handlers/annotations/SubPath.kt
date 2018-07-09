@@ -20,4 +20,4 @@ import kotlin.annotation.AnnotationTarget.PROPERTY
 
 @Target(PROPERTY)
 @Retention(RUNTIME)
-annotation class SubRoute
+annotation class SubPath

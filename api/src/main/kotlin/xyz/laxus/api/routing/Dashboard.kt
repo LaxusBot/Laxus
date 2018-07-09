@@ -34,7 +34,7 @@ import xyz.laxus.api.routing.locations.GuildsPath
 import xyz.laxus.util.db.tags
 
 @Authenticated("discord")
-@RouteHandler("/dashboard")
+@RoutePath("/dashboard")
 class Dashboard(httpClient: HttpClient) {
     private val discordOAuth = DiscordOAuth2(httpClient)
 
