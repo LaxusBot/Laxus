@@ -52,7 +52,7 @@ buildscript {
     }
 }
 
-def ver = [major: 0, minor: 8, revision: 1]
+def ver = [major: 0, minor: 8, revision: 2]
 
 static void createChildExtension(Project target, Project child, String ancestorName = "") {
     if(target == child) return
