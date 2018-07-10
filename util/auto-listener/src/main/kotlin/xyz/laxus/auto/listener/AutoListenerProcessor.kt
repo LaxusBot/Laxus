@@ -21,7 +21,7 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import net.dv8tion.jda.core.events.Event
 import xyz.laxus.auto.listener.internal.AutoListenerGenerator
-import xyz.laxus.auto.listener.internal.ProcessorFrame
+import xyz.laxus.util.processor.ProcessorFrame
 import java.nio.file.Paths
 import javax.annotation.processing.RoundEnvironment
 import javax.annotation.processing.SupportedAnnotationTypes
