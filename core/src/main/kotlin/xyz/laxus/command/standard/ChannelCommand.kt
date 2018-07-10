@@ -23,8 +23,6 @@ import xyz.laxus.Laxus
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.EmptyCommand
-import xyz.laxus.command.ExperimentalCommand
-import xyz.laxus.db.entities.ExperimentAccess
 import xyz.laxus.jda.menus.paginator
 import xyz.laxus.jda.menus.paginatorBuilder
 import xyz.laxus.jda.util.*
@@ -118,10 +116,6 @@ class ChannelCommand: EmptyCommand(StandardGroup) {
         }
     }
 
-    @ExperimentalCommand(
-        info = linkingExperimentInfo,
-        level = ExperimentAccess.Level.CLOSED_BETA
-    )
     private inner class ChannelLinkCommand: Command(this@ChannelCommand) {
         override val name = "Link"
         override val arguments = "<#TextChannel> [VoiceChannel]"
@@ -252,10 +246,6 @@ class ChannelCommand: EmptyCommand(StandardGroup) {
         }
     }
 
-    @ExperimentalCommand(
-        info = linkingExperimentInfo,
-        level = ExperimentAccess.Level.CLOSED_BETA
-    )
     private inner class ChannelUnlinkCommand: Command(this@ChannelCommand) {
         override val name = "Unlink"
         override val arguments = "[VoiceChannel]"
@@ -315,7 +305,6 @@ class ChannelCommand: EmptyCommand(StandardGroup) {
     }
 
     private companion object {
-        private const val linkingExperimentInfo = "Channel linking is an experimental feature!"
         private val channelRegex = FinderUtil.CHANNEL_MENTION.toRegex()
         private val linkedPermissions = listOf(MESSAGE_READ, VIEW_CHANNEL)
     }

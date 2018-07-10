@@ -31,7 +31,6 @@ object OwnerGroup: Command.Group("Owner") {
 
     override fun init(config: Config) {
         + EvalCommand()
-        + ExperimentsCommand()
         + GuildListCommand()
         + MemoryCommand()
         + ModeCommand()

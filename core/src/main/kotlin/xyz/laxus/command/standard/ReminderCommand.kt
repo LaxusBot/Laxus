@@ -20,7 +20,6 @@ import net.dv8tion.jda.core.Permission.*
 import xyz.laxus.Laxus
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
-import xyz.laxus.command.ExperimentalCommand
 import xyz.laxus.command.MustHaveArguments
 import xyz.laxus.db.entities.Reminder
 import xyz.laxus.jda.menus.paginator
@@ -37,7 +36,6 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 
-@ExperimentalCommand("Reminders are experimental!")
 @MustHaveArguments("Specify a time argument followed by a reminder.")
 class ReminderCommand: Command(StandardGroup) {
     override val name = "Reminder"

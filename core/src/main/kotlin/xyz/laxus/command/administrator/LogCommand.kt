@@ -45,7 +45,6 @@ class LogCommand: EmptyCommand(AdministratorGroup) {
         LogTypesCommand()
     )
 
-    @ExperimentalCommand("Configuring logs is an experimental feature!")
     @MustHaveArguments("Specify an a log type, configuration, and, if necessary, a value.")
     private inner class LogConfigureCommand: Command(this@LogCommand) {
         override val name = "Configure"

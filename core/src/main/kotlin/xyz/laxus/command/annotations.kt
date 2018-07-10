@@ -16,8 +16,6 @@
 @file:JvmName("CommandAnnotations")
 package xyz.laxus.command
 
-import xyz.laxus.db.entities.ExperimentAccess.Level
-
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class AutoCooldown(val mode: AutoCooldownMode = AutoCooldownMode.AFTER)
@@ -25,13 +23,5 @@ annotation class AutoCooldown(val mode: AutoCooldownMode = AutoCooldownMode.AFTE
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class MustHaveArguments(val error: String = "")
-
-@Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
-@Suppress("ANNOTATION_CLASS_MEMBER")
-annotation class ExperimentalCommand(
-    val info: String = "",
-    val level: Level = Level.OPEN_BETA
-)
 
 enum class AutoCooldownMode { OFF, BEFORE, AFTER }

@@ -47,7 +47,6 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
                 val aliases = command.aliases
                 val help = command.help
                 val arguments = command.arguments
-                val experiment = command.experiment
                 val children = command.children.filter {
                     !it.unlisted && it.group.check(ctx) && when {
                         ctx.isPrivate -> it.defaultLevel.test(ctx) && !it.guildOnly
@@ -76,11 +75,6 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
                     append("\n**Function:** `$help`\n")
                 }
 
-                if(experiment !== null) {
-                    append("\n**Experimental:** ")
-                    appendln(experiment.info.takeIf(String::isEmpty) ?: "This command is experimental.")
-                }
-
                 if(children.isNotEmpty()) {
                     append("\n**Sub-Commands:**\n\n")
                     var level: Level? = null
@@ -96,8 +90,6 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
                         append("`${ctx.bot.prefix}${c.fullname}")
                         append(if(c.arguments.isNotEmpty()) " ${c.arguments}" else "")
                         append("` - ").append(c.help)
-
-                        if(c.isExperimental) append(" `[EXPERIMENTAL]`")
 
                         if(i < children.lastIndex) appendln()
                     }
@@ -139,11 +131,7 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
     open val children: Array<out Command> = emptyArray()
     open val fullname: String get() = "${parent?.let { "${it.fullname} " } ?: ""}$name"
     open val defaultLevel: Command.Level get() = parent?.defaultLevel ?: group.defaultLevel
-    open val isExperimental: Boolean get() = experiment !== null
     open val unlisted get() = group.unlisted
-
-    val experiment: ExperimentalCommand? by lazy { this::class.findAnnotation() ?: parent?.experiment }
-
     private val autoCooldown by lazy {
         this::class.findAnnotation<AutoCooldown>()?.mode ?: AutoCooldownMode.OFF
     }
@@ -186,20 +174,6 @@ abstract class Command(val group: Command.Group, val parent: Command?): Comparab
         if(!level.guildOnly || ctx.isGuild) {
             if(!level.test(ctx))
                 return
-        }
-
-        experiment?.let { experiment ->
-            val accessLevel = when {
-                ctx.isGuild -> ctx.guild.experimentAccessLevel ?: ctx.author.experimentAccessLevel
-                else -> ctx.author.experimentAccessLevel
-            }
-
-            if(!experiment.level.canBeAccessedWith(accessLevel)) return ctx.reply {
-                "**${experiment.info}**\n" +
-                "This command is only available with **${experiment.level.titleName}** access!\n" +
-                "If you want to learn more about experimental features and how you can access them, " +
-                "join my support server:\n\n<${Laxus.ServerInvite}>"
-            }
         }
 
         if(ctx.isGuild) {
