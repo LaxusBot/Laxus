@@ -119,9 +119,9 @@ object DBGlobalTags: Table() {
         }
     }
 
-    fun deleteTag(name: String) {
+    fun deleteTag(tag: Tag) {
         connection.prepare("SELECT * FROM global_tags WHERE LOWER(name) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
-            statement[1] = name
+            statement[1] = tag.name
             statement.executeQuery {
                 if(it.next()) it.deleteRow()
             }
