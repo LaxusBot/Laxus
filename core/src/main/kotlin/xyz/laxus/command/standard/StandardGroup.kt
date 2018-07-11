@@ -46,6 +46,7 @@ object StandardGroup : Command.Group("Standard") {
         + RoleMeCommand()
         + ServerCommand()
         + TagCommand()
+        + TimeCommand()
         + YouTubeCommand(config.string("keys.youtube"))
     }
 }
