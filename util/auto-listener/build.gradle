@@ -16,5 +16,7 @@
 dependencies {
     compile kotlinModule('reflect')
     compile jda()
-    compile 'com.squareup:kotlinpoet:0.8.0-SNAPSHOT'
+    compile kotlinPoet()
+
+    compile commons()
 }

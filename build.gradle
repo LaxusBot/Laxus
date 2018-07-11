@@ -22,6 +22,7 @@ buildscript {
         kotlinx_coroutines_version = '0.23.4'
         kotlinx_html_version = '0.6.11'
         ktor_version = '0.9.3'
+        kotlin_poet_version = '0.8.0-SNAPSHOT'
         shadow_version = '2.0.1'
         jda_version = '3.6.0_376'
         jda_utilities_version = '2.1.1'
@@ -52,7 +53,7 @@ buildscript {
     }
 }
 
-def ver = [major: 0, minor: 8, revision: 1]
+def ver = [major: 0, minor: 8, revision: 2]
 
 static void createChildExtension(Project target, Project child, String ancestorName = "") {
     if(target == child) return
@@ -114,6 +115,8 @@ allprojects {
                     default: "io.ktor:ktor-$module:$ktor_version"
                 }
             }
+
+            kotlinPoet = { "com.squareup:kotlinpoet:$kotlin_poet_version" }
 
             // Requests
             youtube = { "com.google.apis:google-api-services-youtube:$youtube_api_version" }

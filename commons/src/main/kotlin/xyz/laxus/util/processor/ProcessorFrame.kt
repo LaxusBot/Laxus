@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 @file:Suppress("unused")
-package xyz.laxus.auto.listener.internal
+package xyz.laxus.util.processor
 
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.Filer
@@ -25,7 +25,7 @@ import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
 import kotlin.reflect.KClass
 
-internal abstract class ProcessorFrame: AbstractProcessor() {
+abstract class ProcessorFrame: AbstractProcessor() {
     private lateinit var _types: Types
     private lateinit var _elements: Elements
     private lateinit var _filer: Filer
@@ -39,6 +39,7 @@ internal abstract class ProcessorFrame: AbstractProcessor() {
     protected val elements get() = _elements
     protected val filer get() = _filer
     protected val messager get() = _messager
+    protected val env: ProcessingEnvironment get() = processingEnv
 
     override fun getSupportedSourceVersion() = version
     override fun getSupportedOptions() = options.toMutableSet()

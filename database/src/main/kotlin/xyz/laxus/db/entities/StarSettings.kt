@@ -17,7 +17,7 @@
 package xyz.laxus.db.entities
 
 import xyz.laxus.db.DBStarSettings
-import xyz.laxus.util.ignored
+import xyz.laxus.db.sql.array
 import xyz.laxus.util.hashAll
 import java.sql.ResultSet
 
@@ -32,13 +32,11 @@ data class StarSettings(
     val ignored: MutableSet<Long> = mutableSetOf()
 ) {
     constructor(res: ResultSet): this(
-        guildId = res.getLong("GUILD_ID"),
-        channelId = res.getLong("CHANNEL_ID"),
-        threshold = res.getShort("THRESHOLD"),
-        maxAge = res.getInt("MAX_AGE"),
-        ignored = res.getString("IGNORED")?.split('|')?.mapNotNullTo(mutableSetOf()) {
-            ignored(null) { it.toLong() }
-        } ?: mutableSetOf()
+        guildId = res.getLong("guild_id"),
+        channelId = res.getLong("channel_id"),
+        threshold = res.getShort("threshold"),
+        maxAge = res.getInt("max_age"),
+        ignored = res.array<Long>("ignored").toMutableSet()
     )
 
     fun update() {

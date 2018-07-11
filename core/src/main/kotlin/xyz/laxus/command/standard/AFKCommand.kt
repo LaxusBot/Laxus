@@ -17,13 +17,11 @@ package xyz.laxus.command.standard
 
 import xyz.laxus.command.Command
 import xyz.laxus.command.CommandContext
-import xyz.laxus.command.ExperimentalCommand
 import xyz.laxus.util.db.afkMessage
 
 /**
  * @author Kaidan Gustave
  */
-@ExperimentalCommand("AFK is an experimental feature!")
 class AFKCommand: Command(StandardGroup) {
     override val name = "AFK"
     override val arguments = "<AFK Message>"

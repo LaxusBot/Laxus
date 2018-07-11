@@ -21,7 +21,6 @@ import net.dv8tion.jda.core.hooks.EventListener
 import net.dv8tion.jda.core.hooks.SubscribeEvent
 import xyz.laxus.auto.listener.AutoListener
 import xyz.laxus.auto.listener.AutoListenerProcessor
-import javax.annotation.Generated
 import javax.lang.model.element.Element
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
@@ -57,13 +56,7 @@ internal class AutoListenerGenerator(
             )
         }.forEach { builder.addAnnotation(AnnotationSpec.get(it)) }
 
-        builder.addAnnotation(
-            AnnotationSpec.builder(Generated::class)
-            .addMember("\"%L\"", "${AutoListenerProcessor::class.qualifiedName}")
-            .build()
-        )
-
-        builder.addModifiers(KModifier.PRIVATE)
+        builder.addModifiers(KModifier.INTERNAL)
         builder.addSuperinterface(EventListener::class)
         builder.superclass(original.asClassName())
 

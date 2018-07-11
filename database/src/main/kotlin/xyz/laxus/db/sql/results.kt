@@ -126,9 +126,9 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: SQLTimes
     }
 }
 
-inline fun <reified T> ResultSet.array(column: String): Array<out T> {
-    @Suppress("UNCHECKED_CAST")
-    return getArray(column).array as Array<T>
+inline fun <reified T> ResultSet.array(column: String): Array<T> {
+    val array = getArray(column).array as? Array<*>
+    return array?.let { Array(array.size) { array[it] as T } } ?: emptyArray()
 }
 
 inline fun <reified R: ResultSet> R.getNullShort(column: String): Short? {

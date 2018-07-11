@@ -15,14 +15,12 @@
  */
 package xyz.laxus.auto.listener
 
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.*
 import net.dv8tion.jda.core.events.Event
 import xyz.laxus.auto.listener.internal.AutoListenerGenerator
-import xyz.laxus.auto.listener.internal.ProcessorFrame
+import xyz.laxus.util.processor.ProcessorFrame
 import java.nio.file.Paths
+import javax.annotation.Generated
 import javax.annotation.processing.RoundEnvironment
 import javax.annotation.processing.SupportedAnnotationTypes
 import javax.annotation.processing.SupportedOptions
@@ -43,6 +41,7 @@ internal class AutoListenerProcessor: ProcessorFrame() {
     override val version = SourceVersion.RELEASE_8
 
     private val specs = mutableSetOf<TypeSpec>()
+    private val files = mutableMapOf<String, FileSpec.Builder>()
 
     override fun process(annotations: Set<TypeElement>, roundEnv: RoundEnvironment): Boolean {
         val valid = annotations.filter { isAutoListener(it) }
@@ -57,6 +56,16 @@ internal class AutoListenerProcessor: ProcessorFrame() {
             messager.printMessage(ERROR, "An unexpected error occurred while processing")
             messager.printMessage(ERROR, "$t\n${t.stackTrace.joinToString("\n", prefix = "  ")}")
             return true
+        }
+
+        val genDir = requireNotNull(processingEnv.options[KaptKotlinGenerated]) {
+            "Could not find processing environment option $KaptKotlinGenerated"
+        }
+
+        val genTarget = Paths.get(genDir)
+
+        files.values.forEach { file ->
+            file.build().writeTo(genTarget)
         }
 
         // All annotations were valid and claimed as a result
@@ -96,15 +105,16 @@ internal class AutoListenerProcessor: ProcessorFrame() {
         }
 
         val name = spec.name ?: "${element.simpleName}$GeneratedSuffix"
-        val file = FileSpec.builder("${elements.getPackageOf(element).qualifiedName}", name).apply {
-            addComment("Generated Auto-Listener!\n")
-            addComment("This file should not be modified!\n")
-            addComment("Modifications will be removed upon recompilation!")
+        val pkg = "${elements.getPackageOf(element).qualifiedName}"
+        val file = FileSpec.builder(pkg, name).apply {
+            addGeneratedComment()
+            addAnnotation(
+                AnnotationSpec.builder(Generated::class)
+                    .useSiteTarget(AnnotationSpec.UseSiteTarget.FILE)
+                    .addMember("\"%L\"", "${AutoListenerProcessor::class.qualifiedName}")
+                    .build()
+            )
             addType(spec)
-            addFunction(FunSpec.builder("create${element.simpleName}").apply {
-                returns(element.asClassName())
-                addStatement("return %N()", spec)
-            }.build())
         }.build()
 
         val genDir = requireNotNull(processingEnv.options[KaptKotlinGenerated]) {
@@ -123,6 +133,23 @@ internal class AutoListenerProcessor: ProcessorFrame() {
             return
         }
 
+        files.computeIfAbsent(pkg) {
+            FileSpec.builder(it, "generated_functions_for_${it.split('.').joinToString("_")}").apply {
+                addGeneratedComment()
+                addAnnotation(
+                    AnnotationSpec.builder(Generated::class)
+                        .useSiteTarget(AnnotationSpec.UseSiteTarget.FILE)
+                        .addMember("\"%L\"", "${AutoListenerProcessor::class.qualifiedName}")
+                        .build()
+                )
+            }
+        }.apply {
+            addFunction(FunSpec.builder("create${element.simpleName}").apply {
+                returns(element.asClassName())
+                addStatement("return %N()", spec)
+            }.build())
+        }
+
         specs += spec
     }
 
@@ -133,6 +160,12 @@ internal class AutoListenerProcessor: ProcessorFrame() {
         private fun isAutoListener(element: TypeElement): Boolean {
             return element.qualifiedName.toString() == AutoListener::class.java.canonicalName
                    || element.getAnnotation(AutoListener::class.java) !== null
+        }
+
+        private fun FileSpec.Builder.addGeneratedComment() {
+            addComment("Generated Auto-Listener!\n")
+            addComment("This file should not be modified!\n")
+            addComment("Modifications will be removed upon recompilation!")
         }
     }
 }

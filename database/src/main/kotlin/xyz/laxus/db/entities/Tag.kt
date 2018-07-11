@@ -26,11 +26,20 @@ data class Tag(val name: String, val content: String, val ownerId: Long?, val gu
     fun isOverride() = ownerId === null
 
     fun edit(newContent: String) {
-        DBLocalTags.updateTag(this.copy(content = newContent))
+        val updated = this.copy(content = newContent)
+        if(updated.guildId !== null) {
+            DBLocalTags.updateTag(updated)
+        } else {
+            DBGlobalTags.updateTag(updated)
+        }
     }
 
     fun delete() {
-        DBLocalTags.deleteTag(this)
+        if(guildId !== null) {
+            DBLocalTags.deleteTag(this)
+        } else {
+            DBGlobalTags.deleteTag(this)
+        }
     }
 
     fun override(guildId: Long? = null) {

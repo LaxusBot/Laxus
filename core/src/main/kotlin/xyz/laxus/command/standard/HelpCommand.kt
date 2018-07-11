@@ -63,10 +63,6 @@ class HelpCommand: Command(StandardGroup) {
                         append(" $arguments")
                     }
                     append("` - ${c.help}")
-                    // Experimental commands have the [EXPERIMENTAL] tag
-                    if(c.isExperimental) {
-                        append(" `[EXPERIMENTAL]`")
-                    }
                     appendln()
                 }
             }

@@ -13,18 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.db.entities
+package xyz.laxus.util.db
 
-data class ExperimentAccess
-constructor(val id: Long, val level: ExperimentAccess.Level, val type: ExperimentAccess.Type) {
-    enum class Level {
-        ALPHA, CLOSED_BETA, OPEN_BETA;
+import net.dv8tion.jda.core.entities.User
+import xyz.laxus.db.DBTimeZones
+import java.util.*
 
-        fun canBeAccessedWith(other: Level?): Boolean {
-            if(this == OPEN_BETA) return true
-            if(other === null) return false
-            return this <= other
-        }
+var User.timezone: TimeZone?
+    get() = DBTimeZones.getTimeZone(idLong)
+    set(value) {
+        value?.let { return DBTimeZones.setTimeZone(idLong, it) }
+        DBTimeZones.removeTimeZone(idLong)
     }
-    enum class Type { USER, GUILD }
-}
