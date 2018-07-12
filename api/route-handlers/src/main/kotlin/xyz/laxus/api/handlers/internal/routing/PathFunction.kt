@@ -235,7 +235,7 @@ internal class PathFunction(
             }
         }
         call.handleAfter()
-        if(value !== Unit && value !== null) call.respond(value)
+        call.respond(value?.takeIf { it != Unit } ?: "")
     }
 
     private fun ApplicationCall.handleAfter() {
@@ -259,9 +259,5 @@ internal class PathFunction(
             map[parameter] = value
         }
         return map
-    }
-
-    override fun toString(): String {
-        return super.toString()
     }
 }

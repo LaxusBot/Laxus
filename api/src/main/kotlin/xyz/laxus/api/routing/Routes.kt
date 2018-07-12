@@ -24,9 +24,9 @@ import io.ktor.features.*
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.withCharset
 import io.ktor.locations.Locations
 import io.ktor.response.respond
+import io.ktor.routing.routing
 import me.kgustave.json.ktor.client.JSKtorSerializer
 import me.kgustave.json.ktor.server.JSContentConverter
 import me.kgustave.json.reflect.JSDeserializer
@@ -39,7 +39,7 @@ import xyz.laxus.api.error.InternalServerError
 import xyz.laxus.api.error.badRequest
 import xyz.laxus.api.error.unauthorized
 import xyz.laxus.api.handlers.routeHandlers
-import java.nio.charset.Charset
+import xyz.laxus.api.ratelimits.RateLimits
 
 object Routes: Module {
     private val deserializer = JSDeserializer()
@@ -56,19 +56,19 @@ object Routes: Module {
         }
 
         install(Locations)
-        install(AutoHeadResponse)
 
-        install(ContentNegotiation) {
-            Charset.availableCharsets().values.forEach {
-                register(ContentType.Application.Json.withCharset(it),
-                    JSContentConverter(deserializer, serializer, it))
+        install(RateLimits) {
+            // TODO controller =
+            xRateLimitHeaders {
+                limit()
+                remaining()
+                reset()
             }
         }
 
-        install(Compression) {
-            gzip()
-            deflate()
-            identity()
+        install(ContentNegotiation) {
+            register(ContentType.Application.Json,
+                JSContentConverter(deserializer, serializer, Charsets.UTF_8))
         }
 
         install(CORS) {
@@ -89,6 +89,10 @@ object Routes: Module {
                 val http = exception as? HttpError ?: InternalServerError(exception)
                 call.respond(http.status, http.toJson())
             }
+        }
+
+        routing {
+            install(AutoHeadResponse)
         }
 
         routeHandlers {

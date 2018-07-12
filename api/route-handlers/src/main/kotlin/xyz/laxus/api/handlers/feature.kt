@@ -21,10 +21,7 @@ import io.ktor.application.*
 import io.ktor.auth.authenticate
 import io.ktor.config.ApplicationConfig
 import io.ktor.http.HttpMethod
-import io.ktor.routing.Route
-import io.ktor.routing.method
-import io.ktor.routing.route
-import io.ktor.routing.routing
+import io.ktor.routing.*
 import io.ktor.util.AttributeKey
 import xyz.laxus.api.handlers.annotations.*
 import xyz.laxus.api.handlers.internal.ConfiguredConstructorFunction
@@ -178,9 +175,29 @@ private constructor(configuration: RouteHandlersConfig): RouteHandlersConfigurab
             handlerInfo.forEach { info ->
                 info.functions.forEach { function ->
                     val path = "${info.path.removeSuffix("/")}/${function.path.removePrefix("/").removeSuffix("/")}"
-                    val target = wrap(route(path) {}, function)
                     application.log.debug("Registering $function")
-                    target.createRoute(info, function)
+                    route(path) {
+                        function.rateLimited?.let {
+                            rateLimit(it.limit, it.reset, it.unit) {
+                                function.authenticated?.let {
+                                    authenticate(it.name) {
+                                        method(function.method) { handle(function.func) }
+                                    }
+                                    return@rateLimit
+                                }
+                                method(function.method) { handle(function.func) }
+                                return@rateLimit
+                            }
+                        }
+                        function.authenticated?.let {
+                            authenticate(it.name) {
+                                method(function.method) { handle(function.func) }
+                            }
+                            return@route
+                        }
+                        method(function.method) { handle(function.func) }
+                        return@route
+                    }
                 }
             }
         }
@@ -230,10 +247,6 @@ private constructor(configuration: RouteHandlersConfig): RouteHandlersConfigurab
             }
 
             return routeHandlers
-        }
-
-        private fun Route.createRoute(info: PathHandlerInfo, function: PathFunction) {
-            method(function.method) { handle(function.func) }
         }
 
         private fun validateClass(klass: KClass<*>, sub: RoutePath? = null): RoutePath {

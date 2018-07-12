@@ -49,10 +49,11 @@ dependencies {
     // html
     compile kotlinxHtml('jvm')
 
-    compile project(':api:route-handlers')
-    compile project(':commons')
-    compile project(':commons:jda')
-    compile project(':core')
-    compile project(':core:music')
-    compile project(':database')
+    compile apiRouteHandlers()
+    compile commons()
+    compile commonsJda()
+    compile core()
+    compile coreMusic()
+    compile database()
+    compile apiRatelimits()
 }
