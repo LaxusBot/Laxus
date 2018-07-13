@@ -35,17 +35,17 @@ object DBCustomCommands: Table() {
         }
     }
 
-    fun getCustomCommands(guildId: Long): List<Pair<String, String>> { // TODO Change over to map
-        val list = ArrayList<Pair<String, String>>()
+    fun getCustomCommands(guildId: Long): Map<String, String> {
+        val map = hashMapOf<String, String>()
         connection.prepare("SELECT * FROM custom_commands WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 while(it.next()) {
-                    list += (it.getString("name") to it.getString("content"))
+                    map += (it.getString("name") to it.getString("content"))
                 }
             }
         }
-        return list
+        return map.toMap()
     }
 
     fun getCustomCommand(guildId: Long, name: String): String? {
