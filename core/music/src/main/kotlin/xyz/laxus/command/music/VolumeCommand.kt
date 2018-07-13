@@ -17,7 +17,6 @@ package xyz.laxus.command.music
 
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
-import xyz.laxus.music.MusicManager
 import xyz.laxus.util.ignored
 import xyz.laxus.util.titleName
 
@@ -25,7 +24,7 @@ import xyz.laxus.util.titleName
  * @author Kaidan Gustave
  */
 @MustHaveArguments
-class VolumeCommand(manager: MusicManager): MusicCommand(manager) {
+class VolumeCommand: MusicCommand(MusicGroup.manager) {
     override val name = "Volume"
     override val arguments = "[Volume]"
     override val help = "Changes the bot's playing volume."

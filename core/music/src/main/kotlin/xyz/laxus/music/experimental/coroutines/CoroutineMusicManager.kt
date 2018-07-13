@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger
  */
 class CoroutineMusicManager : IMusicManager, AudioPlayerManager by DefaultAudioPlayerManager() {
     internal companion object {
-        internal val LOG = createLogger(CoroutineMusicManager::class)
+        internal val Log = createLogger(CoroutineMusicManager::class)
 
         internal fun logTrackInfo(track: AudioTrack): String {
             return "Title: ${track.info.title} | Length: ${formatTrackTime(track.duration)} | State: ${track.state}"
@@ -90,7 +90,7 @@ class CoroutineMusicManager : IMusicManager, AudioPlayerManager by DefaultAudioP
             setupPlayer(channel, tracks[0])
         }
 
-        val queue = this[guild] ?: return LOG.error {
+        val queue = this[guild] ?: return Log.error {
             "Attempted to get MusicQueue for Guild (ID: ${guild.idLong}) after checkpoint, but got null?!"
         }
 
@@ -119,26 +119,26 @@ class CoroutineMusicManager : IMusicManager, AudioPlayerManager by DefaultAudioP
     override fun onEvent(event: AudioEvent) {
         when(event) {
             is TrackStartEvent -> {
-                LOG.debug("Track Started | Title: ${event.track.info.title}")
+                Log.debug("Track Started | Title: ${event.track.info.title}")
             }
 
             is TrackEndEvent -> {
                 when(event.endReason) {
                     null        -> return
                     FINISHED    -> onTrackFinished(event)
-                    LOAD_FAILED -> LOG.debug("Track Load Failed | ${logTrackInfo(event.track)}")
-                    STOPPED     -> LOG.debug("Track Stopped | ${logTrackInfo(event.track)}")
-                    REPLACED    -> LOG.debug("Track Replaced | ${logTrackInfo(event.track)}")
-                    CLEANUP     -> LOG.debug("Track Cleanup | ${logTrackInfo(event.track)}")
+                    LOAD_FAILED -> Log.debug("Track Load Failed | ${logTrackInfo(event.track)}")
+                    STOPPED     -> Log.debug("Track Stopped | ${logTrackInfo(event.track)}")
+                    REPLACED    -> Log.debug("Track Replaced | ${logTrackInfo(event.track)}")
+                    CLEANUP     -> Log.debug("Track Cleanup | ${logTrackInfo(event.track)}")
                 }
             }
 
             is TrackExceptionEvent -> {
-                LOG.error("Track Exception | ${logTrackInfo(event.track)}", event.exception)
+                Log.error("Track Exception | ${logTrackInfo(event.track)}", event.exception)
             }
 
             is TrackStuckEvent -> {
-                LOG.debug("Track Stuck | ${logTrackInfo(event.track)} | ${event.thresholdMs}ms")
+                Log.debug("Track Stuck | ${logTrackInfo(event.track)} | ${event.thresholdMs}ms")
             }
         }
     }
@@ -159,7 +159,7 @@ class CoroutineMusicManager : IMusicManager, AudioPlayerManager by DefaultAudioP
     }
 
     private fun onTrackFinished(event: TrackEndEvent) {
-        LOG.debug("Track Finished | ${logTrackInfo(event.track)}")
+        Log.debug("Track Finished | ${logTrackInfo(event.track)}")
 
         val member = event.track.member
         val guildQueue = queueMap[member.guild.idLong] ?: return

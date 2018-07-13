@@ -22,7 +22,6 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import kotlinx.coroutines.experimental.async
 import net.dv8tion.jda.core.Permission
 import xyz.laxus.command.CommandContext
-import xyz.laxus.music.MusicManager
 import xyz.laxus.util.*
 import xyz.laxus.util.db.getCommandLevel
 import kotlin.coroutines.experimental.coroutineContext
@@ -30,7 +29,7 @@ import kotlin.coroutines.experimental.coroutineContext
 /**
  * @author Kaidan Gustave
  */
-class PlayCommand(manager: MusicManager): MusicCommand(manager) {
+class PlayCommand: MusicCommand(MusicGroup.manager) {
     override val name = "Play"
     override val arguments = "[Song|URL]"
     override val help = "Plays a song in your connected voice channel."

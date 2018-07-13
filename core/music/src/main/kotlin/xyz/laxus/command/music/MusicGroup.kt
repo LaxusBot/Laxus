@@ -27,28 +27,28 @@ import xyz.laxus.util.db.isMusic
 /**
  * @author Kaidan Gustave
  */
-object MusicGroup : Command.Group("Music") {
+object MusicGroup: Command.Group("Music") {
     override val defaultLevel get() = Command.Level.STANDARD
     override val devOnly = false
     override val guildOnly = true
 
-    val Manager by lazy { MusicManager() }
+    internal val manager by lazy { MusicManager() }
 
     override fun check(ctx: CommandContext): Boolean = ctx.isDev || (ctx.isGuild && ctx.guild.isMusic)
 
     override fun JDABuilder.configure() {
-        listener { Manager }
+        listener { manager }
     }
 
     override fun init(config: Config) {
         + NowPlayingCommand()
-        + PauseCommand(Manager)
-        + PlayCommand(Manager)
-        + QueueCommand(Manager)
-        + RemoveCommand(Manager)
-        + SearchCommand(Manager)
-        + SkipCommand(Manager)
-        + StopCommand(Manager)
-        + VolumeCommand(Manager)
+        + PauseCommand()
+        + PlayCommand()
+        + QueueCommand()
+        + RemoveCommand()
+        + SearchCommand()
+        + SkipCommand()
+        + StopCommand()
+        + VolumeCommand()
     }
 }

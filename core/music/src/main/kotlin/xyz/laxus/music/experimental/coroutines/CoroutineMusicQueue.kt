@@ -20,6 +20,7 @@ package xyz.laxus.music.experimental.coroutines
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackState.FINISHED
+import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.channels.produce
 import kotlinx.coroutines.experimental.launch
 import net.dv8tion.jda.core.audio.AudioSendHandler
@@ -29,10 +30,7 @@ import xyz.laxus.jda.util.connect
 import xyz.laxus.music.IMusicQueue
 import xyz.laxus.music.lava.SimpleAudioSendHandler
 import xyz.laxus.util.warn
-import java.util.HashSet
 import java.util.concurrent.ConcurrentLinkedQueue
-import kotlin.coroutines.experimental.Continuation
-import kotlin.coroutines.experimental.suspendCoroutine
 
 /**
  * @author Kaidan Gustave
@@ -40,28 +38,25 @@ import kotlin.coroutines.experimental.suspendCoroutine
 class CoroutineMusicQueue(
     override val manager: CoroutineMusicManager,
     override val channel: VoiceChannel,
-    private var track: AudioTrack,
+    @Volatile private var track: AudioTrack,
     override val player: AudioPlayer = manager.newPlayer()
 ): AudioSendHandler by SimpleAudioSendHandler(player),
     IMusicQueue {
-    @Volatile private lateinit var suspension: Continuation<Unit>
+    @Volatile private lateinit var deferred: CompletableDeferred<Unit>
     @Volatile private var dead = false
 
     private val queue = ConcurrentLinkedQueue<AudioTrack>().also { it.offer(track) }
-    private val skipping = HashSet<Long>()
+    private val skipping = hashSetOf<Long>()
     private val receiver = produce<AudioTrack>(manager.playContext) {
         while(!dead) {
-            val next = queue.poll() ?: break // We have null, player needs to close
-            suspendCoroutine<Unit> { continuation ->
-                // Right now, we hold until the track has finished
-                suspension = continuation
-                track = next
-                player.playTrack(track)
-            }
+            deferred = CompletableDeferred()
+            track = queue.poll() ?: break // We have null, player needs to close
+            player.playTrack(track)
+            deferred.await()
 
             // If this happens
             if(track.state != FINISHED) {
-                CoroutineMusicManager.LOG.warn {
+                CoroutineMusicManager.Log.warn {
                     "Somehow a track failed to stop ${CoroutineMusicManager.logTrackInfo(track)}"
                 }
                 player.stopTrack()
@@ -133,8 +128,12 @@ class CoroutineMusicQueue(
         return "CoroutineMusicQueue(VC: ${channel.idLong}, Queued: $size, Now Playing: ${currentTrack.identifier})"
     }
 
-    internal fun awaken() {
-        if(!::suspension.isInitialized) return
-        suspension.resume(Unit)
+    internal fun awaken(t: Throwable? = null) {
+        if(!::deferred.isInitialized) return
+        if(t !== null) {
+            deferred.completeExceptionally(t)
+        } else {
+            deferred.complete(Unit)
+        }
     }
 }

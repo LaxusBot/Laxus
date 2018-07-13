@@ -20,7 +20,6 @@ import xyz.laxus.Laxus
 import xyz.laxus.command.CommandContext
 import xyz.laxus.jda.menus.paginator
 import xyz.laxus.jda.menus.paginatorBuilder
-import xyz.laxus.music.MusicManager
 import xyz.laxus.util.displayTitle
 import xyz.laxus.util.formattedInfo
 import xyz.laxus.util.progression
@@ -28,7 +27,7 @@ import xyz.laxus.util.progression
 /**
  * @author Kaidan Gustave
  */
-class QueueCommand(manager: MusicManager): MusicCommand(manager) {
+class QueueCommand: MusicCommand(MusicGroup.manager) {
     override val name = "Queue"
     override val help = "Shows the currently queued music."
     override val botPermissions = arrayOf(
