@@ -16,14 +16,13 @@
 package xyz.laxus.command.music
 
 import xyz.laxus.command.CommandContext
-import xyz.laxus.music.MusicManager
 import xyz.laxus.util.displayTitle
 import xyz.laxus.util.progression
 
 /**
  * @author Kaidan Gustave
  */
-class PauseCommand(manager: MusicManager): MusicCommand(manager) {
+class PauseCommand: MusicCommand(MusicGroup.manager) {
     override val name = "Pause"
     override val help = "Pauses or unpauses the currently playing music."
     override val defaultLevel get() = Level.MODERATOR

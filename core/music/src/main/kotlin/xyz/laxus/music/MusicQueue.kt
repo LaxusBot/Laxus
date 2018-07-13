@@ -61,7 +61,7 @@ class MusicQueue internal constructor(
     }
 
     override fun shuffle(userId: Long): Int {
-        val indexList = ArrayList<Int>(size)
+        val indexList = arrayListOf(size)
         for(i in indices) {
             val member = this[i].member
             if(member.user.idLong == userId) {

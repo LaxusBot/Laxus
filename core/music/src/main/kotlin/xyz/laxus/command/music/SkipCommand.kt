@@ -16,7 +16,6 @@
 package xyz.laxus.command.music
 
 import xyz.laxus.command.CommandContext
-import xyz.laxus.music.MusicManager
 import xyz.laxus.music.lava.member
 import xyz.laxus.util.displayTitle
 import xyz.laxus.util.formattedName
@@ -24,7 +23,7 @@ import xyz.laxus.util.formattedName
 /**
  * @author Kaidan Gustave
  */
-class SkipCommand(manager: MusicManager): MusicCommand(manager) {
+class SkipCommand: MusicCommand(MusicGroup.manager) {
     override val name = "Skip"
     override val help = "Votes to skip the currently playing song."
 

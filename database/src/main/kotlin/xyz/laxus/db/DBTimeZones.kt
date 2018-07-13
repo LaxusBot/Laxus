@@ -15,17 +15,16 @@
  */
 package xyz.laxus.db
 
-import xyz.laxus.db.schema.*
+import xyz.laxus.db.annotation.Column
+import xyz.laxus.db.annotation.Columns
+import xyz.laxus.db.annotation.TableName
 import xyz.laxus.db.sql.*
-import xyz.laxus.db.sql.ResultSetConcur.*
-import xyz.laxus.db.sql.ResultSetType.*
-import java.time.ZoneId
 import java.util.*
 
 @TableName("timezones")
 @Columns(
-    Column("user_id", BIGINT, primary = true),
-    Column("user_timezone", "$VARCHAR(100)")
+    Column("user_id", "BIGINT", primary = true),
+    Column("user_timezone", "VARCHAR(100)")
 )
 object DBTimeZones: Table() {
     fun getTimeZone(userId: Long): TimeZone? {
@@ -41,8 +40,7 @@ object DBTimeZones: Table() {
     }
 
     fun setTimeZone(userId: Long, timezone: TimeZone) {
-        connection.prepare("SELECT * FROM timezones WHERE user_id = ?",
-            SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM timezones WHERE user_id = ?") { statement ->
             statement[1] = userId
             statement.executeQuery {
                 if(it.next()) it.update {
@@ -56,8 +54,7 @@ object DBTimeZones: Table() {
     }
 
     fun removeTimeZone(userId: Long) {
-        connection.prepare("SELECT * FROM timezones WHERE user_id = ?",
-            SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM timezones WHERE user_id = ?") { statement ->
             statement[1] = userId
             statement.executeQuery {
                 if(it.next()) it.deleteRow()

@@ -17,7 +17,6 @@ package xyz.laxus.command.music
 
 import xyz.laxus.command.CommandContext
 import xyz.laxus.command.MustHaveArguments
-import xyz.laxus.music.MusicManager
 import xyz.laxus.music.lava.member
 import xyz.laxus.util.ignored
 
@@ -25,7 +24,7 @@ import xyz.laxus.util.ignored
  * @author Kaidan Gustave
  */
 @MustHaveArguments("Specify a queued position to remove.")
-class RemoveCommand(manager: MusicManager): MusicCommand(manager) {
+class RemoveCommand: MusicCommand(MusicGroup.manager) {
     override val name = "Remove"
     override val arguments = "[Queue Position]"
     override val help = "Removes a queued track."

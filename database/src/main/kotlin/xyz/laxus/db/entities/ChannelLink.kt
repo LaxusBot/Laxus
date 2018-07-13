@@ -18,9 +18,9 @@ package xyz.laxus.db.entities
 import java.sql.ResultSet
 
 data class ChannelLink(val guildId: Long, val textChannelId: Long, val voiceChannelId: Long) {
-    constructor(results: ResultSet): this(
-        results.getLong("guild_id"),
-        results.getLong("text_channel_id"),
-        results.getLong("voice_channel_id")
+    internal constructor(results: ResultSet): this(
+        guildId = results.getLong("guild_id"),
+        textChannelId = results.getLong("text_channel_id"),
+        voiceChannelId = results.getLong("voice_channel_id")
     )
 }

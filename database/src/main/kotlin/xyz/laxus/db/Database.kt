@@ -17,9 +17,9 @@
 package xyz.laxus.db
 
 import com.typesafe.config.Config
-import xyz.laxus.db.schema.AllPrimary
-import xyz.laxus.db.schema.Columns
-import xyz.laxus.db.schema.TableName
+import xyz.laxus.db.annotation.AllPrimary
+import xyz.laxus.db.annotation.Columns
+import xyz.laxus.db.annotation.TableName
 import xyz.laxus.util.*
 import xyz.laxus.util.reflect.loadClass
 import java.sql.Connection
@@ -31,52 +31,44 @@ import kotlin.reflect.full.findAnnotation
  * @author Kaidan Gustave
  */
 object Database: AutoCloseable {
-    val Log = createLogger(Database::class)
+    @PublishedApi internal val log = createLogger(Database::class)
 
     private lateinit var _connection: Connection
-    private val _tables = HashMap<String, Table>()
+    private val _tables = hashMapOf<String, Table>()
 
     val tables: Map<String, Table> get() = _tables
+    val isConnected get() = this::_connection.isInitialized && !connection.isClosed
     val connection: Connection get() {
-        if(!isConnected()) initializeDB()
+        check(isConnected) { "Database is not connected yet!" }
         return _connection
     }
 
-    fun start() = initializeDB()
-    fun isConnected(): Boolean = ::_connection.isInitialized && !_connection.isClosed
+    fun start(resource: String = "database.conf") {
+        val config = requireNotNull(loadConfig(resource).takeIf { it.isResolved })
 
-    private fun connect(url: String, user: String, pass: String) {
-        Log.info("Connecting to database: $url")
-        _connection = DriverManager.getConnection(url, user, pass)
-    }
-
-    private fun initializeDB() {
-        val config = findConfig()
-        val databaseNode = checkNotNull(config.config("database")) { nodeNotFound("database") }
-        val shutdownHook = databaseNode.boolean("shutdown.hook") ?: false
-
-        if(shutdownHook) {
+        if(config.boolean("database.shutdown.hook") == true) {
             createShutdownHook()
         }
 
-        Log.debug("Logging in using configuration...")
-        val (url, user, pass) = databaseNode.dbValues()
-        connect(url, user, pass)
+        log.debug("Logging in using configuration: $resource")
 
-        val tablesList = checkNotNull(databaseNode.list("tables")) { nodeNotFound("tables") }
-        tablesList.forEach {
+        val (url, user, pass) = loginValues(config)
+
+        log.info("Connecting to database: $url")
+        _connection = DriverManager.getConnection(url, user, pass)
+
+        config.list("database.tables")?.forEach {
             val path = "${it.unwrapped()}"
-            val klazz = checkNotNull(loadClass(path)) {
-                "Could not find class '$path' specified in database.conf!"
+            val klazz = requireNotNull(loadClass(path)) {
+                "Could not find class '$path' specified in '$resource'!"
             }
 
-            val tableName = checkNotNull(klazz.findAnnotation<TableName>()?.value) {
+            val tableName = requireNotNull(klazz.findAnnotation<TableName>()?.value) {
                 "$klazz didn't have a @TableName annotation!"
             }
 
-            val objInst = checkNotNull((klazz.objectInstance ?: klazz.createInstance()) as? Table) {
-                "$klazz didn't extend Table!"
-            }
+            val instance = klazz.objectInstance ?: klazz.createInstance()
+            val table = requireNotNull(instance as? Table) { "$klazz didn't extend Table!" }
 
             val columns = klazz.findAnnotation<Columns>()?.value ?: emptyArray()
             val allPrimary = klazz.findAnnotation<AllPrimary>() !== null
@@ -120,52 +112,41 @@ object Database: AutoCloseable {
                 it.execute(createStatement)
             }
 
-            _tables[tableName] = objInst
+            _tables[tableName] = table
         }
     }
 
     private fun createShutdownHook() = onJvmShutdown("Database Shutdown", this::close)
 
-    private fun findConfig(): Config {
-        return checkNotNull(loadConfig("database.conf").takeIf { it.isResolved }) {
-            "Could not find 'database.conf' in resources!"
-        }
-    }
-
-    private fun Config.dbValues(): Triple<String, String, String> {
-        val user = checkNotNull(string("login.user")) { nodeNotFound("login.user") }
-        val pass = checkNotNull(string("login.pass")) { nodeNotFound("login.pass") }
-        val prefix = checkNotNull(string("url.prefix")) { nodeNotFound("url.prefix") }
-        val path = checkNotNull(string("url.path")) { nodeNotFound("url.path") }
+    private fun loginValues(config: Config): Triple<String, String, String> {
+        val user = requireNotNull(config.string("database.login.user"))
+        val pass = requireNotNull(config.string("database.login.pass"))
         val url = buildString {
-            append("$prefix$path")
-            obj("options")?.entries?.forEach {
-                append(";")
-                append(it.key)
-                append("=")
-                append("${it.value.unwrapped()}")
+            append(requireNotNull(config.string("database.url.prefix")))
+            append(requireNotNull(config.string("database.url.path")))
+            config.obj("database.url.options")?.forEach { key, value ->
+                append(";$key=${value.unwrapped()}")
             }
         }
+
         return Triple(url, user, pass)
     }
 
-    private fun nodeNotFound(node: String): String = "Could not find '$node' node!"
-
     override fun close() {
-        if(!isConnected()) return
+        if(!isConnected) return
 
         tables.values.forEach {
             try {
                 it.close()
             } catch(t: Throwable) {
-                Log.warn("Experienced an exception while closing a table '${it.name}' connection:\n$t")
+                log.warn("Experienced an exception while closing a table '${it::class}' connection:\n$t")
             }
         }
 
         try {
             connection.close()
         } catch(t: Throwable) {
-            Log.warn("Experienced an exception while closing JDBC connection:\n$t")
+            log.warn("Experienced an exception while closing JDBC connection:\n$t")
         }
     }
 }

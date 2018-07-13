@@ -26,7 +26,6 @@ import xyz.laxus.Laxus
 import xyz.laxus.command.CommandContext
 import xyz.laxus.jda.menus.orderedMenu
 import xyz.laxus.jda.menus.orderedMenuBuilder
-import xyz.laxus.music.MusicManager
 import xyz.laxus.util.formattedInfo
 import xyz.laxus.util.noMatch
 import kotlin.coroutines.experimental.coroutineContext
@@ -34,7 +33,7 @@ import kotlin.coroutines.experimental.coroutineContext
 /**
  * @author Kaidan Gustave
  */
-class SearchCommand(manager: MusicManager): MusicCommand(manager) {
+class SearchCommand: MusicCommand(MusicGroup.manager) {
     override val name = "Search"
     override val arguments = "[Query]"
     override val help = "Searches for songs matching a query and plays in a voice channel."

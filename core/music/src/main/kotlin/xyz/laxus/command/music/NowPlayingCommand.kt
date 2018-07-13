@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit
 /**
  * @author Kaidan Gustave
  */
-class NowPlayingCommand: MusicCommand(MusicGroup.Manager) {
+class NowPlayingCommand: MusicCommand(MusicGroup.manager) {
     override val name = "NowPlaying"
     override val aliases = arrayOf("NP")
     override val help = "Gets what song is currently playing."

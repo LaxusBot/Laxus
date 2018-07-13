@@ -16,12 +16,11 @@
 package xyz.laxus.command.music
 
 import xyz.laxus.command.CommandContext
-import xyz.laxus.music.MusicManager
 
 /**
  * @author Kaidan Gustave
  */
-class StopCommand(manager: MusicManager): MusicCommand(manager) {
+class StopCommand: MusicCommand(MusicGroup.manager) {
     override val name = "Stop"
     override val help = "Stops playing music in the server."
     override val defaultLevel get() = Level.ADMINISTRATOR

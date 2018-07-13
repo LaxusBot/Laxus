@@ -16,10 +16,11 @@
 @file:Suppress("MemberVisibilityCanBePrivate", "unused")
 package xyz.laxus.db
 
-import xyz.laxus.db.schema.*
+import xyz.laxus.db.annotation.AllPrimary
+import xyz.laxus.db.annotation.Column
+import xyz.laxus.db.annotation.Columns
+import xyz.laxus.db.annotation.TableName
 import xyz.laxus.db.sql.*
-import xyz.laxus.db.sql.ResultSetConcur.*
-import xyz.laxus.db.sql.ResultSetType.*
 
 /**
  * @author Kaidan Gustave
@@ -27,9 +28,9 @@ import xyz.laxus.db.sql.ResultSetType.*
 @AllPrimary
 @TableName("guild_channels")
 @Columns(
-    Column("guild_id", BIGINT),
-    Column("channel_id", BIGINT),
-    Column("type", "$VARCHAR(50)")
+    Column("guild_id", "BIGINT"),
+    Column("channel_id", "BIGINT"),
+    Column("type", "VARCHAR(50)")
 )
 object DBChannels : Table() {
     fun isChannel(guildId: Long, channelId: Long, type: Type): Boolean {
@@ -71,7 +72,9 @@ object DBChannels : Table() {
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
-                it.whileNext { channels += it.getLong("channel_id") }
+                while(it.next()) {
+                    channels += it.getLong("channel_id")
+                }
             }
         }
         return channels
@@ -79,7 +82,7 @@ object DBChannels : Table() {
 
     fun setChannel(guildId: Long, channelId: Long, type: Type) {
         require(type.single, type::notSingle)
-        connection.prepare("SELECT * FROM guild_channels WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM guild_channels WHERE guild_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -98,7 +101,7 @@ object DBChannels : Table() {
 
     fun addChannel(guildId: Long, channelId: Long, type: Type) {
         require(type.multi, type::notMulti)
-        connection.prepare("SELECT * FROM guild_channels WHERE guild_id = ? AND channel_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM guild_channels WHERE guild_id = ? AND channel_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = channelId
             statement[3] = type.name
@@ -114,7 +117,7 @@ object DBChannels : Table() {
 
     fun removeChannel(guildId: Long, type: Type) {
         require(type.single, type::notSingle)
-        connection.prepare("SELECT * FROM guild_channels WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM guild_channels WHERE guild_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -125,7 +128,7 @@ object DBChannels : Table() {
 
     fun removeChannel(guildId: Long, channelId: Long, type: Type) {
         require(type.multi, type::notMulti)
-        connection.prepare("SELECT * FROM guild_channels WHERE guild_id = ? AND channel_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM guild_channels WHERE guild_id = ? AND channel_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = channelId
             statement[3] = type.name
@@ -137,11 +140,11 @@ object DBChannels : Table() {
 
     fun removeChannels(guildId: Long, type: Type) {
         require(type.multi, type::notMulti)
-        connection.prepare("SELECT * FROM guild_channels WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM guild_channels WHERE guild_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
-                it.whileNext { it.deleteRow() }
+                while(it.next()) it.deleteRow()
             }
         }
     }

@@ -16,19 +16,16 @@
 package xyz.laxus.db
 
 import xyz.laxus.db.entities.ChannelLink
-import xyz.laxus.db.schema.BIGINT
-import xyz.laxus.db.schema.Column
-import xyz.laxus.db.schema.Columns
-import xyz.laxus.db.schema.TableName
+import xyz.laxus.db.annotation.Column
+import xyz.laxus.db.annotation.Columns
+import xyz.laxus.db.annotation.TableName
 import xyz.laxus.db.sql.*
-import xyz.laxus.db.sql.ResultSetConcur.UPDATABLE
-import xyz.laxus.db.sql.ResultSetType.SCROLL_INSENSITIVE
 
 @TableName("channel_links")
 @Columns(
-    Column("guild_id", BIGINT, primary = true),
-    Column("voice_channel_id", BIGINT, primary = true),
-    Column("text_channel_id", BIGINT)
+    Column("guild_id", "BIGINT", primary = true),
+    Column("voice_channel_id", "BIGINT", primary = true),
+    Column("text_channel_id", "BIGINT")
 )
 object DBChannelLinks: Table() {
     fun isLinked(guildId: Long, voiceChannelId: Long, textChannelId: Long): Boolean {
@@ -38,15 +35,12 @@ object DBChannelLinks: Table() {
             statement[1] = guildId
             statement[2] = voiceChannelId
             statement[3] = textChannelId
-            statement.executeQuery {
-                it.next()
-            }
+            statement.executeQuery { it.next() }
         }
     }
 
     fun setChannelLink(link: ChannelLink) {
-        connection.prepare("SELECT * FROM channel_links WHERE guild_id = ? AND voice_channel_id = ?",
-            SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM channel_links WHERE guild_id = ? AND voice_channel_id = ?") { statement ->
             statement[1] = link.guildId
             statement[2] = link.voiceChannelId
             statement.executeQuery {
@@ -62,8 +56,9 @@ object DBChannelLinks: Table() {
     }
 
     fun removeChannelLink(link: ChannelLink) {
-        connection.prepare("SELECT * FROM channel_links WHERE guild_id = ? AND voice_channel_id = ? AND text_channel_id = ?",
-            SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update(
+            "SELECT * FROM channel_links WHERE guild_id = ? AND voice_channel_id = ? AND text_channel_id = ?"
+        ) { statement ->
             statement[1] = link.guildId
             statement[2] = link.voiceChannelId
             statement[3] = link.textChannelId
@@ -92,7 +87,7 @@ object DBChannelLinks: Table() {
             statement[1] = guildId
             statement[2] = textChannelId
             statement.executeQuery {
-                it.whileNext {
+                while(it.next()) {
                     links += ChannelLink(it)
                 }
             }

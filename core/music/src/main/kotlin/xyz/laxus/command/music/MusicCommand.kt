@@ -138,7 +138,7 @@ abstract class MusicCommand(protected val manager: MusicManager): Command(MusicG
             if(ytSearch) {
                 continuation.resume(null)
             } else {
-                rerun("ytsearch:$query")
+                rerun("$YT_SEARCH_PREFIX$query")
             }
         }
 

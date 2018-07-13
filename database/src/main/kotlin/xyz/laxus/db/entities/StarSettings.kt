@@ -31,7 +31,7 @@ data class StarSettings(
     var maxAge: Int = 72,
     val ignored: MutableSet<Long> = mutableSetOf()
 ) {
-    constructor(res: ResultSet): this(
+    internal constructor(res: ResultSet): this(
         guildId = res.getLong("guild_id"),
         channelId = res.getLong("channel_id"),
         threshold = res.getShort("threshold"),

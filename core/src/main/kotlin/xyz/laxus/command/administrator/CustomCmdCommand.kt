@@ -179,7 +179,7 @@ class CustomCmdCommand: EmptyCommand(AdministratorGroup) {
             builder.clearItems()
             val paginator = paginator(builder) {
                 text        { _,_ -> "Custom Commands on ${ctx.guild.name}" }
-                items       { + commands.map { it.first } }
+                items       { + commands.keys }
                 finalAction { ctx.linkMessage(it) }
                 user        { ctx.author }
             }

@@ -15,16 +15,16 @@
  */
 package xyz.laxus.db
 
-import xyz.laxus.db.schema.*
+import xyz.laxus.db.annotation.Column
+import xyz.laxus.db.annotation.Columns
+import xyz.laxus.db.annotation.TableName
 import xyz.laxus.db.sql.*
-import xyz.laxus.db.sql.ResultSetConcur.*
-import xyz.laxus.db.sql.ResultSetType.*
 
 @TableName("command_levels")
 @Columns(
-    Column("guild_id", BIGINT, primary = true),
-    Column("command_name", "$VARCHAR(100)", primary = true),
-    Column("command_level", "$VARCHAR(25)")
+    Column("guild_id", "BIGINT", primary = true),
+    Column("command_name", "VARCHAR(100)", primary = true),
+    Column("command_level", "VARCHAR(25)")
 )
 object DBCommandLevels: Table() {
     fun getCommandLevel(guildId: Long, commandName: String): String? {
@@ -41,7 +41,7 @@ object DBCommandLevels: Table() {
     }
 
     fun setCommandLevel(guildId: Long, commandName: String, commandLevel: String?) {
-        connection.prepare("SELECT * FROM command_levels WHERE guild_id = ? AND LOWER(command_name) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM command_levels WHERE guild_id = ? AND LOWER(command_name) = LOWER(?)") { statement ->
             statement[1] = guildId
             statement[2] = commandName
             statement.executeQuery {

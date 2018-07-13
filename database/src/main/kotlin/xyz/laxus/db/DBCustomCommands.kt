@@ -15,16 +15,16 @@
  */
 package xyz.laxus.db
 
-import xyz.laxus.db.schema.*
+import xyz.laxus.db.annotation.Column
+import xyz.laxus.db.annotation.Columns
+import xyz.laxus.db.annotation.TableName
 import xyz.laxus.db.sql.*
-import xyz.laxus.db.sql.ResultSetConcur.*
-import xyz.laxus.db.sql.ResultSetType.*
 
 @TableName("custom_commands")
 @Columns(
-    Column("guild_id", BIGINT, primary = true),
-    Column("name", "$VARCHAR(50)", primary = true),
-    Column("content", "$VARCHAR(1900)")
+    Column("guild_id", "BIGINT", primary = true),
+    Column("name", "VARCHAR(50)", primary = true),
+    Column("content", "VARCHAR(1900)")
 )
 object DBCustomCommands: Table() {
     fun hasCustomCommand(guildId: Long, name: String): Boolean {
@@ -35,17 +35,17 @@ object DBCustomCommands: Table() {
         }
     }
 
-    fun getCustomCommands(guildId: Long): List<Pair<String, String>> {
-        val list = ArrayList<Pair<String, String>>()
+    fun getCustomCommands(guildId: Long): Map<String, String> {
+        val map = hashMapOf<String, String>()
         connection.prepare("SELECT * FROM custom_commands WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
-                it.whileNext {
-                    list += (it.getString("name") to it.getString("content"))
+                while(it.next()) {
+                    map += (it.getString("name") to it.getString("content"))
                 }
             }
         }
-        return list
+        return map.toMap()
     }
 
     fun getCustomCommand(guildId: Long, name: String): String? {
@@ -62,7 +62,7 @@ object DBCustomCommands: Table() {
     fun setCustomCommand(guildId: Long, name: String, content: String) {
         require(name.length <= 50) { "Custom Command name length exceeds maximum of 50 characters!" }
         require(content.length <= 1900) { "Custom Command content length exceeds maximum of 50 characters!" }
-        connection.prepare("SELECT * FROM custom_commands WHERE guild_id = ? AND LOWER(name) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM custom_commands WHERE guild_id = ? AND LOWER(name) = LOWER(?)") { statement ->
             statement[1] = guildId
             statement[2] = name
             statement.executeQuery {
@@ -78,7 +78,7 @@ object DBCustomCommands: Table() {
     }
 
     fun removeCustomCommand(guildId: Long, name: String) {
-        connection.prepare("SELECT * FROM custom_commands WHERE guild_id = ? AND LOWER(name) = LOWER(?)", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM custom_commands WHERE guild_id = ? AND LOWER(name) = LOWER(?)") { statement ->
             statement[1] = guildId
             statement[2] = name
             statement.executeQuery {

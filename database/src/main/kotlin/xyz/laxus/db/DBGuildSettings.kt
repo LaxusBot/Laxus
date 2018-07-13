@@ -15,19 +15,19 @@
  */
 package xyz.laxus.db
 
-import xyz.laxus.db.schema.*
+import xyz.laxus.db.annotation.Column
+import xyz.laxus.db.annotation.Columns
+import xyz.laxus.db.annotation.TableName
 import xyz.laxus.db.sql.*
-import xyz.laxus.db.sql.ResultSetConcur.*
-import xyz.laxus.db.sql.ResultSetType.*
 
 /**
  * @author Kaidan Gustave
  */
 @TableName("guild_settings")
 @Columns(
-    Column("guild_id", BIGINT, primary = true),
-    Column("is_role_persist", BOOLEAN, def = "false"),
-    Column("role_me_limit", SMALLINT, nullable = true, def = "null")
+    Column("guild_id", "BIGINT", primary = true),
+    Column("is_role_persist", "BOOLEAN", def = "false"),
+    Column("role_me_limit", "SMALLINT", nullable = true, def = "null")
 )
 object DBGuildSettings: Table() {
     fun isRolePersist(guildId: Long): Boolean {
@@ -55,7 +55,7 @@ object DBGuildSettings: Table() {
     }
 
     fun setIsRolePersist(guildId: Long, isRolePersist: Boolean) {
-        connection.prepare("SELECT * FROM guild_settings WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM guild_settings WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(!it.next()) it.insert {
@@ -72,7 +72,7 @@ object DBGuildSettings: Table() {
     }
 
     fun setRoleMeLimit(guildId: Long, roleMeLimit: Short?) {
-        connection.prepare("SELECT * FROM guild_settings WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM guild_settings WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(!it.next()) it.insert {
@@ -86,7 +86,7 @@ object DBGuildSettings: Table() {
     }
 
     fun removeSettings(guildId: Long) {
-        connection.prepare("SELECT * FROM guild_settings WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM guild_settings WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(it.next()) it.deleteRow()

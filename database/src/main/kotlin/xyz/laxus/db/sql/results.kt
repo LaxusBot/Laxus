@@ -16,29 +16,23 @@
 @file:Suppress("unused")
 package xyz.laxus.db.sql
 
-import xyz.laxus.db.schema.SQLArray
-import xyz.laxus.db.schema.SQLTime
-import xyz.laxus.db.schema.SQLTimestamp
+import xyz.laxus.db.sql.SQLArrayType.*
 import java.sql.ResultSet
+import kotlin.reflect.KClass
+import kotlin.reflect.full.cast
 
-inline fun <reified R: ResultSet> R.whileNext(block: (R) -> Unit) {
-    while(next()) {
-        block(this)
-    }
-}
-
-inline fun <reified R: ResultSet> R.insert(block: (R) -> Unit) {
+inline fun ResultSet.insert(block: (ResultSet) -> Unit) {
     moveToInsertRow()
     block(this)
     insertRow()
 }
 
-inline fun <reified R: ResultSet> R.update(block: (R) -> Unit) {
+inline fun ResultSet.update(block: (ResultSet) -> Unit) {
     block(this)
     updateRow()
 }
 
-inline operator fun <reified R: ResultSet> R.set(column: String, value: Boolean?) {
+operator fun ResultSet.set(column: String, value: Boolean?) {
     if(value === null) {
         updateNull(column)
     } else {
@@ -46,7 +40,7 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: Boolean?
     }
 }
 
-inline operator fun <reified R: ResultSet> R.set(column: String, value: String?) {
+operator fun ResultSet.set(column: String, value: String?) {
     if(value === null) {
         updateNull(column)
     } else {
@@ -54,7 +48,7 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: String?)
     }
 }
 
-inline operator fun <reified R: ResultSet> R.set(column: String, value: Short?) {
+operator fun ResultSet.set(column: String, value: Short?) {
     if(value === null) {
         updateNull(column)
     } else {
@@ -62,7 +56,7 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: Short?) 
     }
 }
 
-inline operator fun <reified R: ResultSet> R.set(column: String, value: Int?) {
+operator fun ResultSet.set(column: String, value: Int?) {
     if(value === null) {
         updateNull(column)
     } else {
@@ -70,7 +64,7 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: Int?) {
     }
 }
 
-inline operator fun <reified R: ResultSet> R.set(column: String, value: Long?) {
+operator fun ResultSet.set(column: String, value: Long?) {
     if(value === null) {
         updateNull(column)
     } else {
@@ -78,7 +72,7 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: Long?) {
     }
 }
 
-inline operator fun <reified R: ResultSet> R.set(column: String, value: Float?) {
+operator fun ResultSet.set(column: String, value: Float?) {
     if(value === null) {
         updateNull(column)
     } else {
@@ -86,7 +80,7 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: Float?) 
     }
 }
 
-inline operator fun <reified R: ResultSet> R.set(column: String, value: Double?) {
+operator fun ResultSet.set(column: String, value: Double?) {
     if(value === null) {
         updateNull(column)
     } else {
@@ -94,23 +88,60 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: Double?)
     }
 }
 
-inline operator fun <reified R: ResultSet> R.set(column: String, value: Array<*>?) {
+operator fun ResultSet.set(column: String, value: Array<String>?) {
+    this[column, VARCHAR] = value
+}
+
+operator fun ResultSet.set(column: String, value: BooleanArray?) {
+    this[column, BOOL] = value?.toTypedArray()
+}
+
+operator fun ResultSet.set(column: String, value: ShortArray?) {
+    this[column, INT_2] = value?.toTypedArray()
+}
+
+operator fun ResultSet.set(column: String, value: IntArray?) {
+    this[column, INT_4] = value?.toTypedArray()
+}
+
+operator fun ResultSet.set(column: String, value: LongArray?) {
+    this[column, INT_8] = value?.toTypedArray()
+}
+
+operator fun ResultSet.set(column: String, value: FloatArray?) {
+    this[column, FLOAT_4] = value?.toTypedArray()
+}
+
+operator fun ResultSet.set(column: String, value: DoubleArray?) {
+    this[column, FLOAT_8] = value?.toTypedArray()
+}
+
+operator fun ResultSet.set(column: String, type: SQLArrayType, value: Array<*>?) {
     if(value === null) {
         updateNull(column)
     } else {
-        updateObject(column, value)
+        val conn = requireNotNull(statement?.connection) { "ResultSet does not support statement retrieval!" }
+        this[column] = conn.createArrayOf(type.serverName, value)
     }
 }
 
-inline operator fun <reified R: ResultSet> R.set(column: String, value: SQLArray?) {
+operator fun ResultSet.set(column: String, value: SQLDate?) {
     if(value === null) {
         updateNull(column)
     } else {
-        updateObject(column, value)
+        updateDate(column, value)
     }
 }
 
-inline operator fun <reified R: ResultSet> R.set(column: String, value: SQLTime?) {
+operator fun ResultSet.set(column: String, value: SQLArray?) {
+    if(value === null) {
+        updateNull(column)
+    } else {
+        updateArray(column, value)
+    }
+}
+
+operator fun ResultSet.set(column: String, value: SQLTime?) {
     if(value === null) {
         updateNull(column)
     } else {
@@ -118,7 +149,7 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: SQLTime?
     }
 }
 
-inline operator fun <reified R: ResultSet> R.set(column: String, value: SQLTimestamp?) {
+operator fun ResultSet.set(column: String, value: SQLTimestamp?) {
     if(value === null) {
         updateNull(column)
     } else {
@@ -126,26 +157,121 @@ inline operator fun <reified R: ResultSet> R.set(column: String, value: SQLTimes
     }
 }
 
-inline fun <reified T> ResultSet.array(column: String): Array<T> {
+inline fun <reified T: Any> ResultSet.array(column: String) = array(column, T::class)
+
+fun <T: Any> ResultSet.array(column: String, klass: KClass<T>): Array<T> {
     val array = getArray(column).array as? Array<*>
-    return array?.let { Array(array.size) { array[it] as T } } ?: emptyArray()
+    @Suppress("UNCHECKED_CAST")
+    return (array?.let {
+        Array<Any>(array.size) { klass.cast(array[it]) }
+    } ?: emptyArray()) as Array<T>
 }
 
-inline fun <reified R: ResultSet> R.getNullShort(column: String): Short? {
+fun ResultSet.stringArray(column: String): Array<String> {
+    val array = getArray(column).array
+    return when(array) {
+        null -> emptyArray()
+        is Array<*> -> Array(array.size) { i ->
+            val value = array[i]?.let { (it as? String ?: it.toString()) }
+            requireNotNull(value)
+        }
+        else -> emptyArray()
+    }
+}
+
+fun ResultSet.boolArray(column: String): BooleanArray {
+    val array = getArray(column).array
+    return when(array) {
+        null -> booleanArrayOf()
+        is BooleanArray -> array
+        is Array<*> -> BooleanArray(array.size) { i ->
+            val value = array[i]?.let { (it as? Boolean ?: it.toString().toBoolean()) }
+            requireNotNull(value)
+        }
+        else -> booleanArrayOf()
+    }
+}
+
+fun ResultSet.shortArray(column: String): ShortArray {
+    val array = getArray(column).array
+    return when(array) {
+        null -> shortArrayOf()
+        is ShortArray -> array
+        is Array<*> -> ShortArray(array.size) { i ->
+            val value = array[i]?.let { (it as? Short ?: it.toString().toShortOrNull()) }
+            requireNotNull(value)
+        }
+        else -> shortArrayOf()
+    }
+}
+
+fun ResultSet.intArray(column: String): IntArray {
+    val array = getArray(column).array
+    return when(array) {
+        null -> intArrayOf()
+        is IntArray -> array
+        is Array<*> -> IntArray(array.size) { i ->
+            val value = array[i]?.let { (it as? Int ?: it.toString().toIntOrNull()) }
+            requireNotNull(value)
+        }
+        else -> intArrayOf()
+    }
+}
+
+fun ResultSet.longArray(column: String): LongArray {
+    val array = getArray(column).array
+    return when(array) {
+        null -> longArrayOf()
+        is LongArray -> array
+        is Array<*> -> LongArray(array.size) { i ->
+            val value = array[i]?.let { (it as? Long ?: it.toString().toLongOrNull()) }
+            requireNotNull(value)
+        }
+        else -> longArrayOf()
+    }
+}
+
+fun ResultSet.floatArray(column: String): FloatArray {
+    val array = getArray(column).array
+    return when(array) {
+        null -> floatArrayOf()
+        is FloatArray -> array
+        is Array<*> -> FloatArray(array.size) { i ->
+            val value = array[i]?.let { (it as? Float ?: it.toString().toFloatOrNull()) }
+            requireNotNull(value)
+        }
+        else -> floatArrayOf()
+    }
+}
+
+fun ResultSet.doubleArray(column: String): DoubleArray {
+    val array = getArray(column).array
+    return when(array) {
+        null -> doubleArrayOf()
+        is DoubleArray -> array
+        is Array<*> -> DoubleArray(array.size) { i ->
+            val value = array[i]?.let { (it as? Double ?: it.toString().toDoubleOrNull()) }
+            requireNotNull(value)
+        }
+        else -> doubleArrayOf()
+    }
+}
+
+fun ResultSet.getNullShort(column: String): Short? {
     val s = getShort(column)
     if(wasNull())
         return null
     return s
 }
 
-inline fun <reified R: ResultSet> R.getNullInt(column: String): Int? {
+fun ResultSet.getNullInt(column: String): Int? {
     val i = getInt(column)
     if(wasNull())
         return null
     return i
 }
 
-inline fun <reified R: ResultSet> R.getNullLong(column: String): Long? {
+fun ResultSet.getNullLong(column: String): Long? {
     val l = getLong(column)
     if(wasNull())
         return null
