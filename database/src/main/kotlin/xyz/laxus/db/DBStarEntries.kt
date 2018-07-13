@@ -15,32 +15,29 @@
  */
 package xyz.laxus.db
 
-import xyz.laxus.db.schema.BIGINT
-import xyz.laxus.db.schema.Column
-import xyz.laxus.db.schema.Columns
-import xyz.laxus.db.schema.TableName
+import xyz.laxus.db.annotation.Column
+import xyz.laxus.db.annotation.Columns
+import xyz.laxus.db.annotation.TableName
 import xyz.laxus.db.sql.*
-import xyz.laxus.db.sql.ResultSetConcur.*
-import xyz.laxus.db.sql.ResultSetType.*
 
 /**
  * @author Kaidan Gustave
  */
 @TableName("star_entries")
 @Columns(
-    Column("starred_id", BIGINT, primary = true),
-    Column("entry_id", BIGINT, nullable = true, def = "NULL"),
-    Column("starboard_id", BIGINT),
-    Column("guild_id", BIGINT, primary = true),
-    Column("user_id", BIGINT, primary = true)
+    Column("starred_id", "BIGINT", primary = true),
+    Column("entry_id", "BIGINT", nullable = true, def = "NULL"),
+    Column("starboard_id", "BIGINT"),
+    Column("guild_id", "BIGINT", primary = true),
+    Column("user_id", "BIGINT", primary = true)
 )
-object DBStarEntries : Table() {
+object DBStarEntries: Table() {
     fun addStar(starredId: Long, guildId: Long, userId: Long, entryId: Long? = null) {
         val starboardId = checkNotNull(DBStarSettings.getSettings(guildId)?.channelId) {
             "No StarSettings found for Guild ID: $guildId"
         }
 
-        connection.prepare("SELECT * FROM star_entries WHERE starred_id = ? AND guild_id = ? AND user_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM star_entries WHERE starred_id = ? AND guild_id = ? AND user_id = ?") { statement ->
             statement[1] = starredId
             statement[2] = guildId
             statement[3] = userId
@@ -59,12 +56,14 @@ object DBStarEntries : Table() {
     }
 
     fun getStars(starredId: Long, guildId: Long): List<Long> {
-        val stars = ArrayList<Long>()
+        val stars = arrayListOf<Long>()
         connection.prepare("SELECT USER_ID FROM star_entries WHERE starred_id = ? AND guild_id = ?") { statement ->
             statement[1] = starredId
             statement[2] = guildId
             statement.executeQuery {
-                it.whileNext { stars += it.getLong("user_id") }
+                while(it.next()) {
+                    stars += it.getLong("user_id")
+                }
             }
         }
         return stars
@@ -93,7 +92,7 @@ object DBStarEntries : Table() {
     }
 
     fun removeEntry(userId: Long, starredId: Long, guildId: Long) {
-        connection.prepare("SELECT * FROM star_entries WHERE starred_id = ? AND guild_id = ? AND user_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM star_entries WHERE starred_id = ? AND guild_id = ? AND user_id = ?") { statement ->
             statement[1] = userId
             statement[2] = starredId
             statement[3] = guildId
@@ -104,22 +103,24 @@ object DBStarEntries : Table() {
     }
 
     fun removeAllEntries(starredId: Long, guildId: Long) {
-        connection.prepare("SELECT * FROM star_entries WHERE starred_id = ? AND guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM star_entries WHERE starred_id = ? AND guild_id = ?") { statement ->
             statement[1] = starredId
             statement[2] = guildId
             statement.executeQuery {
-                it.whileNext { it.deleteRow() }
+                while(it.next()) it.deleteRow()
             }
         }
     }
 
     fun setEntry(entryId: Long, starredId: Long, guildId: Long) {
-        connection.prepare("SELECT * FROM star_entries WHERE starred_id = ? AND guild_id = ? AND entry_id IS NOT NULL", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM star_entries WHERE starred_id = ? AND guild_id = ? AND entry_id IS NOT NULL") { statement ->
             statement[1] = starredId
             statement[2] = guildId
             statement.executeQuery {
-                it.whileNext {
-                    it.update { it["entry_id"] = entryId }
+                while(it.next()) {
+                    it.update {
+                        it["entry_id"] = entryId
+                    }
                 }
             }
         }

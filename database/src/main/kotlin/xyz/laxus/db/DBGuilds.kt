@@ -15,13 +15,11 @@
  */
 package xyz.laxus.db
 
-import xyz.laxus.db.schema.*
-import xyz.laxus.db.sql.ResultSetConcur.*
-import xyz.laxus.db.sql.ResultSetType.*
-import xyz.laxus.db.sql.executeQuery
-import xyz.laxus.db.sql.insert
-import xyz.laxus.db.sql.prepare
-import xyz.laxus.db.sql.set
+import xyz.laxus.db.annotation.AllPrimary
+import xyz.laxus.db.annotation.Column
+import xyz.laxus.db.annotation.Columns
+import xyz.laxus.db.annotation.TableName
+import xyz.laxus.db.sql.*
 
 /**
  * @author Kaidan Gustave
@@ -29,8 +27,8 @@ import xyz.laxus.db.sql.set
 @AllPrimary
 @TableName("guilds")
 @Columns(
-    Column("guild_id", BIGINT),
-    Column("type", "$VARCHAR(50)")
+    Column("guild_id", "BIGINT"),
+    Column("type", "VARCHAR(50)")
 )
 object DBGuilds: Table() {
     fun isGuild(guildId: Long, type: Type): Boolean {
@@ -44,7 +42,7 @@ object DBGuilds: Table() {
     }
 
     fun addGuild(guildId: Long, type: Type) {
-        connection.prepare("SELECT * FROM guilds WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM guilds WHERE guild_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -57,7 +55,7 @@ object DBGuilds: Table() {
     }
 
     fun removeGuild(guildId: Long, type: Type) {
-        connection.prepare("SELECT * FROM guilds WHERE guild_id = ? AND type = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM guilds WHERE guild_id = ? AND type = ?") { statement ->
             statement[1] = guildId
             statement[2] = type.name
             statement.executeQuery {
@@ -71,6 +69,6 @@ object DBGuilds: Table() {
     enum class Type {
         MUSIC,
         BLACKLIST,
-        WHITELIST
+        WHITELIST;
     }
 }

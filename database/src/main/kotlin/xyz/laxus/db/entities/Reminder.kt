@@ -16,7 +16,7 @@
 @file:Suppress("unused")
 package xyz.laxus.db.entities
 
-import xyz.laxus.db.schema.SQLTimestamp
+import xyz.laxus.db.sql.SQLTimestamp
 import java.sql.ResultSet
 import java.time.Instant
 import java.time.LocalDateTime
@@ -39,7 +39,7 @@ data class Reminder(val userId: Long, val remindTime: SQLTimestamp, val message:
         )
     )
 
-    constructor(results: ResultSet): this(
+    internal constructor(results: ResultSet): this(
         userId = results.getLong("user_id"),
         message = results.getString("message"),
         remindTime = results.getTimestamp("remind_time"),

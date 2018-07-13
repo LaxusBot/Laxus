@@ -15,18 +15,18 @@
  */
 package xyz.laxus.db
 
-import xyz.laxus.db.schema.*
+import xyz.laxus.db.annotation.Column
+import xyz.laxus.db.annotation.Columns
+import xyz.laxus.db.annotation.TableName
 import xyz.laxus.db.sql.*
-import xyz.laxus.db.sql.ResultSetConcur.*
-import xyz.laxus.db.sql.ResultSetType.*
 
 /**
  * @author Kaidan Gustave
  */
 @TableName("welcomes")
 @Columns(
-    Column("guild_id", BIGINT, primary = true),
-    Column("message", "$VARCHAR(1900)")
+    Column("guild_id", "BIGINT", primary = true),
+    Column("message", "VARCHAR(1900)")
 )
 object DBWelcomes: Table() {
     fun hasWelcome(guildId: Long): Boolean {
@@ -49,7 +49,7 @@ object DBWelcomes: Table() {
     fun setWelcome(guildId: Long, channelId: Long, message: String) {
         require(message.length <= 1900) { "Welcome message must not be longer than 1900 characters!" }
         DBChannels.setChannel(guildId, channelId, DBChannels.Type.WELCOME)
-        connection.prepare("SELECT * FROM welcomes WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM welcomes WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(!it.next()) it.insert {
@@ -64,7 +64,7 @@ object DBWelcomes: Table() {
 
     fun removeWelcome(guildId: Long) {
         DBChannels.removeChannel(guildId, DBChannels.Type.WELCOME)
-        connection.prepare("SELECT * FROM welcomes WHERE guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM welcomes WHERE guild_id = ?") { statement ->
             statement[1] = guildId
             statement.executeQuery {
                 if(it.next()) it.deleteRow()

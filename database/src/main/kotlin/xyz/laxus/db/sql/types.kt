@@ -13,23 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.db.util
+package xyz.laxus.db.sql
 
-import xyz.laxus.db.schema.SQLDate
-import xyz.laxus.db.schema.SQLTimestamp
-import java.time.Instant
-import java.time.LocalDate
-import java.time.OffsetDateTime
-import java.time.temporal.TemporalAccessor
-
-internal fun timestamp(temporal: TemporalAccessor): SQLTimestamp {
-    return SQLTimestamp.from(Instant.from(temporal))
-}
-
-internal fun date(temporal: TemporalAccessor): SQLDate {
-    return SQLDate.valueOf(LocalDate.from(temporal))
-}
-
-fun OffsetDateTime.toSQLTimestamp() = timestamp(this)
-
-fun OffsetDateTime.toSQLDate() = date(this)
+typealias SQLDate = java.sql.Date
+typealias SQLTimestamp = java.sql.Timestamp
+typealias SQLTime = java.sql.Time
+typealias SQLArray = java.sql.Array

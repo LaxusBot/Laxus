@@ -16,25 +16,25 @@
 @file:Suppress("MemberVisibilityCanBePrivate", "unused")
 package xyz.laxus.db
 
+import xyz.laxus.db.annotation.Column
+import xyz.laxus.db.annotation.Columns
+import xyz.laxus.db.annotation.TableName
 import xyz.laxus.db.entities.Case
-import xyz.laxus.db.schema.*
 import xyz.laxus.db.sql.*
-import xyz.laxus.db.sql.ResultSetConcur.*
-import xyz.laxus.db.sql.ResultSetType.*
 
 /**
  * @author Kaidan Gustave
  */
 @TableName("cases")
 @Columns(
-    Column("case_number", INT, primary = true),
-    Column("guild_id", BIGINT, primary = true),
-    Column("message_id", BIGINT),
-    Column("mod_id", BIGINT),
-    Column("target_id", BIGINT),
-    Column("is_on_user", BOOLEAN),
-    Column("action", "$VARCHAR(50)"),
-    Column("reason", "$VARCHAR(300)", nullable = true, def = "NULL")
+    Column("case_number", "INT", primary = true),
+    Column("guild_id", "BIGINT", primary = true),
+    Column("message_id", "BIGINT"),
+    Column("mod_id", "BIGINT"),
+    Column("target_id", "BIGINT"),
+    Column("is_on_user", "BOOLEAN"),
+    Column("action", "VARCHAR(50)"),
+    Column("reason", "VARCHAR(300)", nullable = true, def = "NULL")
 )
 object DBCases: Table() {
     fun getCurrentCaseNumber(guildId: Long): Int {
@@ -50,11 +50,11 @@ object DBCases: Table() {
     }
 
     fun getCases(guildId: Long): List<Case> {
-        val cases = ArrayList<Case>()
+        val cases = arrayListOf<Case>()
         connection.prepare("SELECT * FROM cases WHERE guild_id = ? ORDER BY case_number ASC") { statement ->
             statement[1] = guildId
             statement.executeQuery {
-                it.whileNext {
+                while(it.next()) {
                     cases += Case(it)
                 }
             }
@@ -76,12 +76,12 @@ object DBCases: Table() {
     }
 
     fun getCasesByModId(guildId: Long, modId: Long): List<Case> {
-        val cases = ArrayList<Case>()
+        val cases = arrayListOf<Case>()
         connection.prepare("SELECT * FROM cases WHERE guild_id = ? AND mod_id = ? ORDER BY case_number ASC") { statement ->
             statement[1] = guildId
             statement[2] = modId
             statement.executeQuery {
-                it.whileNext {
+                while(it.next()) {
                     cases += Case(it)
                 }
             }
@@ -90,12 +90,12 @@ object DBCases: Table() {
     }
 
     fun getCasesWithoutReasonByModId(guildId: Long, modId: Long): List<Case> {
-        val cases = ArrayList<Case>()
+        val cases = arrayListOf<Case>()
         connection.prepare("SELECT * FROM cases WHERE guild_id = ? AND mod_id = ? AND reason IS NULL ORDER BY case_number DESC") { statement ->
             statement[1] = guildId
             statement[2] = modId
             statement.executeQuery {
-                it.whileNext {
+                while(it.next()) {
                     cases += Case(it)
                 }
             }
@@ -104,7 +104,7 @@ object DBCases: Table() {
     }
 
     fun addCase(case: Case) {
-        connection.prepare("SELECT * FROM cases WHERE guild_id = ? ORDER BY case_number ASC", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM cases WHERE guild_id = ? ORDER BY case_number ASC") { statement ->
             statement[1] = case.guildId
             statement.executeQuery {
                 it.insert {
@@ -122,7 +122,7 @@ object DBCases: Table() {
     }
 
     fun updateCase(case: Case) {
-        connection.prepare("SELECT reason FROM cases WHERE case_number = ? AND guild_id = ?", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT reason FROM cases WHERE case_number = ? AND guild_id = ?") { statement ->
             statement[1] = case.number
             statement[2] = case.guildId
             statement.executeQuery {
@@ -134,10 +134,10 @@ object DBCases: Table() {
     }
 
     fun removeAllCases(guildId: Long) {
-        connection.prepare("SELECT * FROM cases WHERE guild_id = ? ORDER BY case_number ASC", SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM cases WHERE guild_id = ? ORDER BY case_number ASC") { statement ->
             statement[1] = guildId
             statement.executeQuery {
-                it.whileNext { it.deleteRow() }
+                while(it.next()) it.deleteRow()
             }
         }
     }

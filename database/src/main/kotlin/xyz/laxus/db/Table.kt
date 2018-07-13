@@ -15,20 +15,11 @@
  */
 package xyz.laxus.db
 
-import xyz.laxus.db.schema.*
-import xyz.laxus.util.delegation.annotation
-
 /**
  * @author Kaidan Gustave
  */
 abstract class Table: AutoCloseable {
     protected val connection by lazy { Database.connection }
-    val name by annotation<TableName, String?> { it.value }
-    val columns by annotation<Columns, Array<out Column>?> { it.value }
-
-    protected fun <T> sqlArrayOf(type: SQLArrayType, vararg elements: T): SQLArray {
-        return connection.createArrayOf(type.serverName, elements)
-    }
 
     override fun close() {
         // Can be overriden if necessary

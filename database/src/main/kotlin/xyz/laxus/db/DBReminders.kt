@@ -15,18 +15,18 @@
  */
 package xyz.laxus.db
 
+import xyz.laxus.db.annotation.Column
+import xyz.laxus.db.annotation.Columns
+import xyz.laxus.db.annotation.TableName
 import xyz.laxus.db.entities.Reminder
-import xyz.laxus.db.schema.*
 import xyz.laxus.db.sql.*
-import xyz.laxus.db.sql.ResultSetConcur.UPDATABLE
-import xyz.laxus.db.sql.ResultSetType.SCROLL_INSENSITIVE
 
 @TableName("reminders")
 @Columns(
     Column("id", "BIGSERIAL", primary = true),
-    Column("user_id", BIGINT, primary = true),
-    Column("remind_time", TIMESTAMP),
-    Column("message", "$VARCHAR(${Reminder.MaxMessageLength})")
+    Column("user_id", "BIGINT", primary = true),
+    Column("remind_time", "TIMESTAMP"),
+    Column("message", "VARCHAR(${Reminder.MaxMessageLength})")
 )
 object DBReminders: Table() {
     fun nextReminder(): Reminder? {
@@ -42,8 +42,7 @@ object DBReminders: Table() {
 
     fun addReminder(reminder: Reminder) {
         require(reminder.id == -1L) { "Invalid Reminder.id for adding!" }
-        connection.prepare("SELECT * FROM reminders WHERE user_id = ? ORDER BY remind_time ASC",
-            SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM reminders WHERE user_id = ? ORDER BY remind_time ASC") { statement ->
             statement[1] = reminder.userId
             statement.executeQuery {
                 it.insert {
@@ -60,7 +59,7 @@ object DBReminders: Table() {
         connection.prepare("SELECT * FROM reminders WHERE user_id = ? ORDER BY remind_time ASC") { statement ->
             statement[1] = userId
             statement.executeQuery {
-                it.whileNext {
+                while(it.next()) {
                     list += Reminder(it)
                 }
             }
@@ -70,8 +69,7 @@ object DBReminders: Table() {
 
     fun removeReminder(reminder: Reminder) {
         require(reminder.id != -1L) { "Invalid Reminder.id for removal!" }
-        connection.prepare("SELECT * FROM reminders WHERE id = ?",
-            SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM reminders WHERE id = ?") { statement ->
             statement[1] = reminder.id
             statement.executeQuery {
                 if(it.next()) it.deleteRow()
@@ -80,11 +78,10 @@ object DBReminders: Table() {
     }
 
     fun removeAllReminders(userId: Long) {
-        connection.prepare("SELECT * FROM reminders WHERE user_id = ?",
-            SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM reminders WHERE user_id = ?") { statement ->
             statement[1] = userId
             statement.executeQuery {
-                it.whileNext { it.deleteRow() }
+                while(it.next()) it.deleteRow()
             }
         }
     }

@@ -15,18 +15,18 @@
  */
 package xyz.laxus.db
 
-import xyz.laxus.db.schema.*
+import xyz.laxus.db.annotation.Column
+import xyz.laxus.db.annotation.Columns
+import xyz.laxus.db.annotation.TableName
 import xyz.laxus.db.sql.*
-import xyz.laxus.db.sql.ResultSetConcur.*
-import xyz.laxus.db.sql.ResultSetType.*
 
 /**
  * @author Kaidan Gustave
  */
 @TableName("afk_users")
 @Columns(
-    Column("user_id", BIGINT, primary = true),
-    Column("afk_message", "$VARCHAR(500)", def = "")
+    Column("user_id", "BIGINT", primary = true),
+    Column("afk_message", "VARCHAR(500)", def = "")
 )
 object DBAFKUsers: Table() {
     fun getAFKMessage(userId: Long): String? {
@@ -42,8 +42,7 @@ object DBAFKUsers: Table() {
     }
 
     fun setAFK(userId: Long, afkMessage: String = "") {
-        connection.prepare("SELECT * FROM afk_users WHERE user_id = ?",
-            SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM afk_users WHERE user_id = ?") { statement ->
             statement[1] = userId
             statement.executeQuery {
                 if(it.next()) it.update {
@@ -57,8 +56,7 @@ object DBAFKUsers: Table() {
     }
 
     fun removeAFK(userId: Long) {
-        connection.prepare("SELECT * FROM afk_users WHERE user_id = ?",
-            SCROLL_INSENSITIVE, UPDATABLE) { statement ->
+        connection.update("SELECT * FROM afk_users WHERE user_id = ?") { statement ->
             statement[1] = userId
             statement.executeQuery {
                 if(it.next()) {

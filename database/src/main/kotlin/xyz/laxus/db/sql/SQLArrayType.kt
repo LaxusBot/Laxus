@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xyz.laxus.db.schema
+package xyz.laxus.db.sql
 
-const val BIGINT = "BIGINT"
-const val INT = "INT"
-const val SMALLINT = "SMALLINT"
-const val BOOLEAN = "BOOLEAN"
-const val VARCHAR = "VARCHAR"
-const val ARRAY = "ARRAY"
-const val TIMESTAMP = "TIMESTAMP"
-const val TIME = "TIME"
-const val DATE = "DATE"
-
-typealias SQLDate = java.sql.Date
-typealias SQLTimestamp = java.sql.Timestamp
-typealias SQLTime = java.sql.Time
-typealias SQLArray = java.sql.Array
+/**
+ * @author Kaidan Gustave
+ */
+enum class SQLArrayType(val serverName: String) {
+    INT_2("int2"),
+    INT_4("int4"),
+    INT_8("int8"),
+    FLOAT_4("float4"),
+    FLOAT_8("float8"),
+    BOOL("bool"),
+    VARCHAR("varchar");
+}
