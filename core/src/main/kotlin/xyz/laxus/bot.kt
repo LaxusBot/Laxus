@@ -20,6 +20,7 @@ import com.jagrosh.jagtag.JagTag
 import com.jagrosh.jagtag.Parser
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.config
+import io.ktor.client.features.HttpPlainText
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.request.HttpRequestPipeline
 import io.ktor.client.request.get
@@ -115,6 +116,10 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
 
         install(JsonFeature) {
             serializer = JSKtorSerializer(charset = Charsets.UTF_8)
+        }
+
+        install(HttpPlainText) {
+            defaultCharset = Charsets.UTF_8
         }
 
         install("DefaultContentType") {
