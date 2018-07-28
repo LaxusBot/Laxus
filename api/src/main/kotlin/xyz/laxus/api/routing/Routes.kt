@@ -20,12 +20,16 @@ import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.client.HttpClient
 import io.ktor.client.features.json.JsonFeature
+import io.ktor.content.file
+import io.ktor.content.static
+import io.ktor.content.staticRootFolder
 import io.ktor.features.*
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.locations.Locations
 import io.ktor.response.respond
+import io.ktor.routing.route
 import io.ktor.routing.routing
 import me.kgustave.json.ktor.client.JSKtorSerializer
 import me.kgustave.json.ktor.server.JSContentConverter
@@ -40,6 +44,9 @@ import xyz.laxus.api.error.badRequest
 import xyz.laxus.api.error.unauthorized
 import xyz.laxus.api.handlers.routeHandlers
 import xyz.laxus.api.ratelimits.RateLimits
+import xyz.laxus.api.routing.v1.RoutingV1
+import java.io.File
+import java.nio.file.Paths
 
 object Routes: Module {
     private val deserializer = JSDeserializer()
@@ -67,8 +74,7 @@ object Routes: Module {
         }
 
         install(ContentNegotiation) {
-            register(ContentType.Application.Json,
-                JSContentConverter(deserializer, serializer, Charsets.UTF_8))
+            register(ContentType.Application.Json, JSContentConverter(deserializer, serializer, Charsets.UTF_8))
         }
 
         install(CORS) {
@@ -91,12 +97,10 @@ object Routes: Module {
             }
         }
 
-        routing {
-            install(AutoHeadResponse)
-        }
+        install(AutoHeadResponse)
 
         routeHandlers {
-            register(Dashboard(httpClient))
+            register(RoutingV1(httpClient))
             handleMissing {
                 body { throw badRequest("Request body is missing") }
                 param { throw badRequest("Missing route param!") }
@@ -106,6 +110,32 @@ object Routes: Module {
                         HttpHeaders.Authorization -> unauthorized()
                         else -> badRequest("Missing header value '$header'")
                     }
+                }
+            }
+        }
+
+        routing {
+            route("/", HttpMethod.Get) {
+                // TODO decide on a base folder
+                val root = Paths.get(System.getProperty("user.dir"), "api", "content").toFile()
+                staticRootFolder = root
+
+                static {
+                    file("", "index.html")
+                    file("", "favicon.ico")
+                    file("", "manifest.json")
+                    file("", "asset-manifest.json")
+
+                    root.toPath().resolve("static")
+                        .toFile().walkBottomUp().asSequence()
+                        .filter { file -> file.isFile }
+                        .forEach { file ->
+                            val path = file.path
+                                .removePrefix(root.path)
+                                .replace(File.separatorChar, '/')
+                                .removePrefix("/")
+                            file(path, file)
+                        }
                 }
             }
         }

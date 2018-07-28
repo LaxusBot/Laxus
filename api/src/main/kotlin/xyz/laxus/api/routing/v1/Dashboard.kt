@@ -15,7 +15,7 @@
  */
 @file:Suppress("FunctionName")
 
-package xyz.laxus.api.routing
+package xyz.laxus.api.routing.v1
 
 import io.ktor.application.ApplicationCall
 import io.ktor.auth.authentication

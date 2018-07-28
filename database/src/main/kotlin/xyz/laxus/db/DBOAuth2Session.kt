@@ -15,8 +15,10 @@
  */
 package xyz.laxus.db
 
+import xyz.laxus.db.annotation.Column
+import xyz.laxus.db.annotation.Columns
+import xyz.laxus.db.annotation.TableName
 import xyz.laxus.db.entities.OAuth2Data
-import xyz.laxus.db.schema.*
 import xyz.laxus.db.sql.*
 import java.sql.Timestamp
 import java.time.LocalDateTime
@@ -35,7 +37,11 @@ object DBOAuth2Session: Table() {
     fun remove(accessToken: String) {
         connection.prepare("SELECT * FROM oauth2_sessions WHERE access_token = ?") { statement ->
             statement[1] = accessToken
-            statement.executeQuery { it.whileNext { it.deleteRow() } }
+            statement.executeQuery {
+                while(it.next()) {
+                    it.deleteRow()
+                }
+            }
         }
     }
 
