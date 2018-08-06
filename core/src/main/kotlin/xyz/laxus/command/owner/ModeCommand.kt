@@ -39,7 +39,7 @@ class ModeCommand: Command(OwnerGroup) {
         if(ctx.bot.mode == mode) return ctx.replyWarning {
             "I am already set to **$mode**!"
         }
-        ctx.bot.mode = mode
+        ctx.bot.setMode(mode)
         ctx.replySuccess("Successfully set mode to **$mode**!")
     }
 }

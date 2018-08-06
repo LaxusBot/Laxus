@@ -86,6 +86,9 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
     private val cycleContext = newSingleThreadContext("Cycle Context")
     private val botsListContext = newSingleThreadContext("BotLists Context")
 
+    private var _mode = builder.mode
+    private var _totalGuilds = 0L
+
     val test = builder.test
     val prefix = if(test) Laxus.TestPrefix else Laxus.Prefix
     val startTime: OffsetDateTime = now()
@@ -130,14 +133,8 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
     }
 
     val messageCacheSize get() = callCache.size
-
-    var totalGuilds = 0L
-        private set
-    var mode = builder.mode
-        set(value) {
-            field = value
-            NormalFilter.level = LogLevel.byLevel(field.level)
-        }
+    val totalGuilds get() = _totalGuilds
+    val mode get() = _mode
 
     init { NormalFilter.level = LogLevel.byLevel(mode.level) }
 
@@ -160,6 +157,11 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
 
     fun getUses(command: Command): Int {
         return uses.computeIfAbsent(command.name) { 0 }
+    }
+
+    fun setMode(mode: RunMode) {
+        _mode = mode
+        NormalFilter.level = LogLevel.byLevel(mode.level)
     }
 
     fun incrementUses(command: Command) {
@@ -396,14 +398,14 @@ class Bot internal constructor(builder: Bot.Builder): SuspendedListener {
 
         // If we're not sharded there's no reason to send a GET request
         if(jda.shardInfo === null || dBotsKey === null) {
-            this.totalGuilds = jda.guildCache.size()
+            this._totalGuilds = jda.guildCache.size()
             return
         }
 
         try {
             // Send GET request to bots.discord.pw
             val json = httpClient.get<JSObject>("https://bots.discord.pw/api/bots/${jda.selfUser.id}/stats")
-            this.totalGuilds = json.array("stats").asSequence()
+            this._totalGuilds = json.array("stats").asSequence()
                 .mapNotNull { it as? JSObject }
                 .map { it.optLong("server_count") ?: 0L }.sum()
         } catch (t: Throwable) {
