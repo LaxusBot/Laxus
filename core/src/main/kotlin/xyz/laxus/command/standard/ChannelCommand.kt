@@ -180,11 +180,20 @@ class ChannelCommand: EmptyCommand(StandardGroup) {
             // link
             voiceChannel.linkTo(textChannel)
 
-            // Create a permission override
-            val override = checkNotNull(voiceChannel.getPermissionOverride(ctx.guild.publicRole))
+            // First let's create an override for us, so we can continue to view
+            //the channel without a permission like administrator
+            textChannel.getPermissionOverride(ctx.selfMember)
+                ?.manager?.grant(linkedPermissions)?.queue() ?: textChannel
+                .createPermissionOverride(ctx.selfMember)
+                .setAllow(linkedPermissions)
+                .queue()
 
             // Set the perms to be denied to normal members
-            override.manager.deny(linkedPermissions).queue()
+            textChannel.getPermissionOverride(ctx.guild.publicRole)
+                ?.manager?.deny(linkedPermissions)?.queue() ?: textChannel
+                .createPermissionOverride(ctx.guild.publicRole)
+                .setDeny(linkedPermissions)
+                .queue()
 
             // update members in the voice channel already
             for(member in voiceChannel.members) {

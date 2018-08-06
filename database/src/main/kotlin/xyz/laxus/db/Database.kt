@@ -37,7 +37,7 @@ object Database: AutoCloseable {
     private val _tables = hashMapOf<String, Table>()
 
     val tables: Map<String, Table> get() = _tables
-    val isConnected get() = this::_connection.isInitialized && !connection.isClosed
+    val isConnected get() = this::_connection.isInitialized && !this._connection.isClosed
     val connection: Connection get() {
         check(isConnected) { "Database is not connected yet!" }
         return _connection
@@ -124,9 +124,9 @@ object Database: AutoCloseable {
         val url = buildString {
             append(requireNotNull(config.string("database.url.prefix")))
             append(requireNotNull(config.string("database.url.path")))
-            config.obj("database.url.options")?.forEach { key, value ->
-                append(";$key=${value.unwrapped()}")
-            }
+//            config.obj("database.url.options")?.forEach { key, value ->
+//                append(";$key=${value.unwrapped()}")
+//            }
         }
 
         return Triple(url, user, pass)

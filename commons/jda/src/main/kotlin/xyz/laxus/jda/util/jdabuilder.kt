@@ -29,7 +29,7 @@ import okhttp3.OkHttpClient
 import java.util.concurrent.ConcurrentMap
 import net.dv8tion.jda.core.JDABuilder as Builder
 
-inline fun jda(accountType: AccountType, init: Builder.() -> Unit): JDA = Builder(accountType).apply(init).buildAsync()
+inline fun jda(accountType: AccountType, init: Builder.() -> Unit): JDA = Builder(accountType).apply(init).build()
 
 inline fun Builder.token(lazy: () -> String) = apply { setToken(lazy()) }
 inline fun Builder.game(lazy: () -> String) = apply { setGame(playing(lazy())) }
