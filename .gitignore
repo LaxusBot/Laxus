@@ -9,7 +9,7 @@
 
 ### Gradle Files And Application Resources ###
 /.gradle/
-/build/
+**/build/
 laxus.sh
 
 !build.gradle
