@@ -34,6 +34,7 @@ object StandardGroup : Command.Group("Standard") {
         + ChannelCommand()
         + ColorMeCommand()
         + EmoteCommand()
+        + GameCommand()
         + GoogleCommand()
         + HelpCommand()
         + ImageCommand()
