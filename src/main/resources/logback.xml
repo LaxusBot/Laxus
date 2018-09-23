@@ -42,7 +42,7 @@
     ~ Webhook Appender.
     ~ Sends an embed message to #laxus-log on the support server.
     -->
-  <appender name="Webhook" class="xyz.laxus.util.WebhookAppender">
+  <appender name="Webhook" class="xyz.laxus.bot.webhook.WebhookAppender">
     <config>webhook.conf</config>
     <filter class="xyz.laxus.logging.filters.NormalFilter"/>
   </appender>

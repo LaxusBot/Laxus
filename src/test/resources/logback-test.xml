@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2018 Kaidan Gustave
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<configuration>
+  <!--
+    ~ Conversions for logging.
+    ~ INFO  -> GREEN
+    ~ WARN  -> RED
+    ~ ERROR -> RED (BOLD)
+    ~ DEBUG -> YELLOW
+    -->
+  <conversionRule conversionWord="simpleHL" converterClass="xyz.laxus.logging.SimpleHL"/>
+
+  <!--
+    ~ Console appender.
+    ~ Writes INFO, WARN, and ERROR to console.
+    -->
+  <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+    <filter class="xyz.laxus.logging.filters.NormalFilter"/>
+    <filter class="xyz.laxus.logging.filters.LoggerNameFilter">
+      <level>DEBUG</level>
+      <onMatch>DENY</onMatch>
+      <pattern>net.dv8tion.jda.*.Requester</pattern>
+      <pattern>net.dv8tion.jda.*.GuildLock</pattern>
+      <pattern>net.dv8tion.jda.*.JDA</pattern>
+      <pattern>net.dv8tion.jda.*.WebSocketClient</pattern>
+    </filter>
+    <encoder>
+      <pattern>
+        %nopex[%d{HH:mm:ss}] [%level] [%logger{0}]: %simpleHL(%msg%n%ex)
+      </pattern>
+    </encoder>
+  </appender>
+
+  <!--
+    ~ Webhook Appender.
+    ~ Sends an embed message to #laxus-log on the support server.
+    -->
+  <!--
+  <appender name="Webhook" class="xyz.laxus.bot.webhook.WebhookAppender">
+    <config>webhook.conf</config>
+    <filter class="xyz.laxus.logging.filters.NormalFilter"/>
+  </appender>
+  -->
+
+  <!--
+    ~ Rolling file appender.
+    ~ Creates a new file in ~/test/ every day at midnight
+    ~ No size limitation, 30 days policy, name format = Laxus.yyyy-MM-dd.log
+    -->
+  <appender name="File" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <!-- Set to append to file -->
+    <append>true</append>
+
+    <!-- Rolling Policy -->
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${user.dir}/test-logs/Laxus.%d{yyyy-MM-dd}.log</fileNamePattern>
+      <!-- 30 Days Max Policy -->
+      <maxHistory>30</maxHistory>
+    </rollingPolicy>
+
+    <encoder>
+      <pattern>
+        %nopex[%d{HH:mm:ss}] [%level] [%logger{0}]: %msg%n%ex
+      </pattern>
+    </encoder>
+  </appender>
+
+  <!-- Set root level -->
+  <root level="DEBUG">
+    <appender-ref ref="File"/>
+    <!-- <appender-ref ref="Webhook"/> -->
+    <appender-ref ref="Console"/>
+  </root>
+</configuration>

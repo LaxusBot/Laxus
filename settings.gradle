@@ -13,35 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-rootProject.name = 'Laxus'
-
-void module(Map settings) {
-    def name = settings.name as String
-
-    include name
-    def project = project(name)
-
-    // Change project directory
-    if(settings.directory != null)
-        project.projectDir = file(settings.directory)
-
-    if(settings.children != null) {
-        def children = settings.children
-        if(children instanceof Map) {
-            //noinspection GroovyAssignabilityCheck
-            children.name = name + children.name
-            module(children)
-        } else if(children instanceof List<Map>) {
-            children.each {
-                //noinspection GroovyAssignabilityCheck
-                it.name = name + it.name
-                module(it)
-            }
-        }
+pluginManagement {
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven { url 'https://plugins.gradle.org/m2/' }
+        maven { url 'http://dl.bintray.com/kotlin/kotlin-eap' }
     }
 }
 
-module name: ':commons', children: [name: ':jda']
-module name: ':core', children: [name: ':music']
-module name: ':database'
-module name: ':auto-listener', directory: 'util/auto-listener'
+void module(Map settings) {
+    def name = settings.name
+    def directory = settings.directory ?: name
+    
+    include ":$name"
+    
+    // Change project directory
+    project(":$name").projectDir = file "modules/$directory"
+}
+
+rootProject.name = 'Laxus'
+
+module name: 'bot'
+module name: 'commons'
+module name: 'command'
+module name: 'config'
+module name: 'coroutines'
+module name: 'database'
+module name: 'kotlinpoet'
+module name: 'logging'
+module name: 'reflect'
+module name: 'testing'
+module name: 'utils'

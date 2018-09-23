@@ -15,9 +15,6 @@
  */
 package xyz.laxus
 
-import xyz.laxus.db.Database
-import xyz.laxus.util.onJvmShutdown
-
 /**
  * @author Kaidan Gustave
  */
@@ -25,12 +22,5 @@ object Main {
     @JvmStatic
     fun main(args: Array<String>) {
         sendBanner()
-        Database.start()
-        Laxus.start()
-
-        onJvmShutdown("Main Shutdown") {
-            Database.close()
-            Laxus.stop()
-        }
     }
 }

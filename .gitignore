@@ -1,14 +1,14 @@
 ### IntelliJ Project Files ###
-/.idea/
-/**/out/
-/**/src/test/
+.idea/
+**/out/
 *.iml
 
 ### IDE Configurations ###
+.DS_STORE
 !.editorconfig
 
 ### Gradle Files And Application Resources ###
-/.gradle/
+.gradle/
 **/build/
 laxus.sh
 
@@ -18,30 +18,33 @@ laxus.sh
 !gradlew
 
 ### Configurations ###
-/**/src/main/resources/*.conf
+**/resources/configuration/
+src/**/resources/*.conf
+
+**/resources/*.conf
+!modules/**/resources/*.conf
 
 ### Log Files ###
-/**/logs/
-/**/test-logs/
-/**/test-requests/
+**/logs/
+**/test-logs/
 
 ### Data Files ###
-/backup/
+backup/
 *.json
 *.mv.db
 *.h2.db
 *.lock.db
 *.trace.db
-.DS_STORE
 
 ### Images ###
 *.gif
 *.jpg
 *.png
 
-### Tests ###
-/api/request-tests/
+!**/resources/*.gif
+!**/resources/*.jpg
+!**/resources/*.png
 
 ### Other ###
-/**/xyz/laxus/**/unlisted/
-/database/migration/
+**/xyz/laxus/**/unlisted/
+/api/
